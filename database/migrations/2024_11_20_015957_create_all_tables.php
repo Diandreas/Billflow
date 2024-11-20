@@ -73,12 +73,16 @@ return new class extends Migration
             $table->id();
             $table->string('company_name');
             $table->text('address')->nullable();
-            $table->string('phone')->nullable();
+            $table->string('phone', 20)->nullable();
             $table->string('email')->nullable();
-            $table->string('website')->nullable();
-            $table->string('vat_number')->nullable();
-            $table->string('siret')->nullable(); // Pour la France
+            $table->string('siret', 14)->nullable();
+            $table->decimal('tax_rate', 5, 2)->default(20.00);
             $table->string('logo_path')->nullable();
+            $table->string('currency', 3)->default('EUR');
+            $table->string('invoice_prefix', 10)->default('FACT-');
+            $table->text('invoice_footer')->nullable();
+            $table->integer('default_payment_terms')->default(30);
+            $table->integer('default_due_days')->default(30);
             $table->timestamps();
         });
     }

@@ -17,4 +17,8 @@ class Setting extends Model
     ];
 
     // Méthode pour récupérer les paramètres globaux
+    public static function getSettings()
+    {
+        return self::first() ?? new self();
+    }
 }
