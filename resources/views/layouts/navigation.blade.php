@@ -121,6 +121,12 @@
             </x-responsive-nav-link>
         </div>
 
+        <div class="mt-4 text-center">
+            <a href="{{ route('language.switch', 'en') }}" class="btn btn-primary me-2">English</a>
+            <a href="{{ route('language.switch', 'fr') }}" class="btn btn-primary">Français</a>
+        </div>
+
+
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">

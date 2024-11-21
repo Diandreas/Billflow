@@ -97,13 +97,13 @@
                                         {{ $bill->date->format('d/m/Y') }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right">
-                                        {{ number_format($bill->total - $bill->tax_amount, 2) }} €
+                                        {{ number_format($bill->total - $bill->tax_amount, 0, ',', ' ') }} FCFA
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right">
-                                        {{ number_format($bill->tax_amount, 2) }} €
+                                        {{ number_format($bill->tax_amount, 0, ',', ' ') }} FCFA
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right font-medium">
-                                        {{ number_format($bill->total, 2) }} €
+                                        {{ number_format($bill->total, 0, ',', ' ') }} FCFA
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full

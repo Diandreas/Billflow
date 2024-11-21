@@ -18,7 +18,7 @@ class Bill extends Model
     ];
 
     protected $casts = [
-        'date' => 'date',
+        'date' => 'datetime',
         'total' => 'decimal:2',
         'tax_rate' => 'decimal:2',
         'tax_amount' => 'decimal:2',
@@ -67,5 +67,9 @@ class Bill extends Model
         $this->total += $this->tax_amount;
 
         $this->save();
+    }
+    public function formatAmount($amount)
+    {
+        return number_format($amount, 0, ',', ' ') . ' FCFA';
     }
 }

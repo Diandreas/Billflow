@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -14,8 +13,9 @@
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+    <!-- Charting Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="font-sans antialiased">
 <div class="min-h-screen bg-gray-100">
@@ -32,17 +32,10 @@
 
     <!-- Page Content -->
     <main>
-        @if(session('success'))
-            <div class="max-w-7xl mx-auto mt-4 px-4 sm:px-6 lg:px-8">
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                    <span class="block sm:inline">{{ session('success') }}</span>
-                </div>
-            </div>
-        @endif
-
         {{ $slot }}
     </main>
-    <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
 </div>
+
+@stack('scripts')
 </body>
 </html>

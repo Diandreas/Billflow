@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Product;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Sabberworm\CSS\Settings;
 
 class BillController extends Controller
 {
@@ -176,7 +177,8 @@ class BillController extends Controller
     public function downloadPdf(Bill $bill)
     {
         $bill->load(['client', 'products', 'user']);
-        $pdf = PDF::loadView('bills.pdf', compact('bill'));
+        $settings = Settings::first(); // ou votre méthode pour récupérer les settings
+        $pdf = PDF::loadView('bills.pdf', compact('bill', 'settings'));
         return $pdf->download("facture-{$bill->reference}.pdf");
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ProductController;
@@ -8,10 +9,13 @@ use App\Http\Controllers\BillController;
 use App\Http\Controllers\SettingController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('dashboard');
-})->middleware(['auth'])->name('dashboard');
+Route::get('/', [DashboardController::class, 'index'])
+    ->middleware(['auth'])
+    ->name('/');
 
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth'])
+    ->name('dashboard');
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -34,6 +38,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('bills', BillController::class);
 
     // Routes pour les paramètres
+    Route::get('language/{locale}', [LanguageController::class, 'switch'])->name('language.switch');
+    Route::get('bills/{bill}/download', [BillController::class, 'downloadPdf'])->name('bills.download');
 
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
     Route::post('settings', [SettingController::class, 'update'])->name('settings.update');

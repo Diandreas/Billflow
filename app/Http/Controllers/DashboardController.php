@@ -3,148 +3,150 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bill;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     public function getStats(Request $request)
     {
-        $timeRange = $request->input('timeRange', 'month');
-        $metric = $request->input('metric', 'count');
-        $groupBy = $request->input('groupBy', 'day');
+        try {
+            $timeRange = $request->input('timeRange', 'month');
+            $metric = $request->input('metric', 'count');
 
-        $startDate = match($timeRange) {
-            'month' => now()->subDays(30),
-            'quarter' => now()->subMonths(3),
-            'year' => now()->subYear(),
-            default => now()->subDays(30)
-        };
+            $startDate = match ($timeRange) {
+                'month' => now()->subMonth(),
+                'quarter' => now()->subMonths(3),
+                'year' => now()->subYear(),
+                default => now()->subMonth()
+            };
 
-        $dateFormat = match($groupBy) {
-            'day' => '%Y-%m-%d',
-            'week' => '%Y-%U',
-            'month' => '%Y-%m',
-            default => '%Y-%m-%d'
-        };
+            // Corrigé la requête GROUP BY
+            $results = DB::table('bills')
+                ->select(
+                    DB::raw('DATE(created_at) as date'),
+                    DB::raw('COUNT(*) as count'),
+                    DB::raw('COALESCE(SUM(total), 0) as amount')
+                )
+                ->where('created_at', '>=', $startDate)
+                ->groupBy(DB::raw('DATE(created_at)'))  // Grouper par la même expression
+                ->orderBy('date')
+                ->get();
 
-        $query = Bill::query()
-            ->where('date', '>=', $startDate)
-            ->select(
-                DB::raw("DATE_FORMAT(date, '$dateFormat') as date"),
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(total) as amount'),
-                DB::raw('AVG(total) as avgTicket')
-            )
-            ->groupBy('date')
-            ->orderBy('date');
+            // Remplir les dates manquantes
+            $filledData = [];
+            $currentDate = Carbon::parse($startDate);
+            $endDate = now();
 
-        // Ajout des données manquantes pour avoir une série complète
-        $data = $query->get();
-        $filledData = $this->fillMissingDates($data, $startDate, $groupBy);
+            while ($currentDate <= $endDate) {
+                $dateStr = $currentDate->format('Y-m-d');
+                $existingData = $results->firstWhere('date', $dateStr);
 
-        return response()->json($filledData);
-    }
+                $filledData[] = [
+                    'date' => $currentDate->format('d/m/Y'),
+                    'count' => $existingData ? $existingData->count : 0,
+                    'amount' => $existingData ? $existingData->amount : 0,
+                ];
 
-    private function fillMissingDates($data, $startDate, $groupBy)
-    {
-        $filledData = [];
-        $currentDate = $startDate;
-        $endDate = now();
-        $interval = match($groupBy) {
-            'day' => 'P1D',
-            'week' => 'P1W',
-            'month' => 'P1M',
-            default => 'P1D'
-        };
+                $currentDate->addDay();
+            }
 
-        $dateFormat = match($groupBy) {
-            'day' => 'Y-m-d',
-            'week' => 'Y-W',
-            'month' => 'Y-m',
-            default => 'Y-m-d'
-        };
+            return response()->json($filledData);
 
-        $period = new \DatePeriod(
-            $currentDate,
-            new \DateInterval($interval),
-            $endDate
-        );
-
-        $dataByDate = $data->keyBy('date');
-
-        foreach ($period as $date) {
-            $dateKey = $date->format($dateFormat);
-            $existingData = $dataByDate[$dateKey] ?? null;
-
-            $filledData[] = [
-                'date' => $dateKey,
-                'count' => $existingData?->count ?? 0,
-                'amount' => $existingData?->amount ?? 0,
-                'avgTicket' => $existingData?->avgTicket ?? 0
-            ];
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        return $filledData;
     }
 
     public function getDashboardData()
     {
-        // Récupération des statistiques globales
+        try {
+            // Statistiques du mois en cours
+            $currentMonth = now()->format('m');
+            $currentYear = now()->format('Y');
+
+            $currentMonthStats = DB::table('bills')
+                ->select(
+                    DB::raw('COUNT(*) as count'),
+                    DB::raw('COALESCE(SUM(total), 0) as total'),
+                    DB::raw('COALESCE(AVG(total), 0) as average')
+                )
+                ->whereYear('created_at', $currentYear)
+                ->whereMonth('created_at', $currentMonth)
+                ->first();
+
+            // Statistiques du mois précédent
+            $lastMonth = now()->subMonth();
+            $lastMonthStats = DB::table('bills')
+                ->select(
+                    DB::raw('COUNT(*) as count'),
+                    DB::raw('COALESCE(SUM(total), 0) as total'),
+                    DB::raw('COALESCE(AVG(total), 0) as average')
+                )
+                ->whereYear('created_at', $lastMonth->format('Y'))
+                ->whereMonth('created_at', $lastMonth->format('m'))
+                ->first();
+
+            // Calcul de la croissance
+            $growth = 0;
+            if ($lastMonthStats->total > 0) {
+                $growth = (($currentMonthStats->total - $lastMonthStats->total) / $lastMonthStats->total) * 100;
+            }
+
+            return response()->json([
+                'currentMonth' => [
+                    'count' => $currentMonthStats->count,
+                    'total' => number_format($currentMonthStats->total, 0, ',', ' ') . ' FCFA',
+                    'average' => number_format($currentMonthStats->average, 0, ',', ' ') . ' FCFA'
+                ],
+                'lastMonth' => [
+                    'count' => $lastMonthStats->count,
+                    'total' => number_format($lastMonthStats->total, 0, ',', ' ') . ' FCFA',
+                    'average' => number_format($lastMonthStats->average, 0, ',', ' ') . ' FCFA'
+                ],
+                'growth' => round($growth, 1)
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function index()
+    {
         $globalStats = [
             'totalBills' => Bill::count(),
-            'monthlyBills' => Bill::whereMonth('date', now()->month)->count(),
-            'totalRevenue' => Bill::sum('total'),
-            'monthlyRevenue' => Bill::whereMonth('date', now()->month)->sum('total'),
-            'averageTicket' => Bill::avg('total'),
-            'monthlyAverageTicket' => Bill::whereMonth('date', now()->month)->avg('total')
+            'monthlyBills' => Bill::whereMonth('created_at', now()->month)->count(),
+            'totalRevenue' => number_format(Bill::sum('total'), 0, ',', ' ') . ' FCFA',
+            'averageTicket' => number_format(Bill::avg('total') ?? 0, 0, ',', ' ') . ' FCFA'
         ];
 
-        // Évolution par rapport au mois précédent
-        $lastMonthRevenue = Bill::whereMonth('date', now()->subMonth()->month)->sum('total');
-        $currentMonthRevenue = $globalStats['monthlyRevenue'];
-
-        $revenueGrowth = $lastMonthRevenue > 0
-            ? (($currentMonthRevenue - $lastMonthRevenue) / $lastMonthRevenue * 100)
-            : 0;
-
-        // Top clients
-        $topClients = DB::table('bills')
-            ->join('clients', 'bills.client_id', '=', 'clients.id')
-            ->select('clients.name', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as total'))
-            ->groupBy('clients.id', 'clients.name')
-            ->orderByDesc('total')
-            ->limit(5)
+        $latestBills = Bill::with('client')
+            ->latest()
+            ->take(5)
             ->get();
 
-        // Répartition des factures par montant
-        $billsDistribution = [
-            'small' => Bill::where('total', '<', 1000)->count(),
-            'medium' => Bill::whereBetween('total', [1000, 5000])->count(),
-            'large' => Bill::where('total', '>', 5000)->count(),
-        ];
-
-        // Évolution hebdomadaire
-        $weeklyTrend = DB::table('bills')
-            ->where('date', '>=', now()->subWeeks(4))
+        $topClients = DB::table('bills')
+            ->join('clients', 'bills.client_id', '=', 'clients.id')
             ->select(
-                DB::raw('YEAR(date) as year'),
-                DB::raw('WEEK(date) as week'),
+                'clients.name',
                 DB::raw('COUNT(*) as count'),
                 DB::raw('SUM(total) as total')
             )
-            ->groupBy('year', 'week')
-            ->orderBy('year')
-            ->orderBy('week')
-            ->get();
+            ->groupBy('clients.id', 'clients.name')
+            ->orderByDesc('total')
+            ->take(5)
+            ->get()
+            ->map(function ($client) {
+                $client->total = number_format($client->total, 0, ',', ' ') . ' FCFA';
+                return $client;
+            });
 
-        return response()->json([
-            'globalStats' => $globalStats,
-            'revenueGrowth' => $revenueGrowth,
-            'topClients' => $topClients,
-            'billsDistribution' => $billsDistribution,
-            'weeklyTrend' => $weeklyTrend
-        ]);
+        return view('dashboard', compact('globalStats', 'latestBills', 'topClients'));
     }
 }
