@@ -1,342 +1,323 @@
-
 <x-app-layout>
     <x-slot name="header">
         <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Nouvelle Facture') }}
-            </h2>
-            <a href="{{ route('bills.index') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-                Retour
+            <div>
+                <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
+                    {{ __('Nouvelle Facture') }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ __('Créez et gérez vos factures professionnelles') }}
+                </p>
+            </div>
+            <a href="{{ route('bills.index') }}"
+               class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-50">
+                {{ __('Retour') }}
             </a>
         </div>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <form id="billForm" action="{{ route('bills.store') }}" method="POST">
-                        @csrf
+            <form id="billForm" action="{{ route('bills.store') }}" method="POST" class="space-y-6">
+                @csrf
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <!-- Client Section -->
+                {{-- Client Section --}}
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">
+                            {{ __('Informations de Base') }}
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {{-- Client Selection --}}
                             <div>
-                                <label class="block mb-2">
-                                    <span class="text-gray-700">Client</span>
-                                    <div class="flex space-x-2">
-                                        <select id="client_id" name="client_id" class="mt-1 block w-full rounded-md border-gray-300">
-                                            <option value="">Sélectionner un client</option>
-                                            @foreach($clients as $client)
-                                                <option value="{{ $client->id }}">{{ $client->name }}</option>
-                                            @endforeach
-                                        </select>
-                                        <button type="button"
-                                                onclick="toggleModal('newClientModal')"
-                                                class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                                            +
-                                        </button>
-                                    </div>
+                                <label for="client_id" class="block mb-1 text-sm font-medium text-gray-700">
+                                    {{ __('Client') }}
                                 </label>
+                                <div class="searchable-select-container">
+                                    <input type="text"
+                                           class="searchable-select-search w-full rounded-md border-gray-300"
+                                           placeholder="Rechercher un client...">
+                                    <select id="client_id"
+                                            name="client_id"
+                                            class="searchable-select w-full rounded-md border-gray-300"
+                                            required>
+                                        <option value="">{{ __('Sélectionner un client') }}</option>
+                                        @foreach($clients as $client)
+                                            <option value="{{ $client->id }}">
+                                                {{ $client->name }} - {{ $client->email ?? 'Pas d\'email' }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                @error('client_id')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
 
-                            <!-- Date and Tax Section -->
+                            {{-- Date et TVA --}}
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block mb-2">
-                                        <span class="text-gray-700">Date</span>
-                                        <input type="date" name="date" value="{{ date('Y-m-d') }}"
-                                               class="mt-1 block w-full rounded-md border-gray-300">
+                                    <label for="date" class="block mb-1 text-sm font-medium text-gray-700">
+                                        {{ __('Date') }}
                                     </label>
+                                    <input type="date"
+                                           id="date"
+                                           name="date"
+                                           value="{{ old('date', date('Y-m-d')) }}"
+                                           class="w-full rounded-md border-gray-300">
                                 </div>
                                 <div>
-                                    <label class="block mb-2">
-                                        <span class="text-gray-700">TVA (%)</span>
-                                        <input type="number" name="tax_rate" id="tax_rate" value="20"
-                                               class="mt-1 block w-full rounded-md border-gray-300">
+                                    <label for="tax_rate" class="block mb-1 text-sm font-medium text-gray-700">
+                                        {{ __('TVA (%)') }}
                                     </label>
+                                    <input type="number"
+                                           id="tax_rate"
+                                           name="tax_rate"
+                                           value="{{ old('tax_rate', 18) }}"
+                                           class="w-full rounded-md border-gray-300">
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- Products Section -->
-                        <div class="mb-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold">Produits</h3>
-                                <button type="button"
-                                        onclick="addProductRow()"
-                                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                                    Ajouter un produit
-                                </button>
-                            </div>
-
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full">
-                                    <thead>
-                                    <tr>
-                                        <th class="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Produit</th>
-                                        <th class="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Quantité</th>
-                                        <th class="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Prix unitaire</th>
-                                        <th class="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                                        <th class="px-6 py-3 border-b border-gray-200 bg-gray-50"></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="productsContainer"></tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- Totals Section -->
-                        <div class="border-t border-gray-200 pt-4">
-                            <div class="flex flex-col items-end space-y-2">
-                                <div class="text-sm">
-                                    <span class="font-medium">Sous-total:</span>
-                                    <span id="subtotal" class="ml-2">0.00 €</span>
-                                </div>
-                                <div class="text-sm">
-                                    <span class="font-medium">TVA:</span>
-                                    <span id="taxAmount" class="ml-2">0.00 €</span>
-                                </div>
-                                <div class="text-lg font-bold">
-                                    <span>Total:</span>
-                                    <span id="total" class="ml-2">0.00 €</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-6 flex justify-end">
-                            <button type="submit" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
-                                Créer la facture
+                {{-- Products Section --}}
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">
+                                {{ __('Produits et Services') }}
+                            </h3>
+                            <button type="button"
+                                    onclick="addProductRow()"
+                                    class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md">
+                                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                {{ __('Ajouter un Produit') }}
                             </button>
                         </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- New Client Modal -->
-    <div id="newClientModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3">
-                // Suite de resources/views/bills/create.blade.php (Modal Client)
-                <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Nouveau Client</h3>
-                <form id="newClientForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Nom</label>
-                        <input type="text" name="name" required
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {{ __('Produit') }}
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                                        {{ __('Quantité') }}
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                                        {{ __('Prix unitaire (FCFA)') }}
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                                        {{ __('Total (FCFA)') }}
+                                    </th>
+                                    <th class="relative px-6 py-3 w-20">
+                                        <span class="sr-only">{{ __('Actions') }}</span>
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tbody id="productsContainer" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Genre</label>
-                        <select name="sex" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            <option value="">Non spécifié</option>
-                            <option value="M">Homme</option>
-                            <option value="F">Femme</option>
-                            <option value="Other">Autre</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Date de naissance</label>
-                        <input type="date" name="birth"
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    </div>
-
-                    <div id="phonesContainer">
-                        <label class="block text-sm font-medium text-gray-700">Téléphones</label>
-                        <div class="space-y-2">
-                            <div class="flex gap-2">
-                                <input type="text" name="phones[]"
-                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                                <button type="button" onclick="addPhoneField()"
-                                        class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                                    +
-                                </button>
+                        {{-- Totals --}}
+                        <div class="mt-6 border-t border-gray-200 pt-4">
+                            <div class="flex flex-col items-end space-y-2">
+                                <div class="text-sm">
+                                    <span class="font-medium text-gray-500">{{ __('Sous-total:') }}</span>
+                                    <span id="subtotal" class="ml-2">0 FCFA</span>
+                                </div>
+                                <div class="text-sm">
+                                    <span class="font-medium text-gray-500">{{ __('TVA:') }}</span>
+                                    <span id="taxAmount" class="ml-2">0 FCFA</span>
+                                </div>
+                                <div class="text-lg font-bold">
+                                    <span class="text-gray-900">{{ __('Total:') }}</span>
+                                    <span id="total" class="ml-2 text-indigo-600">0 FCFA</span>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="flex justify-end gap-2">
-                        <button type="button" onclick="toggleModal('newClientModal')"
-                                class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-                            Annuler
-                        </button>
-                        <button type="submit"
-                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                            Créer
-                        </button>
-                    </div>
-                </form>
-            </div>
+                {{-- Submit Button --}}
+                <div class="flex justify-end">
+                    <button type="submit"
+                            class="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                        {{ __('Créer la Facture') }}
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- New Product Modal -->
-    <div id="newProductModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3">
-                <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Nouveau Produit</h3>
-                <form id="newProductForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Nom</label>
-                        <input type="text" name="name" required
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Description</label>
-                        <textarea name="description" rows="3"
-                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
-                    </div>
-
-                    <div class="flex justify-end gap-2">
-                        <button type="button" onclick="toggleModal('newProductModal')"
-                                class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-                            Annuler
-                        </button>
-                        <button type="submit"
-                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                            Créer
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    @push('styles')
+        <style>
+            .searchable-select-container {
+                position: relative;
+            }
+            .searchable-select-search {
+                width: 100%;
+                padding: 0.5rem 1rem;
+                margin-bottom: 0.25rem;
+            }
+            .searchable-select {
+                width: 100%;
+            }
+            .searchable-select option {
+                padding: 0.5rem 1rem;
+            }
+            .searchable-select option:hover {
+                background-color: #f3f4f6;
+            }
+        </style>
+    @endpush
 
     @push('scripts')
         <script>
-            function toggleModal(modalId) {
-                document.getElementById(modalId).classList.toggle('hidden');
-            }
+            // Initialisation des select recherchables
+            function initializeSearchableSelects() {
+                document.querySelectorAll('.searchable-select-container').forEach(container => {
+                    const select = container.querySelector('select');
+                    const searchInput = container.querySelector('input');
+                    const options = Array.from(select.options);
 
-            function addPhoneField() {
-                const container = document.querySelector('#phonesContainer .space-y-2');
-                const div = document.createElement('div');
-                div.className = 'flex gap-2';
-                div.innerHTML = `
-                <input type="text" name="phones[]"
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                <button type="button" onclick="this.parentElement.remove()"
-                        class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-                    -
-                </button>
-            `;
-                container.appendChild(div);
-            }
+                    // Fonction de recherche
+                    searchInput.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase();
 
-            function addProductRow() {
-                const container = document.getElementById('productsContainer');
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                <td class="px-6 py-4">
-                    <div class="flex gap-2">
-                        <select name="products[]" class="block w-full rounded-md border-gray-300 product-select">
-                            <option value="">Sélectionner un produit</option>
-                            @foreach($products as $product)
-                <option value="{{ $product->id }}">{{ $product->name }}</option>
-                            @endforeach
-                </select>
-                <button type="button" onclick="toggleModal('newProductModal')"
-                        class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                    +
-                </button>
-            </div>
-        </td>
-        <td class="px-6 py-4">
-            <input type="number" name="quantities[]" value="1" min="1"
-                   class="block w-full rounded-md border-gray-300 quantity">
-        </td>
-        <td class="px-6 py-4">
-            <input type="number" name="unit_prices[]" step="0.01" min="0"
-                   class="block w-full rounded-md border-gray-300 unit-price">
-        </td>
-        <td class="px-6 py-4">
-            <span class="line-total">0.00 €</span>
-        </td>
-        <td class="px-6 py-4">
-            <button type="button" onclick="this.closest('tr').remove(); calculateTotals()"
-                    class="text-red-600 hover:text-red-900">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </td>
-`;
-                container.appendChild(row);
+                        options.forEach(option => {
+                            const text = option.text.toLowerCase();
+                            option.style.display = text.includes(searchTerm) ? '' : 'none';
+                        });
+                    });
 
-                // Initialiser TomSelect sur le nouveau select
-                new TomSelect(row.querySelector('.product-select'), {
-                    valueField: 'id',
-                    labelField: 'name',
-                    searchField: ['name'],
-                    load: function(query, callback) {
-                        fetch(`/products/search?q=${query}`)
-                            .then(response => response.json())
-                            .then(json => callback(json));
-                    }
+                    // Mise à jour du champ de recherche lors de la sélection
+                    select.addEventListener('change', function() {
+                        const selectedOption = this.options[this.selectedIndex];
+                        searchInput.value = selectedOption.text;
+                    });
                 });
             }
 
+            // Fonction pour ajouter une ligne produit
+            function addProductRow() {
+                const container = document.getElementById('productsContainer');
+                const rowId = `product-row-${Date.now()}`;
+
+                const row = document.createElement('tr');
+                row.id = rowId;
+                row.innerHTML = `
+                <td class="px-6 py-4">
+                    <div class="searchable-select-container">
+                        <input type="text"
+                               class="searchable-select-search rounded-md border-gray-300"
+                               placeholder="Rechercher un produit...">
+                        <select name="products[]"
+                                class="searchable-select rounded-md border-gray-300"
+                                required
+                                onchange="updatePrice('${rowId}', this)">
+                            <option value="">{{ __('Sélectionner un produit') }}</option>
+                            @foreach($products as $product)
+                <option value="{{ $product->id }}"
+                                        data-price="{{ $product->price }}">
+                                    {{ $product->name }} - {{ $product->reference ?? 'Sans référence' }}
+                </option>
+@endforeach
+                </select>
+            </div>
+        </td>
+        <td class="px-6 py-4">
+            <input type="number"
+                   name="quantities[]"
+                   value="1"
+                   min="1"
+                   required
+                   class="quantity w-full rounded-md border-gray-300"
+                   onchange="calculateRowTotal('${rowId}')">
+                </td>
+                <td class="px-6 py-4">
+                    <input type="number"
+                           name="prices[]"
+                           class="price w-full rounded-md border-gray-300"
+                           required
+                           step="1"
+                           min="0"
+                           onchange="calculateRowTotal('${rowId}')">
+                </td>
+                <td class="px-6 py-4">
+                    <span class="row-total">0 FCFA</span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <button type="button"
+                            onclick="removeRow('${rowId}')"
+                            class="text-red-600 hover:text-red-900">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </td>
+            `;
+
+                container.appendChild(row);
+                initializeSearchableSelects();
+            }
+
+            // Mettre à jour le prix quand un produit est sélectionné
+            function updatePrice(rowId, select) {
+                const row = document.getElementById(rowId);
+                const priceInput = row.querySelector('.price');
+                const selectedOption = select.options[select.selectedIndex];
+
+                if (selectedOption && selectedOption.dataset.price) {
+                    priceInput.value = selectedOption.dataset.price;
+                    calculateRowTotal(rowId);
+                }
+            }
+
+            // Calculer le total d'une ligne
+            function calculateRowTotal(rowId) {
+                const row = document.getElementById(rowId);
+                const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+                const price = parseFloat(row.querySelector('.price').value) || 0;
+                const total = quantity * price;
+
+                row.querySelector('.row-total').textContent = `${total.toLocaleString('fr-FR')} FCFA`;
+                calculateTotals();
+            }
+
+            // Calculer les totaux
             function calculateTotals() {
                 let subtotal = 0;
                 document.querySelectorAll('#productsContainer tr').forEach(row => {
                     const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
-                    const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
-                    const lineTotal = quantity * unitPrice;
-                    row.querySelector('.line-total').textContent = lineTotal.toFixed(2) + ' €';
-                    subtotal += lineTotal;
+                    const price = parseFloat(row.querySelector('.price').value) || 0;
+                    subtotal += quantity * price;
                 });
 
                 const taxRate = parseFloat(document.getElementById('tax_rate').value) || 0;
                 const taxAmount = subtotal * (taxRate / 100);
                 const total = subtotal + taxAmount;
 
-                document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' €';
-                document.getElementById('taxAmount').textContent = taxAmount.toFixed(2) + ' €';
-                document.getElementById('total').textContent = total.toFixed(2) + ' €';
+                document.getElementById('subtotal').textContent = `${subtotal.toLocaleString('fr-FR')} FCFA`;
+                document.getElementById('taxAmount').textContent = `${taxAmount.toLocaleString('fr-FR')} FCFA`;
+                document.getElementById('total').textContent = `${total.toLocaleString('fr-FR')} FCFA`;
             }
 
-            // Event Listeners pour les formulaires modaux
-            document.getElementById('newClientForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                fetch('/clients', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if(data.success) {
-                            const select = document.getElementById('client_id');
-                            const option = new Option(data.client.name, data.client.id);
-                            select.add(option);
-                            select.value = data.client.id;
-                            toggleModal('newClientModal');
-                            this.reset();
-                        }
-                    });
-            });
+            // Supprimer une ligne
+            function removeRow(rowId) {
+                document.getElementById(rowId).remove();
+                calculateTotals();
+            }
 
             // Initialisation
             document.addEventListener('DOMContentLoaded', function() {
-                // Initialiser le premier select de client avec TomSelect
-                new TomSelect('#client_id', {
-                    valueField: 'id',
-                    labelField: 'name',
-                    searchField: ['name'],
-                    load: function(query, callback) {
-                        fetch(`/clients/search?q=${query}`)
-                            .then(response => response.json())
-                            .then(json => callback(json));
-                    }
-                });
-
-                // Ajouter la première ligne de produit
+                initializeSearchableSelects();
                 addProductRow();
             });
         </script>

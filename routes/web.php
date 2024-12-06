@@ -33,7 +33,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/api/products/quick-create', [ProductController::class, 'quickCreate'])->name('products.quick-create');
     Route::get('/api/products/{product}/price-history', [ProductController::class, 'priceHistory'])->name('products.price-history');
     Route::get('/api/products/{product}/usage-stats', [ProductController::class, 'usageStats'])->name('products.usage-stats');
-
+    Route::get('/clients/search', [ClientController::class, 'search']);
+    Route::get('/products/search', [ProductController::class, 'search']);
+    Route::get('/products/{product}', [ProductController::class, 'show']);
     // Routes pour les factures
     Route::resource('bills', BillController::class);
 
