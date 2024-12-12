@@ -9,35 +9,50 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    /**
+     * Récupérer les statistiques des factures avec support des plages de dates personnalisées
+     */
     public function getStats(Request $request)
     {
         try {
             $timeRange = $request->input('timeRange', 'month');
             $metric = $request->input('metric', 'count');
 
-            $startDate = match ($timeRange) {
-                'month' => now()->subMonth(),
-                'quarter' => now()->subMonths(3),
-                'year' => now()->subYear(),
-                default => now()->subMonth()
-            };
+            // Gestion des dates personnalisées
+            if ($timeRange === 'custom') {
+                $startDate = $request->input('startDate') ? Carbon::parse($request->input('startDate')) : now()->startOfMonth();
+                $endDate = $request->input('endDate') ? Carbon::parse($request->input('endDate')) : now();
+            } else {
+                // Définir les dates de début et de fin en fonction de la période sélectionnée
+                $startDate = match ($timeRange) {
+                    'month' => now()->startOfMonth(),
+                    'quarter' => now()->startOfQuarter(),
+                    'year' => now()->startOfYear(),
+                    default => now()->startOfMonth()
+                };
+                $endDate = now();
+            }
 
-            // Corrigé la requête GROUP BY
+            // Vérifier et ajuster si la date de début est postérieure à la date de fin
+            if ($startDate > $endDate) {
+                [$startDate, $endDate] = [$endDate, $startDate];
+            }
+
+            // Requête pour récupérer les statistiques
             $results = DB::table('bills')
                 ->select(
                     DB::raw('DATE(created_at) as date'),
                     DB::raw('COUNT(*) as count'),
                     DB::raw('COALESCE(SUM(total), 0) as amount')
                 )
-                ->where('created_at', '>=', $startDate)
-                ->groupBy(DB::raw('DATE(created_at)'))  // Grouper par la même expression
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->groupBy(DB::raw('DATE(created_at)'))
                 ->orderBy('date')
                 ->get();
 
             // Remplir les dates manquantes
             $filledData = [];
             $currentDate = Carbon::parse($startDate);
-            $endDate = now();
 
             while ($currentDate <= $endDate) {
                 $dateStr = $currentDate->format('Y-m-d');
@@ -61,13 +76,16 @@ class DashboardController extends Controller
         }
     }
 
+    /**
+     * Récupérer les données détaillées du mois en cours et précédent
+     */
     public function getDashboardData()
     {
         try {
-            // Statistiques du mois en cours
             $currentMonth = now()->format('m');
             $currentYear = now()->format('Y');
 
+            // Statistiques du mois en cours
             $currentMonthStats = DB::table('bills')
                 ->select(
                     DB::raw('COUNT(*) as count'),
@@ -117,8 +135,12 @@ class DashboardController extends Controller
         }
     }
 
+    /**
+     * Page principale du tableau de bord
+     */
     public function index()
     {
+        // Statistiques globales
         $globalStats = [
             'totalBills' => Bill::count(),
             'monthlyBills' => Bill::whereMonth('created_at', now()->month)->count(),
@@ -126,11 +148,13 @@ class DashboardController extends Controller
             'averageTicket' => number_format(Bill::avg('total') ?? 0, 0, ',', ' ') . ' FCFA'
         ];
 
+        // Dernières factures
         $latestBills = Bill::with('client')
             ->latest()
             ->take(5)
             ->get();
 
+        // Top clients
         $topClients = DB::table('bills')
             ->join('clients', 'bills.client_id', '=', 'clients.id')
             ->select(
@@ -148,5 +172,48 @@ class DashboardController extends Controller
             });
 
         return view('dashboard', compact('globalStats', 'latestBills', 'topClients'));
+    }
+
+    /**
+     * Méthode optionnelle pour obtenir un aperçu rapide des statistiques
+     */
+    public function quickStats()
+    {
+        try {
+            $thisWeek = now()->startOfWeek();
+            $thisMonth = now()->startOfMonth();
+
+            $weekStats = DB::table('bills')
+                ->select(
+                    DB::raw('COUNT(*) as count'),
+                    DB::raw('COALESCE(SUM(total), 0) as total')
+                )
+                ->where('created_at', '>=', $thisWeek)
+                ->first();
+
+            $monthStats = DB::table('bills')
+                ->select(
+                    DB::raw('COUNT(*) as count'),
+                    DB::raw('COALESCE(SUM(total), 0) as total')
+                )
+                ->where('created_at', '>=', $thisMonth)
+                ->first();
+
+            return response()->json([
+                'weekly' => [
+                    'count' => $weekStats->count,
+                    'total' => number_format($weekStats->total, 0, ',', ' ') . ' FCFA'
+                ],
+                'monthly' => [
+                    'count' => $monthStats->count,
+                    'total' => number_format($monthStats->total, 0, ',', ' ') . ' FCFA'
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

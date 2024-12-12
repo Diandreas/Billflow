@@ -38,7 +38,7 @@
             <!-- Graphique -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-8">
                 <div class="p-6">
-                    <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="mb-6 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
                             <select id="chartType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
@@ -53,6 +53,7 @@
                                 <option value="month" selected>Ce mois</option>
                                 <option value="quarter">Ce trimestre</option>
                                 <option value="year">Cette année</option>
+                                <option value="custom">Personnalisé</option>
                             </select>
                         </div>
 
@@ -62,6 +63,16 @@
                                 <option value="count">Nombre de factures</option>
                                 <option value="amount">Montant total</option>
                             </select>
+                        </div>
+
+                        <div id="startDateContainer" style="display: none;">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
+                            <input type="date" id="startDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+
+                        <div id="endDateContainer" style="display: none;">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
+                            <input type="date" id="endDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                         </div>
                     </div>
 
@@ -145,13 +156,35 @@
                     }).format(value) + ' FCFA';
                 }
 
+                function toggleDateInputs() {
+                    const timeRange = document.getElementById('timeRange').value;
+                    const startDateContainer = document.getElementById('startDateContainer');
+                    const endDateContainer = document.getElementById('endDateContainer');
+
+                    if (timeRange === 'custom') {
+                        startDateContainer.style.display = 'block';
+                        endDateContainer.style.display = 'block';
+                    } else {
+                        startDateContainer.style.display = 'none';
+                        endDateContainer.style.display = 'none';
+                    }
+                }
+
                 function updateChart() {
                     const timeRange = document.getElementById('timeRange').value;
                     const metric = document.getElementById('metric').value;
                     const chartType = document.getElementById('chartType').value;
+                    const startDate = document.getElementById('startDate').value;
+                    const endDate = document.getElementById('endDate').value;
 
-                    // Utiliser l'URL du web.php au lieu de l'API
-                    fetch(`/dashboard/stats?timeRange=${timeRange}&metric=${metric}`, {
+                    const params = new URLSearchParams({
+                        timeRange: timeRange,
+                        metric: metric,
+                        startDate: startDate,
+                        endDate: endDate
+                    });
+
+                    fetch(`/dashboard/stats?${params.toString()}`, {
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
                             'Accept': 'application/json'
@@ -231,22 +264,28 @@
                             console.error('Erreur:', error);
                             const chartContainer = document.getElementById('statsChart');
                             chartContainer.parentElement.innerHTML = `
-                        <div class="text-center text-gray-500 mt-4">
-                            <p>Erreur lors du chargement des données</p>
-                            <button onclick="updateChart()" class="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-md">
-                                Réessayer
-                            </button>
-                        </div>
-                    `;
+                            <div class="text-center text-gray-500 mt-4">
+                                <p>Erreur lors du chargement des données</p>
+                                <button onclick="updateChart()" class="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-md">
+                                    Réessayer
+                                </button>
+                            </div>
+                        `;
                         });
                 }
 
                 // Event listeners
                 document.getElementById('chartType').addEventListener('change', updateChart);
-                document.getElementById('timeRange').addEventListener('change', updateChart);
+                document.getElementById('timeRange').addEventListener('change', function() {
+                    toggleDateInputs();
+                    updateChart();
+                });
                 document.getElementById('metric').addEventListener('change', updateChart);
+                document.getElementById('startDate').addEventListener('change', updateChart);
+                document.getElementById('endDate').addEventListener('change', updateChart);
 
-                // Initial load
+                // Initialisation
+                toggleDateInputs();
                 updateChart();
             });
         </script>
