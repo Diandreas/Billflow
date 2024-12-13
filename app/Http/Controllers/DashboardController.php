@@ -61,11 +61,14 @@ class DashboardController extends Controller
                 $filledData[] = [
                     'date' => $currentDate->format('d/m/Y'),
                     'count' => $existingData ? $existingData->count : 0,
-                    'amount' => $existingData ? $existingData->amount : 0,
+                    'amount' => $existingData ? floatval($existingData->amount) : 0,
                 ];
 
                 $currentDate->addDay();
             }
+
+            // Ajoutez cette ligne pour déboguer
+            \Log::info('Filled Data:', $filledData);
 
             return response()->json($filledData);
 
@@ -75,6 +78,8 @@ class DashboardController extends Controller
             ], 500);
         }
     }
+
+
 
     /**
      * Récupérer les données détaillées du mois en cours et précédent

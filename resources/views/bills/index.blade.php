@@ -21,7 +21,7 @@
                     <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Client</label>
-                            <select id="client_filter" class="w-full rounded-md border-gray-300">
+                            <select id="client_filter" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                                 <option value="">Tous les clients</option>
                                 @foreach($clients as $client)
                                     <option value="{{ $client->id }}">{{ $client->name }}</option>
@@ -30,7 +30,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Statut</label>
-                            <select id="status_filter" class="w-full rounded-md border-gray-300">
+                            <select id="status_filter" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                                 <option value="">Tous les statuts</option>
                                 <option value="paid">Payée</option>
                                 <option value="pending">En attente</option>
@@ -39,7 +39,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Période</label>
-                            <select id="period_filter" class="w-full rounded-md border-gray-300">
+                            <select id="period_filter" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                                 <option value="">Toutes les périodes</option>
                                 <option value="current_month">Mois en cours</option>
                                 <option value="last_month">Mois dernier</option>
@@ -49,7 +49,47 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Recherche</label>
                             <input type="text" id="search" placeholder="N° facture, référence..."
-                                   class="w-full rounded-md border-gray-300">
+                                   class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        </div>
+                    </div>
+
+                    <!-- Recherche avancée (déroulant) -->
+                    <div class="mb-6">
+                        <button id="toggle_advanced_search" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            Recherche avancée
+                        </button>
+                        <div id="advanced_search_fields" class="hidden mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
+                                <input type="date" id="start_date" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
+                                <input type="date" id="end_date" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Montant minimum</label>
+                                <input type="number" id="min_amount" placeholder="Montant minimum" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Montant maximum</label>
+                                <input type="number" id="max_amount" placeholder="Montant maximum" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bouton Rechercher -->
+                    <div class="mb-6">
+                        <button id="search_button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            Rechercher
+                        </button>
+                    </div>
+
+                    <!-- Filtres actifs -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-2">Filtres actifs</h3>
+                        <div id="active_filters" class="flex flex-wrap gap-2">
+                            <!-- Les filtres actifs seront affichés ici -->
                         </div>
                     </div>
 
@@ -82,9 +122,9 @@
                                 <th class="px-6 py-3 bg-gray-50"></th>
                             </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
+                            <tbody class="bg-white divide-y divide-gray-200" id="bills-table-body">
                             @foreach($bills as $bill)
-                                <tr>
+                                <tr class="bill-row" data-client="{{ $bill->client->id }}" data-status="{{ $bill->status }}" data-date="{{ $bill->date->format('Y-m-d') }}">
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <a href="{{ route('bills.show', $bill) }}" class="text-indigo-600 hover:text-indigo-900">
                                             {{ $bill->reference }}
@@ -151,4 +191,78 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const clientFilter = document.getElementById('client_filter');
+                const statusFilter = document.getElementById('status_filter');
+                const periodFilter = document.getElementById('period_filter');
+                const searchInput = document.getElementById('search');
+                const startDateInput = document.getElementById('start_date');
+                const endDateInput = document.getElementById('end_date');
+                const minAmountInput = document.getElementById('min_amount');
+                const maxAmountInput = document.getElementById('max_amount');
+                const searchButton = document.getElementById('search_button');
+                const toggleAdvancedSearchButton = document.getElementById('toggle_advanced_search');
+                const advancedSearchFields = document.getElementById('advanced_search_fields');
+                const activeFilters = document.getElementById('active_filters');
+
+                function updateQueryString() {
+                    const url = new URL(window.location);
+                    const params = {
+                        client: clientFilter.value,
+                        status: statusFilter.value,
+                        period: periodFilter.value,
+                        search: searchInput.value,
+                        start_date: startDateInput.value,
+                        end_date: endDateInput.value,
+                        min_amount: minAmountInput.value,
+                        max_amount: maxAmountInput.value
+                    };
+
+                    Object.keys(params).forEach(key => {
+                        if (params[key]) {
+                            url.searchParams.set(key, params[key]);
+                        } else {
+                            url.searchParams.delete(key);
+                        }
+                    });
+
+                    window.location.href = url.toString();
+                }
+
+                function displayActiveFilters() {
+                    activeFilters.innerHTML = '';
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.forEach((value, key) => {
+                        const filterElement = document.createElement('div');
+                        filterElement.classList.add('bg-gray-100', 'text-gray-800', 'px-3', 'py-1', 'rounded-full', 'flex', 'items-center');
+                        filterElement.innerHTML = `
+                            <span>${key}: ${value}</span>
+                            <button class="ml-2 text-red-500" onclick="removeFilter('${key}')">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        `;
+                        activeFilters.appendChild(filterElement);
+                    });
+                }
+
+                function removeFilter(key) {
+                    const url = new URL(window.location);
+                    url.searchParams.delete(key);
+                    window.location.href = url.toString();
+                }
+
+                searchButton.addEventListener('click', updateQueryString);
+                toggleAdvancedSearchButton.addEventListener('click', function() {
+                    advancedSearchFields.classList.toggle('hidden');
+                });
+
+                displayActiveFilters();
+            });
+        </script>
+    @endpush
 </x-app-layout>

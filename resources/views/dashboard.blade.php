@@ -8,37 +8,37 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <!-- Statistiques sommaires -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <div class="text-sm font-medium text-gray-500">Total Factures</div>
-                        <div class="text-2xl font-bold text-gray-900">{{ $globalStats['totalBills'] }}</div>
-                    </div>
-                </div>
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <div class="text-sm font-medium text-gray-500">Ce mois</div>
-                        <div class="text-2xl font-bold text-gray-900">{{ $globalStats['monthlyBills'] }}</div>
-                    </div>
-                </div>
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <div class="text-sm font-medium text-gray-500">Revenu Total</div>
-                        <div class="text-2xl font-bold text-gray-900">{{ $globalStats['totalRevenue'] }}</div>
-                    </div>
-                </div>
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <div class="text-sm font-medium text-gray-500">Panier Moyen</div>
-                        <div class="text-2xl font-bold text-gray-900">{{ $globalStats['averageTicket'] }}</div>
-                    </div>
-                </div>
-            </div>
+{{--            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">--}}
+{{--                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">--}}
+{{--                    <div class="p-6">--}}
+{{--                        <div class="text-sm font-medium text-gray-500">Total Factures</div>--}}
+{{--                        <div class="text-2xl font-bold text-gray-900">{{ $globalStats['totalBills'] }}</div>--}}
+{{--                    </div>--}}
+{{--                </div>--}}
+{{--                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">--}}
+{{--                    <div class="p-6">--}}
+{{--                        <div class="text-sm font-medium text-gray-500">Ce mois</div>--}}
+{{--                        <div class="text-2xl font-bold text-gray-900">{{ $globalStats['monthlyBills'] }}</div>--}}
+{{--                    </div>--}}
+{{--                </div>--}}
+{{--                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">--}}
+{{--                    <div class="p-6">--}}
+{{--                        <div class="text-sm font-medium text-gray-500">Revenu Total</div>--}}
+{{--                        <div class="text-2xl font-bold text-gray-900">{{ $globalStats['totalRevenue'] }}</div>--}}
+{{--                    </div>--}}
+{{--                </div>--}}
+{{--                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">--}}
+{{--                    <div class="p-6">--}}
+{{--                        <div class="text-sm font-medium text-gray-500">Panier Moyen</div>--}}
+{{--                        <div class="text-2xl font-bold text-gray-900">{{ $globalStats['averageTicket'] }}</div>--}}
+{{--                    </div>--}}
+{{--                </div>--}}
+{{--            </div>--}}
 
             <!-- Graphique -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-8">
                 <div class="p-6">
-                    <div class="mb-6 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div class="mb-6 grid grid-cols-1 md:grid-cols-5 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
                             <select id="chartType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
@@ -58,21 +58,39 @@
                         </div>
 
                         <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
+                            <input type="date" id="startDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                   max="{{ now()->format('Y-m-d') }}">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
+                            <input type="date" id="endDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                   max="{{ now()->format('Y-m-d') }}">
+                        </div>
+
+                        <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Métrique</label>
                             <select id="metric" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                 <option value="count">Nombre de factures</option>
                                 <option value="amount">Montant total</option>
                             </select>
                         </div>
+                    </div>
 
-                        <div id="startDateContainer" style="display: none;">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
-                            <input type="date" id="startDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <!-- Statistiques dynamiques de la plage -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="bg-gray-100 p-4 rounded-lg">
+                            <div class="text-sm font-medium text-gray-600">Revenu Total</div>
+                            <div id="totalRevenueSpan" class="text-xl font-bold text-gray-900">0 FCFA</div>
                         </div>
-
-                        <div id="endDateContainer" style="display: none;">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
-                            <input type="date" id="endDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        <div class="bg-gray-100 p-4 rounded-lg">
+                            <div class="text-sm font-medium text-gray-600">Panier Moyen</div>
+                            <div id="averageTicketSpan" class="text-xl font-bold text-gray-900">0 FCFA</div>
+                        </div>
+                        <div class="bg-gray-100 p-4 rounded-lg">
+                            <div class="text-sm font-medium text-gray-600">Nombre de Factures</div>
+                            <div id="billCountSpan" class="text-xl font-bold text-gray-900">0</div>
                         </div>
                     </div>
 
@@ -82,7 +100,7 @@
                 </div>
             </div>
 
-            <!-- Tables -->
+            <!-- Tables (restent inchangées) -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <!-- Dernières Factures -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -156,26 +174,18 @@
                     }).format(value) + ' FCFA';
                 }
 
-                function toggleDateInputs() {
-                    const timeRange = document.getElementById('timeRange').value;
-                    const startDateContainer = document.getElementById('startDateContainer');
-                    const endDateContainer = document.getElementById('endDateContainer');
-
-                    if (timeRange === 'custom') {
-                        startDateContainer.style.display = 'block';
-                        endDateContainer.style.display = 'block';
-                    } else {
-                        startDateContainer.style.display = 'none';
-                        endDateContainer.style.display = 'none';
-                    }
-                }
-
                 function updateChart() {
                     const timeRange = document.getElementById('timeRange').value;
                     const metric = document.getElementById('metric').value;
                     const chartType = document.getElementById('chartType').value;
                     const startDate = document.getElementById('startDate').value;
                     const endDate = document.getElementById('endDate').value;
+
+                    // Désactiver les champs de date si la période prédéfinie est sélectionnée
+                    const dateInputs = document.querySelectorAll('#startDate, #endDate');
+                    dateInputs.forEach(input => {
+                        input.disabled = timeRange !== 'custom';
+                    });
 
                     const params = new URLSearchParams({
                         timeRange: timeRange,
@@ -184,7 +194,7 @@
                         endDate: endDate
                     });
 
-                    fetch(`/dashboard/stats?${params.toString()}`, {
+                    fetch('/dashboard/stats?' + params.toString(), {
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
                             'Accept': 'application/json'
@@ -198,11 +208,35 @@
                             return response.json();
                         })
                         .then(data => {
+                            console.log('Data received:', data); // Ajoutez cette ligne pour déboguer
+
                             const ctx = document.getElementById('statsChart').getContext('2d');
 
                             if (myChart) {
                                 myChart.destroy();
                             }
+
+                            // Calcul robuste du revenu total
+                            const totalRevenue = data.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+
+                            // Calcul robuste du nombre de factures
+                            const billCount = data.reduce((sum, item) => sum + (item.count || 0), 0);
+
+                            // Calcul sécurisé du panier moyen
+                            const averageTicket = billCount > 0 ? totalRevenue / billCount : 0;
+
+                            // Vérifiez si les valeurs sont des nombres
+                            if (isNaN(totalRevenue) || isNaN(billCount) || isNaN(averageTicket)) {
+                                console.error('Invalid data received:', data);
+                                return;
+                            }
+
+                            // Formatage et affichage des statistiques
+                            document.getElementById('totalRevenueSpan').textContent = formatMoney(Math.round(totalRevenue));
+                            document.getElementById('billCountSpan').textContent = billCount;
+                            document.getElementById('averageTicketSpan').textContent = billCount > 0
+                                ? formatMoney(Math.round(averageTicket))
+                                : '0 FCFA';
 
                             myChart = new Chart(ctx, {
                                 type: chartType,
@@ -210,7 +244,7 @@
                                     labels: data.map(item => item.date),
                                     datasets: [{
                                         label: metric === 'count' ? 'Nombre de factures' : 'Montant',
-                                        data: data.map(item => metric === 'count' ? item.count : item.amount),
+                                        data: data.map(item => metric === 'count' ? item.count : parseFloat(item.amount)),
                                         backgroundColor: 'rgba(99, 102, 241, 0.2)',
                                         borderColor: 'rgba(99, 102, 241, 1)',
                                         borderWidth: 1,
@@ -263,31 +297,35 @@
                         .catch(error => {
                             console.error('Erreur:', error);
                             const chartContainer = document.getElementById('statsChart');
-                            chartContainer.parentElement.innerHTML = `
-                            <div class="text-center text-gray-500 mt-4">
-                                <p>Erreur lors du chargement des données</p>
-                                <button onclick="updateChart()" class="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-md">
-                                    Réessayer
-                                </button>
-                            </div>
-                        `;
+                            chartContainer.parentElement.innerHTML =
+                                "<div class='text-center text-gray-500 mt-4'>" +
+                                "<p>Erreur lors du chargement des données</p>" +
+                                "<button onclick='updateChart()' class='mt-2 px-4 py-2 bg-indigo-600 text-white rounded-md'>" +
+                                "Réessayer" +
+                                "</button>" +
+                                "</div>";
                         });
                 }
 
                 // Event listeners
                 document.getElementById('chartType').addEventListener('change', updateChart);
                 document.getElementById('timeRange').addEventListener('change', function() {
-                    toggleDateInputs();
+                    if (this.value !== 'custom') {
+                        document.getElementById('startDate').value = '';
+                        document.getElementById('endDate').value = '';
+                    }
                     updateChart();
                 });
-                document.getElementById('metric').addEventListener('change', updateChart);
                 document.getElementById('startDate').addEventListener('change', updateChart);
                 document.getElementById('endDate').addEventListener('change', updateChart);
+                document.getElementById('metric').addEventListener('change', updateChart);
 
                 // Initialisation
-                toggleDateInputs();
                 updateChart();
             });
+
+
         </script>
     @endpush
 </x-app-layout>
+

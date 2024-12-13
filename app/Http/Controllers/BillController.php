@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\Bill;
@@ -8,7 +7,6 @@ use App\Models\Product;
 use App\Models\Setting;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-//use Sabberworm\CSS\Settings;
 
 class BillController extends Controller
 {
@@ -48,6 +46,18 @@ class BillController extends Controller
                         $q->where('name', 'like', "%{$search}%");
                     });
             });
+        }
+
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('date', [$request->start_date, $request->end_date]);
+        }
+
+        if ($request->filled('min_amount')) {
+            $query->where('total', '>=', $request->min_amount);
+        }
+
+        if ($request->filled('max_amount')) {
+            $query->where('total', '<=', $request->max_amount);
         }
 
         // Récupération des factures paginées
@@ -178,7 +188,7 @@ class BillController extends Controller
     public function downloadPdf(Bill $bill)
     {
         $bill->load(['client', 'products', 'user']);
-        $settings = Setting::first(); // Utilisez Setting au lieu de Settings
+        $settings = Setting::first();
         $pdf = PDF::loadView('bills.pdf', compact('bill', 'settings'));
         return $pdf->download("facture-{$bill->reference}.pdf");
     }
