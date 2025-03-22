@@ -11,7 +11,6 @@
                 <div class="p-6">
                     <form action="{{ route('settings.update', $settings) }}" method="POST" enctype="multipart/form-data">
                         @csrf
-                        @method('PUT')
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Company Info -->

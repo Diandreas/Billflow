@@ -8,6 +8,11 @@ class Product extends Model
     protected $fillable = [
         'name',
         'description',
+        'default_price',
+    ];
+
+    protected $casts = [
+        'default_price' => 'decimal:2',
     ];
 
     public function bills()

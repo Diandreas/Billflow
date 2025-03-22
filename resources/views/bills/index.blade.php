@@ -222,6 +222,18 @@
 
     @push('scripts')
         <script>
+            // Fonction globale pour supprimer un filtre
+            function removeFilter(key) {
+                const url = new URL(window.location);
+                url.searchParams.delete(key);
+                window.location.href = url.toString();
+            }
+
+            // Fonction globale pour effacer tous les filtres
+            function clearAllFilters() {
+                window.location.href = window.location.pathname;
+            }
+            
             document.addEventListener('DOMContentLoaded', function() {
                 const clientFilter = document.getElementById('client_filter');
                 const statusFilter = document.getElementById('status_filter');
@@ -299,7 +311,6 @@
                     }
                 });
 
-                // Le reste du code reste identique...
                 function displayActiveFilters() {
                     activeFilters.innerHTML = '';
                     const urlParams = new URLSearchParams(window.location.search);
@@ -378,16 +389,6 @@
                     }
                 }
 
-                function removeFilter(key) {
-                    const url = new URL(window.location);
-                    url.searchParams.delete(key);
-                    window.location.href = url.toString();
-                }
-
-                function clearAllFilters() {
-                    window.location.href = window.location.pathname;
-                }
-
                 // Gestionnaires d'événements
                 searchButton.addEventListener('click', updateQueryString);
                 toggleAdvancedSearchButton.addEventListener('click', function() {
@@ -431,7 +432,6 @@
                     }
                 });
             });
-
         </script>
     @endpush
 </x-app-layout>

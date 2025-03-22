@@ -61,7 +61,10 @@ class BillController extends Controller
         }
 
         // Récupération des factures paginées
-        $bills = $query->paginate(10)->withQueryString();
+        $bills = $query->paginate(10);
+        if (method_exists($bills, 'withQueryString')) {
+            $bills = $bills->withQueryString();
+        }
 
         // Statistiques pour la période filtrée
         $stats = [
@@ -88,9 +91,8 @@ class BillController extends Controller
             'tax_rate' => 'required|numeric',
             'description' => 'nullable|string',
             'products' => 'required|array',
-            'products.*.id' => 'required|exists:products,id',
-            'products.*.quantity' => 'required|numeric|min:1',
-            'products.*.unit_price' => 'required|numeric|min:0',
+            'quantities' => 'required|array',
+            'prices' => 'required|array',
         ]);
 
         // Générer une référence unique
@@ -102,17 +104,27 @@ class BillController extends Controller
             'client_id' => $validated['client_id'],
             'date' => $validated['date'],
             'tax_rate' => $validated['tax_rate'],
-            'description' => $validated['description'],
-            'user_id' => auth()->id(),
+            'description' => $validated['description'] ?? null,
+            'user_id' => auth()->user() ? auth()->user()->id : 1,
         ]);
 
         // Ajouter les produits
-        foreach ($validated['products'] as $product) {
-            $bill->products()->attach($product['id'], [
-                'quantity' => $product['quantity'],
-                'unit_price' => $product['unit_price'],
-                'total' => $product['quantity'] * $product['unit_price']
-            ]);
+        $products = $request->input('products', []);
+        $quantities = $request->input('quantities', []);
+        $prices = $request->input('prices', []);
+
+        for ($i = 0; $i < count($products); $i++) {
+            if (isset($products[$i]) && isset($quantities[$i]) && isset($prices[$i])) {
+                $productId = $products[$i];
+                $quantity = $quantities[$i];
+                $price = $prices[$i];
+                
+                $bill->products()->attach($productId, [
+                    'quantity' => $quantity,
+                    'unit_price' => $price,
+                    'total' => $quantity * $price
+                ]);
+            }
         }
 
         // Calculer les totaux
@@ -146,9 +158,8 @@ class BillController extends Controller
             'tax_rate' => 'required|numeric',
             'description' => 'nullable|string',
             'products' => 'required|array',
-            'products.*.id' => 'required|exists:products,id',
-            'products.*.quantity' => 'required|numeric|min:1',
-            'products.*.unit_price' => 'required|numeric|min:0',
+            'quantities' => 'required|array',
+            'prices' => 'required|array',
         ]);
 
         // Mettre à jour la facture
@@ -156,17 +167,28 @@ class BillController extends Controller
             'client_id' => $validated['client_id'],
             'date' => $validated['date'],
             'tax_rate' => $validated['tax_rate'],
-            'description' => $validated['description'],
+            'description' => $validated['description'] ?? null,
         ]);
 
         // Mettre à jour les produits
         $bill->products()->detach();
-        foreach ($validated['products'] as $product) {
-            $bill->products()->attach($product['id'], [
-                'quantity' => $product['quantity'],
-                'unit_price' => $product['unit_price'],
-                'total' => $product['quantity'] * $product['unit_price']
-            ]);
+        
+        $products = $request->input('products', []);
+        $quantities = $request->input('quantities', []);
+        $prices = $request->input('prices', []);
+
+        for ($i = 0; $i < count($products); $i++) {
+            if (isset($products[$i]) && isset($quantities[$i]) && isset($prices[$i])) {
+                $productId = $products[$i];
+                $quantity = $quantities[$i];
+                $price = $prices[$i];
+                
+                $bill->products()->attach($productId, [
+                    'quantity' => $quantity,
+                    'unit_price' => $price,
+                    'total' => $quantity * $price
+                ]);
+            }
         }
 
         // Recalculer les totaux

@@ -92,6 +92,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-
+        Schema::dropIfExists('bill_products');
+        Schema::dropIfExists('bills');
+        Schema::dropIfExists('products');
+        Schema::dropIfExists('client_phone');
+        Schema::dropIfExists('phones');
+        Schema::dropIfExists('clients');
+        Schema::dropIfExists('settings');
     }
 };

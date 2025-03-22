@@ -224,7 +224,7 @@
                             <option value="">{{ __('Sélectionner un produit') }}</option>
                             @foreach($products as $product)
                 <option value="{{ $product->id }}"
-                                        data-price="{{ $product->price }}">
+                                        data-price="{{ $product->default_price }}">
                                     {{ $product->name }} - {{ $product->reference ?? 'Sans référence' }}
                 </option>
 @endforeach
