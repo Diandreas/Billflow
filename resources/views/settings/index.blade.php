@@ -83,12 +83,18 @@
                                         <img src="{{ Storage::url($settings->logo_path) }}"
                                              alt="Logo" class="h-12 w-auto">
                                     </div>
+                                    <p class="text-xs text-gray-500 mr-4">Logo actuel</p>
+                                @else
+                                    <p class="text-xs text-gray-500 mr-4">Aucun logo téléchargé</p>
                                 @endif
                                 <input type="file" name="logo" accept="image/*"
                                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
                                               file:rounded-full file:border-0 file:text-sm file:font-semibold
                                               file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                             </div>
+                            <p class="mt-1 text-sm text-gray-500">
+                                Le logo apparaîtra sur vos factures. Format recommandé: PNG ou JPG, maximum 1 Mo.
+                            </p>
                         </div>
 
                         <!-- Submit Button -->

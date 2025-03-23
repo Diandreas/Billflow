@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class SettingController extends Controller
 {
@@ -29,6 +30,12 @@ class SettingController extends Controller
         $settings = Setting::getSettings();
 
         if ($request->hasFile('logo')) {
+            // Supprimer l'ancien logo s'il existe
+            if ($settings->logo_path) {
+                Storage::disk('public')->delete($settings->logo_path);
+            }
+            
+            // Stocker le nouveau logo
             $path = $request->file('logo')->store('logos', 'public');
             $validated['logo_path'] = $path;
         }

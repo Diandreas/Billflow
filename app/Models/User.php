@@ -49,4 +49,33 @@ class User extends Authenticatable
     {
         return $this->hasMany(Bill::class);
     }
+
+    public function campaigns()
+    {
+        return $this->hasMany(Campaign::class);
+    }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function promotionalMessages()
+    {
+        return $this->hasMany(PromotionalMessage::class);
+    }
+
+    public function getActiveSubscriptionAttribute()
+    {
+        return $this->subscriptions()
+            ->where('status', 'active')
+            ->where('ends_at', '>', now())
+            ->latest()
+            ->first();
+    }
+
+    public function hasActiveSubscription()
+    {
+        return $this->activeSubscription !== null;
+    }
 }

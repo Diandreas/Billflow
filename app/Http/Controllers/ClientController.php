@@ -10,51 +10,45 @@ class ClientController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Client::with('phones')
-            ->withCount('bills')
-            ->withSum('bills', 'total');
-
+        $query = Client::query();
+        
         // Recherche
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhereHas('phones', function($q) use ($search) {
-                        $q->where('number', 'like', "%{$search}%");
-                    });
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
             });
         }
-
-        // Tri
-        if ($request->filled('sort')) {
-            $sortField = $request->sort;
-            $sortDirection = $request->direction ?? 'asc';
-
-            if ($sortField === 'total_bills') {
-                $query->orderBy('bills_sum_total', $sortDirection);
-            } elseif ($sortField === 'bills_count') {
-                $query->orderBy('bills_count', $sortDirection);
-            } else {
-                $query->orderBy($sortField, $sortDirection);
-            }
-        } else {
-            $query->latest();
+        
+        // Filtre par abonnement
+        if ($request->filled('subscription_id')) {
+            $subscriptionId = $request->subscription_id;
+            $query->whereHas('bills', function($q) use ($subscriptionId) {
+                $q->whereHas('user', function($u) use ($subscriptionId) {
+                    $u->whereHas('subscriptions', function($s) use ($subscriptionId) {
+                        $s->where('id', $subscriptionId);
+                    });
+                });
+            });
         }
-
-        $clients = $query->paginate(10)->withQueryString();
-
-        // Statistiques globales
-        $stats = [
-            'total_clients' => Client::count(),
-            'active_clients' => Client::has('bills')->count(),
-            'total_revenue' => Client::withSum('bills', 'total')->get()->sum('bills_sum_total'),
-            'average_revenue_per_client' => Client::has('bills')
-                ->withSum('bills', 'total')
-                ->get()
-                ->average('bills_sum_total')
-        ];
-
-        return view('clients.index', compact('clients', 'stats'));
+        
+        // Ordre par défaut
+        $query->orderBy('name');
+        
+        $clients = $query->withCount('bills')
+                         ->withSum('bills as total_spent', 'total')
+                         ->paginate(10)
+                         ->withQueryString();
+                         
+        // Si on vient d'un abonnement spécifique, ajouter l'info pour l'affichage
+        $subscription = null;
+        if ($request->filled('subscription_id')) {
+            $subscription = \App\Models\Subscription::with('plan')->find($request->subscription_id);
+        }
+        
+        return view('clients.index', compact('clients', 'subscription'));
     }
 
     public function create()

@@ -12,15 +12,49 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <!-- Si on vient d'un abonnement spécifique, afficher un bandeau d'info -->
+            @if (isset($subscription))
+                <div class="mb-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-semibold text-indigo-800">Clients liés à l'abonnement</h3>
+                            <p class="text-indigo-600">{{ $subscription->plan->name }} - {{ $subscription->starts_at->format('d/m/Y') }} à {{ $subscription->ends_at->format('d/m/Y') }}</p>
+                        </div>
+                        <a href="{{ route('subscriptions.show', $subscription) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition">
+                            Voir l'abonnement
+                        </a>
+                    </div>
+                </div>
+            @endif
+            
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
                     <!-- Search Bar -->
                     <div class="mb-4">
-                        <div class="flex gap-4">
-                            <input type="text" id="search"
-                                   class="flex-1 rounded-md border-gray-300"
-                                   placeholder="Rechercher un client...">
-                        </div>
+                        <form method="GET" action="{{ route('clients.index') }}" class="flex gap-4">
+                            @if(request()->has('subscription_id'))
+                                <input type="hidden" name="subscription_id" value="{{ request('subscription_id') }}">
+                            @endif
+                            <div class="flex-1 relative">
+                                <input type="text" name="search" value="{{ request('search') }}"
+                                       class="w-full rounded-md border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                       placeholder="Rechercher un client par nom, email ou téléphone...">
+                                <button type="submit" class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 bg-gray-50 rounded-r-md border-l">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition">
+                                Rechercher
+                            </button>
+                            
+                            @if(request()->has('search'))
+                                <a href="{{ url()->current() }}{{ request()->has('subscription_id') ? '?subscription_id=' . request('subscription_id') : '' }}" class="inline-flex items-center px-4 py-2 bg-gray-200 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 active:bg-gray-400 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition">
+                                    Réinitialiser
+                                </a>
+                            @endif
+                        </form>
                     </div>
 
                     <!-- Clients Table -->

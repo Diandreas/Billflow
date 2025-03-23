@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             ClientsSeeder::class,
             PhonesSeeder::class,
             BillsSeeder::class,
+            SubscriptionPlanSeeder::class,
         ]);
     }
 }

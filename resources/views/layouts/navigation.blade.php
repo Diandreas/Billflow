@@ -53,6 +53,22 @@
                         </svg>
                         {{ __('Paramètres') }}
                     </x-nav-link>
+
+                    <!-- Messages Promotionnels -->
+                    <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
+                        <x-nav-link :href="route('campaigns.index')" :active="request()->routeIs('campaigns.*')">
+                            <i class="bi bi-megaphone-fill mr-1"></i>
+                            {{ __('Messages Promotionnels') }}
+                        </x-nav-link>
+                    </div>
+
+                    <!-- Abonnements -->
+                    <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
+                        <x-nav-link :href="route('subscriptions.index')" :active="request()->routeIs('subscriptions.*')">
+                            <i class="bi bi-credit-card-fill mr-1"></i>
+                            {{ __('Abonnements') }}
+                        </x-nav-link>
+                    </div>
                 </div>
             </div>
 

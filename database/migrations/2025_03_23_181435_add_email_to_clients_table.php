@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('bills', function (Blueprint $table) {
-            $table->string('status')->default('pending')->change();
+        Schema::table('clients', function (Blueprint $table) {
+            $table->string('email')->nullable()->after('name');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('bills', function (Blueprint $table) {
-            $table->string('status')->change();
+        Schema::table('clients', function (Blueprint $table) {
+            $table->dropColumn('email');
         });
     }
 };

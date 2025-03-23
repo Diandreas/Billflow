@@ -21,11 +21,13 @@
 
         .company-info {
             float: left;
+            width: 60%;
         }
 
         .bill-info {
             float: right;
             text-align: right;
+            width: 40%;
         }
 
         .client-info {
@@ -84,7 +86,9 @@
 
         .logo {
             max-width: 200px;
+            max-height: 100px;
             margin-bottom: 20px;
+            object-fit: contain;
         }
     </style>
 </head>
@@ -94,7 +98,7 @@
     <div class="header">
         <div class="company-info">
             @if($settings->logo_path)
-                <img src="{{ Storage::path($settings->logo_path) }}" alt="Logo" class="logo">
+                <img src="{{ $settings->logo_real_path ?? Storage::path($settings->logo_path) }}" alt="Logo" class="logo">
             @endif
             <h1>{{ $settings->company_name }}</h1>
             <p>

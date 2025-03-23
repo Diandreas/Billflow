@@ -214,6 +214,13 @@ class BillController extends Controller
     {
         $bill->load(['client', 'products', 'user']);
         $settings = Setting::first();
+        
+        // Conversion du chemin Storage en chemin réel pour l'accès du PDF
+        if ($settings && $settings->logo_path) {
+            $logoRealPath = storage_path('app/public/' . $settings->logo_path);
+            $settings->logo_real_path = $logoRealPath;
+        }
+        
         $pdf = PDF::loadView('bills.pdf', compact('bill', 'settings'));
         return $pdf->download("facture-{$bill->reference}.pdf");
     }

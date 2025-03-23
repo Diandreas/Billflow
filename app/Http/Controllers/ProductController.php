@@ -90,26 +90,46 @@ class ProductController extends Controller
             ->with('success', 'Produit créé avec succès');
     }
 
-    public function show(Product $product)
+    public function show(Request $request, Product $product)
     {
-        $product->load(['bills' => function($query) {
-            $query->latest()->with('client');
-        }]);
+        // Chargement des factures avec recherche si nécessaire
+        $billsQuery = $product->bills()->with('client');
+        
+        if ($request->filled('bill_search')) {
+            $search = $request->bill_search;
+            $billsQuery->where(function($query) use ($search) {
+                $query->where('reference', 'like', "%{$search}%")
+                    ->orWhereHas('client', function($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%")
+                          ->orWhere('email', 'like', "%{$search}%");
+                    })
+                    ->orWhereDate('date', 'like', "%{$search}%");
+            });
+        }
+        
+        // Ordonner par date
+        $billsQuery->latest('date');
+        
+        // Paginer les résultats pour l'affichage
+        $filteredBills = $billsQuery->paginate(10)->withQueryString();
+        
+        // Charger toutes les factures pour les statistiques (sans filtre)
+        $allBills = $product->bills;
 
         // Statistiques du produit
         $stats = [
-            'total_sales' => $product->bills->sum(function($bill) {
+            'total_sales' => $allBills->sum(function($bill) {
                 return $bill->pivot->unit_price * $bill->pivot->quantity;
             }),
-            'total_quantity' => $product->bills->sum('pivot.quantity'),
-            'average_price' => $product->bills->avg('pivot.unit_price'),
-            'usage_count' => $product->bills->count(),
-            'first_use' => $product->bills->last()?->date,
-            'last_use' => $product->bills->first()?->date,
+            'total_quantity' => $allBills->sum('pivot.quantity'),
+            'average_price' => $allBills->avg('pivot.unit_price'),
+            'usage_count' => $allBills->count(),
+            'first_use' => $allBills->last()?->date,
+            'last_use' => $allBills->first()?->date,
         ];
 
         // Évolution mensuelle
-        $monthlyStats = $product->bills
+        $monthlyStats = $allBills
             ->groupBy(function($bill) {
                 return $bill->date->format('Y-m');
             })
@@ -132,7 +152,7 @@ class ProductController extends Controller
             ->orderByDesc('usage_count')
             ->get();
 
-        return view('products.show', compact('product', 'stats', 'monthlyStats', 'priceHistory'));
+        return view('products.show', compact('product', 'stats', 'monthlyStats', 'priceHistory', 'filteredBills'));
     }
 
     public function edit(Product $product)

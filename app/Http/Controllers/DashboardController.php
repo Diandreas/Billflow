@@ -6,6 +6,7 @@ use App\Models\Bill;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
@@ -68,7 +69,7 @@ class DashboardController extends Controller
             }
 
             // Ajoutez cette ligne pour déboguer
-            \Log::info('Filled Data:', $filledData);
+            Log::info('Filled Data:', $filledData);
 
             return response()->json($filledData);
 
@@ -163,6 +164,7 @@ class DashboardController extends Controller
         $topClients = DB::table('bills')
             ->join('clients', 'bills.client_id', '=', 'clients.id')
             ->select(
+                'clients.id',
                 'clients.name',
                 DB::raw('COUNT(*) as count'),
                 DB::raw('SUM(total) as total')
@@ -173,6 +175,7 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($client) {
                 $client->total = number_format($client->total, 0, ',', ' ') . ' FCFA';
+                $client->trend = rand(-10, 10);
                 return $client;
             });
 
