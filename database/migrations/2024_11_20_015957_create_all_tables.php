@@ -75,6 +75,7 @@ return new class extends Migration
             $table->text('address')->nullable();
             $table->string('phone', 20)->nullable();
             $table->string('email')->nullable();
+            $table->string('website')->nullable();
             $table->string('siret', 14)->nullable();
             $table->decimal('tax_rate', 5, 2)->default(20.00);
             $table->string('logo_path')->nullable();

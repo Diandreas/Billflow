@@ -14,7 +14,8 @@ class Bill extends Model
         'tax_rate',
         'tax_amount',
         'user_id',
-        'client_id'
+        'client_id',
+        'status'
     ];
 
     protected $casts = [
@@ -22,6 +23,10 @@ class Bill extends Model
         'total' => 'decimal:2',
         'tax_rate' => 'decimal:2',
         'tax_amount' => 'decimal:2',
+    ];
+
+    protected $attributes = [
+        'status' => 'pending'
     ];
 
     public function user()

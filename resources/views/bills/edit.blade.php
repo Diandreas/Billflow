@@ -80,6 +80,20 @@
                                            class="w-full rounded-md border-gray-300">
                                 </div>
                             </div>
+
+                            {{-- Statut --}}
+                            <div>
+                                <label for="status" class="block mb-1 text-sm font-medium text-gray-700">
+                                    {{ __('Statut') }}
+                                </label>
+                                <select id="status"
+                                        name="status"
+                                        class="w-full rounded-md border-gray-300">
+                                    <option value="pending" {{ $bill->status === 'pending' ? 'selected' : '' }}>{{ __('En attente') }}</option>
+                                    <option value="paid" {{ $bill->status === 'paid' ? 'selected' : '' }}>{{ __('Payée') }}</option>
+                                    <option value="cancelled" {{ $bill->status === 'cancelled' ? 'selected' : '' }}>{{ __('Annulée') }}</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>

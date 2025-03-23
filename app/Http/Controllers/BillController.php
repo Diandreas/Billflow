@@ -106,6 +106,7 @@ class BillController extends Controller
             'tax_rate' => $validated['tax_rate'],
             'description' => $validated['description'] ?? null,
             'user_id' => auth()->user() ? auth()->user()->id : 1,
+            'status' => 'pending',
         ]);
 
         // Ajouter les produits
@@ -160,6 +161,7 @@ class BillController extends Controller
             'products' => 'required|array',
             'quantities' => 'required|array',
             'prices' => 'required|array',
+            'status' => 'nullable|string|in:pending,paid,cancelled',
         ]);
 
         // Mettre à jour la facture
@@ -168,6 +170,7 @@ class BillController extends Controller
             'date' => $validated['date'],
             'tax_rate' => $validated['tax_rate'],
             'description' => $validated['description'] ?? null,
+            'status' => $validated['status'] ?? $bill->status,
         ]);
 
         // Mettre à jour les produits
