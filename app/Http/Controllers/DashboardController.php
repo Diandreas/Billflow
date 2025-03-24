@@ -224,4 +224,162 @@ class DashboardController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Exporter les statistiques au format CSV
+     * 
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function exportStats()
+    {
+        $stats = $this->getStatsData();
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=statistiques-export.csv',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+        
+        $callback = function() use ($stats) {
+            $file = fopen('php://output', 'w');
+            
+            // En-têtes CSV - Statistiques générales
+            fputcsv($file, ['Statistiques Générales']);
+            fputcsv($file, ['Métrique', 'Valeur']);
+            fputcsv($file, ['Total Clients', $stats['totalClients']]);
+            fputcsv($file, ['Total Factures', $stats['totalBills']]);
+            fputcsv($file, ['Total Revenus', $stats['totalRevenue']]);
+            fputcsv($file, ['Panier Moyen', $stats['averageBill']]);
+            fputcsv($file, ['Clients ce mois', $stats['clientsThisMonth']]);
+            fputcsv($file, ['Revenus ce mois', $stats['revenueThisMonth']]);
+            
+            // Ligne vide pour séparer les sections
+            fputcsv($file, []);
+            
+            // Statistiques mensuelles
+            fputcsv($file, ['Statistiques Mensuelles']);
+            fputcsv($file, ['Mois', 'Clients', 'Factures', 'Revenus']);
+            
+            foreach ($stats['monthlyStats'] as $month => $data) {
+                fputcsv($file, [
+                    $month,
+                    $data['clients'] ?? 0,
+                    $data['bills'] ?? 0,
+                    $data['revenue'] ?? 0
+                ]);
+            }
+            
+            // Ligne vide pour séparer les sections
+            fputcsv($file, []);
+            
+            // Top clients
+            fputcsv($file, ['Top Clients']);
+            fputcsv($file, ['Nom', 'Total Factures', 'Total Dépensé']);
+            
+            foreach ($stats['topClients'] as $client) {
+                fputcsv($file, [
+                    $client['name'] ?? 'Client inconnu',
+                    $client['bills_count'] ?? 0,
+                    $client['total_spent'] ?? 0
+                ]);
+            }
+            
+            // Ligne vide pour séparer les sections
+            fputcsv($file, []);
+            
+            // Produits les plus vendus
+            fputcsv($file, ['Produits les plus vendus']);
+            fputcsv($file, ['Nom', 'Quantité vendue', 'Revenus générés']);
+            
+            foreach ($stats['topProducts'] as $product) {
+                fputcsv($file, [
+                    $product['name'] ?? 'Produit inconnu',
+                    $product['quantity_sold'] ?? 0,
+                    $product['revenue'] ?? 0
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
+    
+    /**
+     * Obtenir les données de statistiques pour l'exportation
+     */
+    private function getStatsData()
+    {
+        // Statistiques globales
+        $totalClients = \App\Models\Client::count();
+        $totalBills = \App\Models\Bill::count();
+        $totalRevenue = \App\Models\Bill::sum('total');
+        $averageBill = $totalBills > 0 ? \App\Models\Bill::avg('total') : 0;
+        
+        // Statistiques du mois en cours
+        $currentMonth = now()->startOfMonth();
+        $clientsThisMonth = \App\Models\Client::where('created_at', '>=', $currentMonth)->count();
+        $revenueThisMonth = \App\Models\Bill::where('date', '>=', $currentMonth)->sum('total');
+        
+        // Statistiques mensuelles (12 derniers mois)
+        $monthlyStats = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $monthStart = $month->copy()->startOfMonth();
+            $monthEnd = $month->copy()->endOfMonth();
+            $monthKey = $month->format('Y-m');
+            
+            $monthlyStats[$monthKey] = [
+                'clients' => \App\Models\Client::whereBetween('created_at', [$monthStart, $monthEnd])->count(),
+                'bills' => \App\Models\Bill::whereBetween('date', [$monthStart, $monthEnd])->count(),
+                'revenue' => \App\Models\Bill::whereBetween('date', [$monthStart, $monthEnd])->sum('total')
+            ];
+        }
+        
+        // Top clients
+        $topClients = \App\Models\Client::withCount('bills')
+            ->withSum('bills as total_spent', 'total')
+            ->orderByDesc('total_spent')
+            ->limit(10)
+            ->get()
+            ->map(function($client) {
+                return [
+                    'name' => $client->name,
+                    'bills_count' => $client->bills_count,
+                    'total_spent' => $client->total_spent
+                ];
+            });
+        
+        // Top produits
+        $topProducts = \App\Models\Product::withCount(['bills as quantity_sold' => function($query) {
+                $query->select(\Illuminate\Support\Facades\DB::raw('SUM(bill_product.quantity)'));
+            }])
+            ->withCount(['bills as revenue' => function($query) {
+                $query->select(\Illuminate\Support\Facades\DB::raw('SUM(bill_product.quantity * bill_product.price)'));
+            }])
+            ->orderByDesc('revenue')
+            ->limit(10)
+            ->get()
+            ->map(function($product) {
+                return [
+                    'name' => $product->name,
+                    'quantity_sold' => $product->quantity_sold,
+                    'revenue' => $product->revenue
+                ];
+            });
+        
+        return [
+            'totalClients' => $totalClients,
+            'totalBills' => $totalBills,
+            'totalRevenue' => $totalRevenue,
+            'averageBill' => $averageBill,
+            'clientsThisMonth' => $clientsThisMonth,
+            'revenueThisMonth' => $revenueThisMonth,
+            'monthlyStats' => $monthlyStats,
+            'topClients' => $topClients,
+            'topProducts' => $topProducts
+        ];
+    }
 }

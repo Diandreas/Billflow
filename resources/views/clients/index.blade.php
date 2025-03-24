@@ -1,22 +1,27 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Gestion des Clients') }}
-            </h2>
-            <div class="flex space-x-2">
-                <button id="importClientsBtn" class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md flex items-center transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                    </svg>
-                    Importer
-                </button>
-                <button onclick="toggleModal('newClientModal')" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md flex items-center transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                    </svg>
-                    Nouveau Client
-                </button>
+        <!-- Header Section -->
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 py-6 px-4 sm:px-6 lg:px-8 mb-6 rounded-xl shadow-md">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex-1 min-w-0 mb-4 md:mb-0">
+                    <h2 class="text-2xl font-bold leading-7 text-white sm:text-3xl sm:truncate">
+                        {{ __('Gestion des clients') }}
+                    </h2>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="toggleModal('createClient')" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium bg-white text-indigo-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200">
+                        <i class="bi bi-plus-lg mr-2"></i>
+                        {{ __('Ajouter un client') }}
+                    </button>
+                    <button onclick="toggleImportModal()" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium bg-green-50 text-green-700 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200">
+                        <i class="bi bi-cloud-upload mr-2"></i>
+                        {{ __('Importer') }}
+                    </button>
+                    <a href="{{ route('clients.export') }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                        <i class="bi bi-cloud-download mr-2"></i>
+                        {{ __('Exporter') }}
+                    </a>
+                </div>
             </div>
         </div>
     </x-slot>
@@ -288,7 +293,7 @@
                         <h3 class="mt-2 text-sm font-medium text-gray-900">Aucun client trouvé</h3>
                         <p class="mt-1 text-sm text-gray-500">Essayez de modifier vos critères de recherche ou ajoutez un nouveau client.</p>
                         <div class="mt-6">
-                            <button type="button" onclick="toggleModal('newClientModal')" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <button type="button" onclick="toggleModal('createClient')" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
                                 </svg>
@@ -416,6 +421,135 @@
         </div>
     </div>
 
+    <!-- Import Clients Modal -->
+    <div id="importClientsModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div class="relative bg-white rounded-2xl shadow-xl mx-auto p-0 max-w-3xl w-full transform transition-transform duration-300 scale-95 opacity-0" id="importModalContent">
+            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-t-2xl p-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-white">
+                        <i class="bi bi-cloud-upload mr-2"></i>{{ __('Importer des clients') }}
+                    </h3>
+                    <button type="button" onclick="toggleImportModal()" class="text-white hover:text-gray-200 focus:outline-none">
+                        <i class="bi bi-x-lg text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="mb-6">
+                    <p class="text-gray-600">Importez vos clients à partir d'un fichier CSV ou Excel. Vous pourrez associer les colonnes avec les champs appropriés.</p>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Étape 1: Téléchargement du fichier -->
+                    <div id="importStep1" class="import-step">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">1. Sélectionnez votre fichier</h4>
+                        
+                        <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-8 mb-4 bg-gray-50 relative">
+                            <input type="file" id="importFile" accept=".csv,.xlsx,.xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            <div class="text-center pointer-events-none">
+                                <i class="bi bi-file-earmark-spreadsheet text-5xl text-indigo-500 mb-3"></i>
+                                <p class="text-gray-600 mb-2">Glissez-déposez votre fichier ici ou cliquez pour parcourir</p>
+                                <p class="text-sm text-gray-500">Formats acceptés: CSV, Excel (.xlsx, .xls)</p>
+                            </div>
+                        </div>
+                        
+                        <div id="selectedFileContainer" class="hidden mb-4 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="bi bi-file-earmark-spreadsheet text-xl text-indigo-500 mr-2"></i>
+                                    <span id="selectedFileName" class="text-gray-700 font-medium"></span>
+                                </div>
+                                <button type="button" id="removeFileBtn" class="text-gray-400 hover:text-gray-600">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <a href="/templates/import-clients.csv" class="text-indigo-600 hover:text-indigo-800 text-sm flex items-center">
+                                    <i class="bi bi-download mr-1"></i>
+                                    Télécharger un modèle
+                                </a>
+                            </div>
+                            <button type="button" id="goToStep2Btn" disabled
+                                    class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium py-2.5 px-6 rounded-xl shadow-sm transition duration-200 opacity-50 cursor-not-allowed">
+                                Continuer <i class="bi bi-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Étape 2: Mappage des colonnes -->
+                    <div id="importStep2" class="import-step hidden">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">2. Associez les colonnes</h4>
+                        
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                            <div class="flex items-center text-gray-700 mb-3">
+                                <i class="bi bi-info-circle text-indigo-500 mr-2"></i>
+                                <span>Associez les colonnes de votre fichier avec les champs correspondants</span>
+                            </div>
+                            
+                            <div id="columnMappingContainer" class="space-y-3">
+                                <!-- Les champs de mappage seront générés ici via JavaScript -->
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between">
+                            <button type="button" id="backToStep1Btn" class="border border-gray-300 text-gray-700 font-medium py-2.5 px-6 rounded-xl shadow-sm hover:bg-gray-50 transition duration-200">
+                                <i class="bi bi-arrow-left mr-1"></i> Retour
+                            </button>
+                            <button type="button" id="goToStep3Btn" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium py-2.5 px-6 rounded-xl shadow-sm transition duration-200">
+                                Aperçu <i class="bi bi-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Étape 3: Aperçu et validation -->
+                    <div id="importStep3" class="import-step hidden">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">3. Aperçu et importation</h4>
+                        
+                        <div class="overflow-x-auto bg-gray-50 rounded-xl p-4 mb-6">
+                            <table class="min-w-full divide-y divide-gray-200" id="previewTable">
+                                <thead>
+                                    <tr class="bg-gray-100">
+                                        <!-- Les en-têtes seront générés ici via JavaScript -->
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <!-- Les données de prévisualisation seront générées ici via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center text-gray-600 text-sm">
+                                <i class="bi bi-people mr-1"></i>
+                                <span id="recordCount">0 clients à importer</span>
+                            </div>
+                            
+                            <div class="flex items-center">
+                                <label class="flex items-center text-sm text-gray-700">
+                                    <input type="checkbox" id="skipHeaderRow" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mr-2">
+                                    Ignorer la première ligne (en-têtes)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between">
+                            <button type="button" id="backToStep2Btn" class="border border-gray-300 text-gray-700 font-medium py-2.5 px-6 rounded-xl shadow-sm hover:bg-gray-50 transition duration-200">
+                                <i class="bi bi-arrow-left mr-1"></i> Retour
+                            </button>
+                            <button type="button" id="importBtn" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-2.5 px-6 rounded-xl shadow-sm transition duration-200">
+                                <i class="bi bi-check-circle mr-1"></i> Importer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- SMS Promo Modal -->
     <div id="smsPromoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
@@ -486,6 +620,92 @@
         </div>
     </div>
 
+    <!-- Create Client Modal -->
+    <div id="createClient" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div class="relative bg-white rounded-2xl shadow-xl mx-auto p-0 w-full max-w-md transform transition-transform duration-300">
+            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-2xl p-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-white">
+                        <i class="bi bi-person-plus mr-2"></i>{{ __('Ajouter un client') }}
+                    </h3>
+                    <button type="button" onclick="toggleModal('createClient')" class="text-white hover:text-gray-200 focus:outline-none">
+                        <i class="bi bi-x-lg text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <form id="quickClientForm" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Nom complet') }} <span class="text-red-500">*</span></label>
+                        <input type="text" id="name" name="name" required 
+                               class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm">
+                    </div>
+                    
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Email') }}</label>
+                        <input type="email" id="email" name="email"
+                               class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm">
+                    </div>
+
+                    <div>
+                        <label for="sex" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Genre') }}</label>
+                        <select id="sex" name="sex" class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm">
+                            <option value="">{{ __('Non spécifié') }}</option>
+                            <option value="M">{{ __('Homme') }}</option>
+                            <option value="F">{{ __('Femme') }}</option>
+                            <option value="Other">{{ __('Autre') }}</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="birth" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Date de naissance') }}</label>
+                        <input type="date" id="birth" name="birth"
+                               class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ __('Téléphones') }}
+                            <button type="button" id="addPhoneField" class="ml-2 text-indigo-600 hover:text-indigo-800 text-xs font-medium">
+                                <i class="bi bi-plus-circle"></i> {{ __('Ajouter') }}
+                            </button>
+                        </label>
+                        <div id="phoneFields" class="space-y-2">
+                            <div class="phone-field flex items-center">
+                                <input type="text" name="phones[]" class="block w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm" placeholder="Numéro de téléphone">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="address" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Adresse') }}</label>
+                        <textarea id="address" name="address" rows="2"
+                                  class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Notes') }}</label>
+                        <textarea id="notes" name="notes" rows="2"
+                                  class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm"></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-4 border-t">
+                        <button type="button" onclick="toggleModal('createClient')" 
+                                class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition duration-200">
+                            {{ __('Annuler') }}
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-sm transition duration-200">
+                            {{ __('Enregistrer') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Client-side search implementation
         let allClients = @json($clients->items());
@@ -494,12 +714,8 @@
         // Utility functions
         function toggleModal(modalId) {
             const modal = document.getElementById(modalId);
-            if (modal.classList.contains('hidden')) {
-                modal.classList.remove('hidden');
-                document.body.classList.add('overflow-hidden');
-            } else {
-                modal.classList.add('hidden');
-                document.body.classList.remove('overflow-hidden');
+            if (modal) {
+                modal.classList.toggle('hidden');
             }
         }
         
@@ -901,6 +1117,461 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Pre-fill data with initial load
             clientsCache = [...allClients];
+        });
+
+        // Gestion du formulaire d'ajout rapide de client
+        document.getElementById('quickClientForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Afficher un indicateur de chargement
+            Swal.fire({
+                title: 'Création en cours...',
+                html: 'Veuillez patienter pendant la création du client',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Récupération des données du formulaire
+            const formData = new FormData(this);
+            
+            // Conversion en objet JSON
+            const jsonData = {};
+            formData.forEach((value, key) => {
+                // Gérer les tableaux (comme les numéros de téléphone)
+                if (key.endsWith('[]')) {
+                    const cleanKey = key.substring(0, key.length - 2);
+                    if (!jsonData[cleanKey]) {
+                        jsonData[cleanKey] = [];
+                    }
+                    if (value.trim() !== '') {
+                        jsonData[cleanKey].push(value);
+                    }
+                } else {
+                    jsonData[key] = value;
+                }
+            });
+            
+            // Envoi de la requête
+            fetch('{{ route('clients.store') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(jsonData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur réseau');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Réponse du serveur:", data);
+                
+                if (data.success) {
+                    // Fermer le modal
+                    toggleModal('createClient');
+                    
+                    // Réinitialiser le formulaire
+                    this.reset();
+                    
+                    // Afficher un message de succès
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Client ajouté!',
+                        text: data.message,
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+                    
+                    // Recharger la page après un court délai
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // Afficher une erreur
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erreur',
+                        text: data.message || 'Une erreur est survenue lors de la création du client'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                
+                // Afficher une erreur
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erreur',
+                    text: 'Une erreur est survenue lors de la communication avec le serveur'
+                });
+            });
+        });
+        
+        // Ajout d'un champ téléphone supplémentaire
+        document.getElementById('addPhoneField').addEventListener('click', function() {
+            const phoneFieldsContainer = document.getElementById('phoneFields');
+            
+            const newPhoneField = document.createElement('div');
+            newPhoneField.className = 'phone-field flex items-center mt-2';
+            newPhoneField.innerHTML = `
+                <input type="text" name="phones[]" class="block w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm" placeholder="Numéro de téléphone">
+                <button type="button" class="ml-2 text-red-500 hover:text-red-700 remove-phone">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+            
+            phoneFieldsContainer.appendChild(newPhoneField);
+            
+            // Ajouter l'événement pour supprimer le champ
+            newPhoneField.querySelector('.remove-phone').addEventListener('click', function() {
+                newPhoneField.remove();
+            });
+        });
+        
+        // Suppression d'un champ téléphone existant
+        document.querySelectorAll('.remove-phone').forEach(button => {
+            button.addEventListener('click', function() {
+                this.closest('.phone-field').remove();
+            });
+        });
+
+        // Import Modal Functions
+        function toggleImportModal() {
+            const modal = document.getElementById('importClientsModal');
+            const modalContent = document.getElementById('importModalContent');
+            
+            if (modal.classList.contains('hidden')) {
+                // Ouvrir la modal
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modalContent.classList.remove('scale-95', 'opacity-0');
+                    modalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                // Réinitialiser à l'étape 1
+                showImportStep(1);
+            } else {
+                // Fermer la modal
+                modalContent.classList.remove('scale-100', 'opacity-100');
+                modalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+        }
+        
+        function showImportStep(step) {
+            // Cacher toutes les étapes
+            document.querySelectorAll('.import-step').forEach(el => {
+                el.classList.add('hidden');
+            });
+            
+            // Afficher l'étape demandée
+            document.getElementById(`importStep${step}`).classList.remove('hidden');
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const importFile = document.getElementById('importFile');
+            const selectedFileContainer = document.getElementById('selectedFileContainer');
+            const selectedFileName = document.getElementById('selectedFileName');
+            const removeFileBtn = document.getElementById('removeFileBtn');
+            const goToStep2Btn = document.getElementById('goToStep2Btn');
+            const backToStep1Btn = document.getElementById('backToStep1Btn');
+            const goToStep3Btn = document.getElementById('goToStep3Btn');
+            const backToStep2Btn = document.getElementById('backToStep2Btn');
+            const importBtn = document.getElementById('importBtn');
+            const columnMappingContainer = document.getElementById('columnMappingContainer');
+            const previewTable = document.getElementById('previewTable');
+            const skipHeaderRow = document.getElementById('skipHeaderRow');
+            const recordCount = document.getElementById('recordCount');
+            
+            let fileData = null;
+            let headers = [];
+            let parsedData = [];
+            let columnMapping = {};
+            
+            // Champs disponibles dans l'application
+            const availableFields = [
+                { id: 'name', label: 'Nom' },
+                { id: 'email', label: 'Email' },
+                { id: 'phone', label: 'Téléphone' },
+                { id: 'address', label: 'Adresse' },
+                { id: 'company', label: 'Entreprise' },
+                { id: 'notes', label: 'Notes' }
+            ];
+            
+            // Gérer le téléchargement de fichier
+            importFile.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    selectedFileName.textContent = file.name;
+                    selectedFileContainer.classList.remove('hidden');
+                    goToStep2Btn.disabled = false;
+                    goToStep2Btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    
+                    // Lire le fichier
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        fileData = event.target.result;
+                        parseFileData(file.name, fileData);
+                    };
+                    reader.readAsText(file);
+                }
+            });
+            
+            // Supprimer le fichier
+            removeFileBtn.addEventListener('click', function() {
+                importFile.value = '';
+                selectedFileContainer.classList.add('hidden');
+                goToStep2Btn.disabled = true;
+                goToStep2Btn.classList.add('opacity-50', 'cursor-not-allowed');
+                fileData = null;
+                headers = [];
+                parsedData = [];
+            });
+            
+            // Navigation entre les étapes
+            goToStep2Btn.addEventListener('click', function() {
+                createColumnMappingUI();
+                showImportStep(2);
+            });
+            
+            backToStep1Btn.addEventListener('click', function() {
+                showImportStep(1);
+            });
+            
+            goToStep3Btn.addEventListener('click', function() {
+                createPreviewTable();
+                showImportStep(3);
+            });
+            
+            backToStep2Btn.addEventListener('click', function() {
+                showImportStep(2);
+            });
+            
+            importBtn.addEventListener('click', function() {
+                importClients();
+            });
+            
+            // Analyser les données du fichier
+            function parseFileData(filename, data) {
+                headers = [];
+                parsedData = [];
+                
+                if (filename.endsWith('.csv')) {
+                    // Analyser CSV
+                    const lines = data.split('\n');
+                    if (lines.length > 0) {
+                        // Extraire les en-têtes
+                        headers = lines[0].split(',').map(header => header.trim().replace(/"/g, ''));
+                        
+                        // Extraire les données
+                        for (let i = 1; i < lines.length; i++) {
+                            if (lines[i].trim() !== '') {
+                                const values = lines[i].split(',').map(value => value.trim().replace(/"/g, ''));
+                                const row = {};
+                                headers.forEach((header, index) => {
+                                    row[header] = values[index] || '';
+                                });
+                                parsedData.push(row);
+                            }
+                        }
+                    }
+                } else if (filename.endsWith('.xlsx') || filename.endsWith('.xls')) {
+                    // Pour Excel, nous aurons besoin d'une bibliothèque comme SheetJS/xlsx
+                    // Cette partie nécessiterait l'intégration d'une bibliothèque externe
+                    alert('Le support des fichiers Excel nécessite une bibliothèque supplémentaire. Veuillez utiliser un fichier CSV pour le moment.');
+                }
+            }
+            
+            // Créer l'interface de mappage des colonnes
+            function createColumnMappingUI() {
+                columnMappingContainer.innerHTML = '';
+                
+                headers.forEach(header => {
+                    const row = document.createElement('div');
+                    row.className = 'flex items-center space-x-4';
+                    
+                    const sourceCol = document.createElement('div');
+                    sourceCol.className = 'w-1/2';
+                    sourceCol.innerHTML = `
+                        <div class="text-sm font-medium text-gray-700">${header}</div>
+                        <div class="text-xs text-gray-500">Colonne du fichier</div>
+                    `;
+                    
+                    const arrow = document.createElement('div');
+                    arrow.className = 'text-gray-400';
+                    arrow.innerHTML = '<i class="bi bi-arrow-right"></i>';
+                    
+                    const selectCol = document.createElement('div');
+                    selectCol.className = 'w-1/2';
+                    
+                    const select = document.createElement('select');
+                    select.className = 'mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md';
+                    select.dataset.sourceColumn = header;
+                    
+                    // Option vide
+                    const emptyOption = document.createElement('option');
+                    emptyOption.value = '';
+                    emptyOption.textContent = 'Ne pas importer';
+                    select.appendChild(emptyOption);
+                    
+                    // Options pour chaque champ disponible
+                    availableFields.forEach(field => {
+                        const option = document.createElement('option');
+                        option.value = field.id;
+                        option.textContent = field.label;
+                        
+                        // Auto-mapper les colonnes avec des noms similaires
+                        if (header.toLowerCase() === field.label.toLowerCase() || 
+                            header.toLowerCase() === field.id.toLowerCase()) {
+                            option.selected = true;
+                            columnMapping[header] = field.id;
+                        }
+                        
+                        select.appendChild(option);
+                    });
+                    
+                    // Événement pour mettre à jour le mapping
+                    select.addEventListener('change', function() {
+                        columnMapping[header] = this.value;
+                    });
+                    
+                    selectCol.appendChild(select);
+                    
+                    row.appendChild(sourceCol);
+                    row.appendChild(arrow);
+                    row.appendChild(selectCol);
+                    
+                    columnMappingContainer.appendChild(row);
+                });
+            }
+            
+            // Créer la table de prévisualisation
+            function createPreviewTable() {
+                // Nettoyer la table existante
+                const thead = previewTable.querySelector('thead tr');
+                const tbody = previewTable.querySelector('tbody');
+                thead.innerHTML = '';
+                tbody.innerHTML = '';
+                
+                // Ajouter les en-têtes
+                const mappedHeaders = headers.filter(header => columnMapping[header] && columnMapping[header] !== '');
+                mappedHeaders.forEach(header => {
+                    const th = document.createElement('th');
+                    th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+                    th.textContent = availableFields.find(field => field.id === columnMapping[header])?.label || header;
+                    thead.appendChild(th);
+                });
+                
+                // Ajouter les données
+                const dataToShow = skipHeaderRow.checked && parsedData.length > 0 ? parsedData.slice(1) : parsedData;
+                dataToShow.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50';
+                    
+                    mappedHeaders.forEach(header => {
+                        const td = document.createElement('td');
+                        td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500';
+                        td.textContent = row[header] || '';
+                        tr.appendChild(td);
+                    });
+                    
+                    tbody.appendChild(tr);
+                });
+                
+                // Mettre à jour le compteur d'enregistrements
+                recordCount.textContent = `${dataToShow.length} clients à importer`;
+            }
+            
+            // Importer les clients
+            function importClients() {
+                const dataToImport = skipHeaderRow.checked && parsedData.length > 0 ? parsedData.slice(1) : parsedData;
+                
+                // Préparer les données pour l'import
+                const clientsToImport = dataToImport.map(row => {
+                    const client = {};
+                    
+                    // Mapper les colonnes selon la configuration
+                    headers.forEach(header => {
+                        if (columnMapping[header] && columnMapping[header] !== '') {
+                            client[columnMapping[header]] = row[header] || '';
+                        }
+                    });
+                    
+                    return client;
+                });
+                
+                // Vérifier s'il y a des données à importer
+                if (clientsToImport.length === 0) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erreur',
+                        text: 'Aucun client à importer. Veuillez vérifier votre fichier.',
+                    });
+                    return;
+                }
+                
+                // Désactiver le bouton d'import et afficher une animation de chargement
+                importBtn.disabled = true;
+                importBtn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin mr-1"></i> Importation...';
+                
+                // Envoyer les données au serveur
+                fetch('/clients/import', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        clients: clientsToImport
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Succès',
+                            text: `${data.imported} clients ont été importés avec succès.`,
+                        }).then(() => {
+                            // Fermer la modal et rafraîchir la page
+                            toggleImportModal();
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erreur',
+                            text: data.message || 'Une erreur est survenue lors de l\'importation.',
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erreur',
+                        text: 'Une erreur est survenue lors de l\'importation. Veuillez réessayer.',
+                    });
+                })
+                .finally(() => {
+                    // Réactiver le bouton d'import
+                    importBtn.disabled = false;
+                    importBtn.innerHTML = '<i class="bi bi-check-circle mr-1"></i> Importer';
+                });
+            }
+            
+            // Événement pour mettre à jour la prévisualisation lorsque l'option "ignorer l'en-tête" change
+            skipHeaderRow.addEventListener('change', function() {
+                createPreviewTable();
+            });
         });
     </script>
 </x-app-layout>

@@ -30,6 +30,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('clients', ClientController::class);
     Route::get('clients/{client}/bills', [ClientController::class, 'billsIndex'])->name('clients.bills.index');
     Route::get('clients/{client}/bills/create', [ClientController::class, 'billsCreate'])->name('clients.bills.create');
+    Route::post('/clients/import', [ClientController::class, 'import'])->name('clients.import');
+    Route::get('/templates/import-clients.csv', [ClientController::class, 'importTemplate'])->name('clients.import.template');
 
     // Routes pour les produits
     Route::resource('products', ProductController::class);
@@ -80,6 +82,11 @@ Route::middleware('auth')->group(function () {
 
     // Routes pour les téléphones
     Route::resource('phones', PhoneController::class);
+    
+    // Routes d'exportation
+    Route::get('/clients/export/csv', [ClientController::class, 'export'])->name('clients.export');
+    Route::get('/bills/export/csv', [BillController::class, 'export'])->name('bills.export');
+    Route::get('/stats/export/csv', [DashboardController::class, 'exportStats'])->name('stats.export');
 });
 
 require __DIR__.'/auth.php';

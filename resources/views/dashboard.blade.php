@@ -1,8 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Tableau de bord') }}
-        </h2>
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ __('Tableau de bord') }}
+            </h2>
+            <a href="{{ route('stats.export') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm inline-flex items-center transition-colors duration-150">
+                <i class="bi bi-cloud-download mr-2"></i>
+                Exporter les statistiques
+            </a>
+        </div>
     </x-slot>
 
     <div class="py-12">

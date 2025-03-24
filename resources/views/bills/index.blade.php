@@ -4,10 +4,16 @@
             <h2 class="font-semibold text-2xl text-gray-900 leading-tight">
                 {{ __('Factures') }}
             </h2>
-            <a href="{{ route('bills.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-5 rounded-lg shadow-sm inline-flex items-center transition-colors duration-150">
-                <i class="bi bi-plus-lg mr-2"></i>
-                Nouvelle Facture
-            </a>
+            <div class="flex space-x-3">
+                <a href="{{ route('bills.export') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-5 rounded-lg shadow-sm inline-flex items-center transition-colors duration-150">
+                    <i class="bi bi-cloud-download mr-2"></i>
+                    Exporter
+                </a>
+                <a href="{{ route('bills.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-5 rounded-lg shadow-sm inline-flex items-center transition-colors duration-150">
+                    <i class="bi bi-plus-lg mr-2"></i>
+                    Nouvelle Facture
+                </a>
+            </div>
         </div>
     </x-slot>
 

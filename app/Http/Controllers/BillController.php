@@ -62,10 +62,7 @@ class BillController extends Controller
 
         // Récupération des factures paginées
         $bills = $query->paginate(10);
-        if (method_exists($bills, 'withQueryString')) {
-            $bills = $bills->withQueryString();
-        }
-
+        
         // Statistiques pour la période filtrée
         $stats = [
             'count' => $query->count(),
@@ -105,7 +102,7 @@ class BillController extends Controller
             'date' => $validated['date'],
             'tax_rate' => $validated['tax_rate'],
             'description' => $validated['description'] ?? null,
-            'user_id' => auth()->user() ? auth()->user()->id : 1,
+            'user_id' => 1, // Utilisateur par défaut
             'status' => 'pending',
         ]);
 
@@ -223,5 +220,69 @@ class BillController extends Controller
         
         $pdf = PDF::loadView('bills.pdf', compact('bill', 'settings'));
         return $pdf->download("facture-{$bill->reference}.pdf");
+    }
+
+    /**
+     * Exporter les factures au format CSV
+     * 
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function export()
+    {
+        $bills = Bill::with(['client', 'products'])->get();
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=factures-export.csv',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+        
+        $callback = function() use ($bills) {
+            $file = fopen('php://output', 'w');
+            
+            // En-têtes CSV
+            fputcsv($file, [
+                'ID',
+                'Référence',
+                'Client',
+                'Date',
+                'Date d\'échéance',
+                'Statut',
+                'Sous-total',
+                'Taxes',
+                'Total',
+                'Produits',
+                'Notes',
+                'Date de création'
+            ]);
+            
+            // Données
+            foreach ($bills as $bill) {
+                $products = $bill->products->map(function($product) {
+                    return $product->name . ' (' . $product->pivot->quantity . ' x ' . number_format($product->pivot->price, 2) . ')';
+                })->implode('; ');
+                
+                fputcsv($file, [
+                    $bill->id,
+                    $bill->reference,
+                    $bill->client ? $bill->client->name : 'Client inconnu',
+                    $bill->date ? $bill->date->format('Y-m-d') : '',
+                    $bill->due_date ? $bill->due_date->format('Y-m-d') : '',
+                    $bill->status,
+                    $bill->subtotal,
+                    $bill->tax_amount,
+                    $bill->total,
+                    $products,
+                    $bill->notes,
+                    $bill->created_at->format('Y-m-d H:i:s')
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
     }
 }

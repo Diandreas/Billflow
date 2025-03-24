@@ -127,45 +127,41 @@
         </div>
     </div>
 
-    <div id="newProductModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
-            <div class="absolute top-3 right-3">
-                <button type="button" onclick="toggleModal('newProductModal')" class="text-gray-400 hover:text-gray-500">
-                    <i class="bi bi-x-lg"></i>
-                </button>
+    <div id="newProductModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div class="relative bg-white rounded-2xl shadow-xl mx-auto p-0 max-w-md w-full transform transition-transform duration-300 scale-95 opacity-0" id="modalContent">
+            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-2xl p-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-white">
+                        <i class="bi bi-box-seam mr-2"></i>{{ __('Nouveau Produit') }}
+                    </h3>
+                    <button type="button" onclick="toggleModal('newProductModal')" class="text-white hover:text-gray-200 focus:outline-none">
+                        <i class="bi bi-x-lg text-xl"></i>
+                    </button>
+                </div>
             </div>
-            <div class="mt-3">
-                <h3 class="text-xl font-medium text-gray-900 mb-4">{{ __('Nouveau Produit') }}</h3>
-                <form id="newProductForm" class="space-y-4">
+            <div class="p-6">
+                <form id="newProductForm" method="POST" action="{{ route('products.store') }}" class="space-y-4">
+                    @csrf
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">{{ __('Nom') }}</label>
-                        <input type="text" name="name" required
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Nom du produit') }}</label>
+                        <input type="text" name="name" id="name" required class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     </div>
-
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">{{ __('Description') }}</label>
-                        <textarea name="description" rows="3"
-                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200"></textarea>
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Description') }} ({{ __('optionnelle') }})</label>
+                        <textarea name="description" id="description" rows="3" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"></textarea>
                     </div>
-                    
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">{{ __('Prix par défaut (FCFA)') }}</label>
-                        <input type="number" name="default_price" step="0.01" min="0" value="0"
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                        <label for="default_price" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Prix par défaut') }} (FCFA)</label>
+                        <input type="number" min="0" name="default_price" id="default_price" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     </div>
-
-                    <div class="flex justify-end gap-2">
-                        <button type="button" onclick="toggleModal('newProductModal')"
-                                class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors duration-150">
+                    <div class="flex justify-end pt-4">
+                        <button type="button" onclick="toggleModal('newProductModal')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2.5 px-4 rounded-xl mr-2 shadow-sm">
                             {{ __('Annuler') }}
                         </button>
-                        <button type="submit"
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-150">
-                            {{ __('Créer') }}
+                        <button type="submit" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium py-2.5 px-6 rounded-xl shadow-sm transition duration-200">
+                            <i class="bi bi-check-lg mr-1"></i>{{ __('Créer') }}
                         </button>
                     </div>
-                    @csrf
                 </form>
             </div>
         </div>
@@ -195,50 +191,119 @@
 
     @push('scripts')
     <script>
-        // Fonction pour basculer la visibilité du modal
+        // Toggle modal avec animation
         function toggleModal(modalId) {
             const modal = document.getElementById(modalId);
-            modal.classList.toggle('hidden');
+            const modalContent = document.getElementById('modalContent');
+            
+            if (modal.classList.contains('hidden')) {
+                // Afficher le modal
+                modal.classList.remove('hidden');
+                // Animation d'entrée
+                setTimeout(() => {
+                    modalContent.classList.remove('scale-95', 'opacity-0');
+                    modalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            } else {
+                // Animation de sortie
+                modalContent.classList.remove('scale-100', 'opacity-100');
+                modalContent.classList.add('scale-95', 'opacity-0');
+                // Cacher le modal après l'animation
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
         }
 
-        // Fonction pour rediriger vers la page d'édition
+        // Fonction pour rediriger vers la page d'édition d'un produit
         function editProduct(id) {
             window.location.href = `/products/${id}/edit`;
         }
 
-        // Gestion du formulaire d'ajout de produit
+        // Soumission du formulaire de création de produit
         document.getElementById('newProductForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
+            // Récupération des données du formulaire
             const formData = new FormData(this);
             
-            // Conversion en objet pour l'envoi en JSON
-            const formObject = {};
+            // Conversion en objet JSON
+            const jsonData = {};
             formData.forEach((value, key) => {
-                formObject[key] = value;
+                jsonData[key] = value;
             });
             
-            fetch('{{ route('products.store') }}', {
+            // Envoi de la requête
+            fetch(this.action, {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 },
-                body: JSON.stringify(formObject)
+                body: JSON.stringify(jsonData)
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Redirection ou rafraîchissement de la page
-                    window.location.reload();
+                    // Fermer le modal
+                    toggleModal('newProductModal');
+                    
+                    // Afficher un message de succès
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Produit créé',
+                        text: data.message,
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true,
+                        background: '#fff',
+                        iconColor: '#4F46E5',
+                        customClass: {
+                            popup: 'colored-toast'
+                        }
+                    });
+                    
+                    // Recharger la page après un court délai
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 } else {
-                    alert('Erreur lors de la création du produit: ' + (data.message || 'Erreur inconnue'));
+                    // Afficher un message d'erreur
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erreur',
+                        text: data.message || 'Une erreur est survenue',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 4000,
+                        background: '#fff',
+                        iconColor: '#EF4444',
+                        customClass: {
+                            popup: 'colored-toast'
+                        }
+                    });
                 }
             })
             .catch(error => {
-                console.error('Erreur:', error);
-                alert('Une erreur est survenue lors de la création du produit');
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erreur',
+                    text: 'Une erreur est survenue lors de la création du produit',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 4000,
+                    background: '#fff',
+                    iconColor: '#EF4444',
+                    customClass: {
+                        popup: 'colored-toast'
+                    }
+                });
             });
         });
 
@@ -256,7 +321,113 @@
                 }
             });
         });
+
+        // Confirmation de suppression avec SweetAlert
+        document.addEventListener('click', function(e) {
+            const deleteButton = e.target.closest('button[type="submit"]');
+            if (deleteButton && deleteButton.closest('form[action*="products"]') && deleteButton.closest('form[method="POST"]')) {
+                e.preventDefault();
+                const form = deleteButton.closest('form');
+                
+                Swal.fire({
+                    title: 'Êtes-vous sûr?',
+                    text: "Vous ne pourrez pas revenir en arrière!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#4F46E5',
+                    cancelButtonColor: '#6B7280',
+                    confirmButtonText: 'Oui, supprimer',
+                    cancelButtonText: 'Annuler',
+                    customClass: {
+                        confirmButton: 'swal2-confirm-button',
+                        cancelButton: 'swal2-cancel-button'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Soumettre le formulaire via AJAX pour éviter le rechargement de la page
+                        const url = form.getAttribute('action');
+                        const token = document.querySelector('meta[name="csrf-token"]').content;
+                        
+                        fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': token,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                _method: 'DELETE'
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Supprimé!',
+                                    text: data.message,
+                                    toast: true,
+                                    position: 'top-end',
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true,
+                                    background: '#fff',
+                                    iconColor: '#4F46E5'
+                                });
+                                
+                                // Supprimer la carte du produit du DOM
+                                const productCard = deleteButton.closest('.product-card');
+                                if (productCard) {
+                                    productCard.remove();
+                                } else {
+                                    // Recharger la page si l'élément ne peut pas être trouvé
+                                    setTimeout(() => {
+                                        window.location.reload();
+                                    }, 1000);
+                                }
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Erreur',
+                                    text: data.message || "Impossible de supprimer ce produit",
+                                    confirmButtonColor: '#4F46E5'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Erreur',
+                                text: 'Une erreur est survenue lors de la suppression du produit',
+                                confirmButtonColor: '#4F46E5'
+                            });
+                        });
+                    }
+                });
+            }
+        });
     </script>
+
+    <style>
+        /* Styles pour les boutons SweetAlert */
+        .swal2-confirm-button {
+            padding: 0.5rem 1.5rem !important;
+            font-weight: 500 !important;
+            border-radius: 0.5rem !important;
+        }
+        
+        .swal2-cancel-button {
+            padding: 0.5rem 1.5rem !important;
+            font-weight: 500 !important;
+            border-radius: 0.5rem !important;
+        }
+        
+        /* Animation pour le modal */
+        #modalContent {
+            transition: all 0.3s ease-out;
+        }
+    </style>
     @endpush
 
 </x-app-layout>
