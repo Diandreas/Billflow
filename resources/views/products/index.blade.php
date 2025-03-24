@@ -82,7 +82,8 @@
                     <!-- Products Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         @foreach($products as $product)
-                            <div class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer" onclick="window.location.href='{{ route('products.show', $product) }}'">
+                            <div class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer product-card" 
+                                 onclick="window.location.href='{{ route('products.show', $product) }}'">
                                 <div class="bg-indigo-50 p-4 border-b relative">
                                     <div class="absolute top-2 right-2 flex space-x-2">
                                         <button onclick="event.stopPropagation(); editProduct({{ $product->id }})"
@@ -164,6 +165,7 @@
                             {{ __('Créer') }}
                         </button>
                     </div>
+                    @csrf
                 </form>
             </div>
         </div>
@@ -177,6 +179,16 @@
                 -webkit-line-clamp: 2;
                 -webkit-box-orient: vertical;
                 overflow: hidden;
+            }
+            
+            .product-card {
+                cursor: pointer;
+                transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            }
+            
+            .product-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             }
         </style>
     @endpush
@@ -200,18 +212,20 @@
             
             const formData = new FormData(this);
             
+            // Conversion en objet pour l'envoi en JSON
+            const formObject = {};
+            formData.forEach((value, key) => {
+                formObject[key] = value;
+            });
+            
             fetch('{{ route('products.store') }}', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
-                body: JSON.stringify({
-                    name: formData.get('name'),
-                    description: formData.get('description'),
-                    default_price: formData.get('default_price')
-                })
+                body: JSON.stringify(formObject)
             })
             .then(response => response.json())
             .then(data => {
@@ -219,12 +233,12 @@
                     // Redirection ou rafraîchissement de la page
                     window.location.reload();
                 } else {
-                    alert('Erreur lors de la création du produit');
+                    alert('Erreur lors de la création du produit: ' + (data.message || 'Erreur inconnue'));
                 }
             })
             .catch(error => {
                 console.error('Erreur:', error);
-                alert('Une erreur est survenue');
+                alert('Une erreur est survenue lors de la création du produit');
             });
         });
 

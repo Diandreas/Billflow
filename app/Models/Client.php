@@ -11,6 +11,7 @@ class Client extends Model
         'email',
         'sex',
         'birth',
+        'user_id',
     ];
 
     protected $casts = [
@@ -30,6 +31,11 @@ class Client extends Model
     public function promotionalMessages()
     {
         return $this->hasMany(PromotionalMessage::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function getBirthdayMonthAttribute()

@@ -9,6 +9,7 @@ use App\Models\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class CampaignController extends Controller
 {
@@ -101,10 +102,27 @@ class CampaignController extends Controller
             abort(403);
         }
         
-        // Charger les messages associés
-        $campaign->load('messages');
+        // Récupérer les statistiques de messages envoyés
+        $messagesStats = [
+            'messages_count' => PromotionalMessage::where('campaign_id', $campaign->id)->count(),
+            'delivered_count' => PromotionalMessage::where('campaign_id', $campaign->id)
+                ->where('status', 'delivered')->count(),
+            'failed_count' => PromotionalMessage::where('campaign_id', $campaign->id)
+                ->where('status', 'failed')->count(),
+            'pending_count' => PromotionalMessage::where('campaign_id', $campaign->id)
+                ->where('status', 'pending')->count(),
+        ];
         
-        return view('campaigns.show', compact('campaign'));
+        // Ajouter les statistiques à l'objet campaign
+        $campaign->messages_count = $messagesStats['messages_count'];
+        $campaign->delivered_count = $messagesStats['delivered_count'];
+        $campaign->failed_count = $messagesStats['failed_count'];
+        $campaign->pending_count = $messagesStats['pending_count'];
+        
+        // Vérifier si l'utilisateur a un abonnement actif
+        $subscription = Auth::user()->activeSubscription;
+        
+        return view('campaigns.show', compact('campaign', 'subscription'));
     }
 
     /**
@@ -317,6 +335,31 @@ class CampaignController extends Controller
         
         return redirect()->route('campaigns.show', $campaign)
             ->with('success', 'Campagne envoyée avec succès à ' . $smsCount . ' clients.');
+    }
+    
+    /**
+     * Annuler une campagne programmée
+     */
+    public function cancel(Campaign $campaign)
+    {
+        // Vérifier que l'utilisateur est propriétaire de la campagne
+        if ($campaign->user_id !== Auth::id()) {
+            abort(403);
+        }
+        
+        // Vérifier que la campagne est bien programmée
+        if ($campaign->status !== 'scheduled') {
+            return redirect()->route('campaigns.show', $campaign)
+                ->with('error', 'Seules les campagnes programmées peuvent être annulées.');
+        }
+        
+        // Mettre à jour le statut de la campagne
+        $campaign->status = 'draft';
+        $campaign->scheduled_at = null;
+        $campaign->save();
+        
+        return redirect()->route('campaigns.show', $campaign)
+            ->with('success', 'La campagne programmée a été annulée avec succès.');
     }
     
     /**

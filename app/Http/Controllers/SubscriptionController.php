@@ -13,29 +13,13 @@ class SubscriptionController extends Controller
     /**
      * Liste des abonnements de l'utilisateur
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = Subscription::where('user_id', Auth::id())
-            ->with('plan');
-            
-        // Recherche
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->whereHas('plan', function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
+        $subscriptions = Subscription::where('user_id', Auth::id())
+            ->with('plan')
+            ->latest('starts_at')
+            ->paginate(10);
         
-        // Filtre par statut
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        
-        // Tri par date de début par défaut
-        $query->latest('starts_at');
-        
-        $subscriptions = $query->paginate(10)->withQueryString();
         $activeSubscription = Auth::user()->activeSubscription;
         
         return view('subscriptions.index', compact('subscriptions', 'activeSubscription'));

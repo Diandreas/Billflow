@@ -31,6 +31,54 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <!-- Statistiques -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('Résumé') }}</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="bg-indigo-50 rounded-lg p-4 flex items-start">
+                            <div class="rounded-full bg-indigo-100 p-3 mr-4">
+                                <i class="bi bi-receipt text-xl text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">{{ __('Référence') }}</p>
+                                <p class="text-xl font-bold text-indigo-700">{{ $bill->reference }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-green-50 rounded-lg p-4 flex items-start">
+                            <div class="rounded-full bg-green-100 p-3 mr-4">
+                                <i class="bi bi-calendar-date text-xl text-green-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">{{ __('Date') }}</p>
+                                <p class="text-xl font-bold text-green-700">{{ $bill->date->format('d/m/Y') }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-purple-50 rounded-lg p-4 flex items-start">
+                            <div class="rounded-full bg-purple-100 p-3 mr-4">
+                                <i class="bi bi-box-seam text-xl text-purple-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">{{ __('Produits') }}</p>
+                                <p class="text-xl font-bold text-purple-700">{{ $bill->products->count() }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-50 rounded-lg p-4 flex items-start">
+                            <div class="rounded-full bg-blue-100 p-3 mr-4">
+                                <i class="bi bi-cash-stack text-xl text-blue-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">{{ __('Total') }}</p>
+                                <p class="text-xl font-bold text-blue-700">{{ number_format($bill->total, 0, ',', ' ') }} FCFA</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <!-- Status de la facture -->
                 <div class="flex justify-between items-center mb-8">

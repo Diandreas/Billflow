@@ -180,6 +180,12 @@ class ClientController extends Controller
     {
         // Vérifier si le client a des factures
         if ($client->bills()->exists()) {
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Impossible de supprimer un client ayant des factures'
+                ], 422);
+            }
             return back()->with('error', 'Impossible de supprimer un client ayant des factures');
         }
 
@@ -188,6 +194,13 @@ class ClientController extends Controller
 
         // Supprimer le client
         $client->delete();
+
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Client supprimé avec succès'
+            ]);
+        }
 
         return redirect()
             ->route('clients.index')
@@ -248,5 +261,26 @@ class ClientController extends Controller
                 ->latest()
                 ->paginate(5)
         );
+    }
+
+    /**
+     * Affiche la liste des factures d'un client spécifique
+     */
+    public function billsIndex(Client $client)
+    {
+        $client->load(['bills' => function($query) {
+            $query->latest()->with('products');
+        }]);
+        
+        return view('clients.bills.index', compact('client'));
+    }
+
+    /**
+     * Affiche le formulaire pour créer une facture pour un client spécifique
+     */
+    public function billsCreate(Client $client)
+    {
+        $products = \App\Models\Product::orderBy('name')->get();
+        return view('clients.bills.create', compact('client', 'products'));
     }
 }

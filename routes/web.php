@@ -9,6 +9,7 @@ use App\Http\Controllers\BillController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\PhoneController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DashboardController::class, 'index'])
@@ -27,6 +28,8 @@ Route::middleware('auth')->group(function () {
         ->name('dashboard.data');
     // Routes pour les clients
     Route::resource('clients', ClientController::class);
+    Route::get('clients/{client}/bills', [ClientController::class, 'billsIndex'])->name('clients.bills.index');
+    Route::get('clients/{client}/bills/create', [ClientController::class, 'billsCreate'])->name('clients.bills.create');
 
     // Routes pour les produits
     Route::resource('products', ProductController::class);
@@ -63,6 +66,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
     Route::get('/campaigns/{campaign}/prepare', [CampaignController::class, 'prepare'])->name('campaigns.prepare');
     Route::post('/campaigns/{campaign}/send', [CampaignController::class, 'send'])->name('campaigns.send');
+    Route::post('/campaigns/{campaign}/cancel', [CampaignController::class, 'cancel'])->name('campaigns.cancel');
 
     // Routes pour les abonnements
     Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
@@ -73,6 +77,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel'])->name('subscriptions.cancel');
     Route::get('/subscriptions/recharge', [SubscriptionController::class, 'rechargeForm'])->name('subscriptions.recharge.form');
     Route::post('/subscriptions/recharge', [SubscriptionController::class, 'recharge'])->name('subscriptions.recharge');
+
+    // Routes pour les téléphones
+    Route::resource('phones', PhoneController::class);
 });
 
 require __DIR__.'/auth.php';

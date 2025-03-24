@@ -121,43 +121,33 @@
                     </div>
                     
                     <!-- Barre de recherche et filtres -->
-                    <div class="mb-4">
-                        <form method="GET" action="{{ route('subscriptions.index') }}" class="flex flex-col md:flex-row gap-4">
-                            <div class="flex-1">
-                                <div class="relative">
-                                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Rechercher un abonnement..." class="w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                                    <button type="submit" class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 bg-gray-50 rounded-r-md border-l">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
+                    <div class="mb-4 flex flex-col md:flex-row gap-4">
+                        <div class="flex-1">
+                            <div class="relative">
+                                <input type="text" id="searchSubscription" placeholder="Rechercher un abonnement..." class="w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                <div class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 bg-gray-50 rounded-r-md border-l">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                                    </svg>
                                 </div>
                             </div>
-                            
-                            <div>
-                                <select name="status" class="rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                                    <option value="">Tous les statuts</option>
-                                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Actif</option>
-                                    <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Annulé</option>
-                                    <option value="expired" {{ request('status') === 'expired' ? 'selected' : '' }}>Expiré</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-200 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 active:bg-gray-400 focus:outline-none focus:border-indigo-500 focus:ring ring-indigo-200 disabled:opacity-25 transition">
-                                    Filtrer
-                                </button>
-                                
-                                @if(request()->has('search') || request()->has('status'))
-                                    <a href="{{ route('subscriptions.index') }}" class="inline-flex items-center px-4 py-2 ml-2 bg-red-100 border border-red-300 rounded-md font-semibold text-xs text-red-700 uppercase tracking-widest hover:bg-red-200 active:bg-red-300 focus:outline-none focus:border-red-500 focus:ring ring-red-200 disabled:opacity-25 transition">
-                                        Réinitialiser
-                                    </a>
-                                @endif
-                            </div>
-                        </form>
+                        </div>
+                        
+                        <div>
+                            <select id="filterSubscriptionStatus" class="rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                <option value="">Tous les statuts</option>
+                                <option value="active">Actif</option>
+                                <option value="cancelled">Annulé</option>
+                                <option value="expired">Expiré</option>
+                            </select>
+                        </div>
                     </div>
                     
                     @if ($subscriptions->count() > 0)
+                        <div class="text-center py-4 text-gray-500 hidden" id="noSubscriptionsResults">
+                            <p>Aucun abonnement ne correspond à votre recherche.</p>
+                        </div>
+                        
                         <div class="overflow-x-auto">
                             <table class="min-w-full bg-white">
                                 <thead>
@@ -171,7 +161,9 @@
                                 </thead>
                                 <tbody class="divide-y divide-gray-200">
                                     @foreach ($subscriptions as $subscription)
-                                        <tr>
+                                        <tr class="subscription-row" 
+                                           data-plan="{{ strtolower($subscription->plan->name) }}" 
+                                           data-status="{{ $subscription->status }}">
                                             <td class="py-4 px-6 text-sm">
                                                 <div class="font-medium text-gray-900">{{ $subscription->plan->name }}</div>
                                                 <div class="text-gray-500">{{ $subscription->plan->cycleText }}</div>
@@ -224,4 +216,46 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchSubscription');
+            const statusFilter = document.getElementById('filterSubscriptionStatus');
+            const subscriptionRows = document.querySelectorAll('.subscription-row');
+            const noSubscriptionsResults = document.getElementById('noSubscriptionsResults');
+            
+            function filterSubscriptions() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const selectedStatus = statusFilter.value;
+                
+                let visibleCount = 0;
+                
+                subscriptionRows.forEach(row => {
+                    const planName = row.dataset.plan;
+                    const status = row.dataset.status;
+                    
+                    const matchesSearch = planName.includes(searchTerm);
+                    const matchesStatus = selectedStatus === '' || status === selectedStatus;
+                    
+                    if (matchesSearch && matchesStatus) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                // Afficher un message si aucun résultat
+                if (visibleCount === 0 && subscriptionRows.length > 0) {
+                    noSubscriptionsResults.classList.remove('hidden');
+                } else {
+                    noSubscriptionsResults.classList.add('hidden');
+                }
+            }
+            
+            // Événements de recherche et de filtrage
+            searchInput.addEventListener('input', filterSubscriptions);
+            statusFilter.addEventListener('change', filterSubscriptions);
+        });
+    </script>
 </x-app-layout> 

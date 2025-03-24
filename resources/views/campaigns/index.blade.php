@@ -34,16 +34,45 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 bg-white border-b border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Vos Campagnes SMS</h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Vos Campagnes SMS</h3>
+                        
+                        <div class="flex space-x-2">
+                            <div>
+                                <select id="filterStatus" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm">
+                                    <option value="">Tous les statuts</option>
+                                    <option value="draft">Brouillons</option>
+                                    <option value="scheduled">Planifiés</option>
+                                    <option value="sent">Envoyés</option>
+                                </select>
+                            </div>
+                            
+                            <div class="relative">
+                                <input type="text" id="searchCampaign" placeholder="Rechercher..." class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 pl-8 text-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     @if ($campaigns->isEmpty())
-                        <div class="text-center py-8 text-gray-500">
+                        <div class="text-center py-8 text-gray-500" id="noCampaignsMessage">
                             <p class="mb-4">Vous n'avez pas encore créé de campagne SMS.</p>
                             <a href="{{ route('campaigns.create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
                                 <i class="bi bi-plus"></i> Créer votre première campagne
                             </a>
                         </div>
+                        <div class="text-center py-8 text-gray-500 hidden" id="noSearchResultsMessage">
+                            <p>Aucune campagne ne correspond à votre recherche.</p>
+                        </div>
                     @else
+                        <div class="text-center py-8 text-gray-500 hidden" id="noSearchResultsMessage">
+                            <p>Aucune campagne ne correspond à votre recherche.</p>
+                        </div>
+                        
                         <div class="overflow-x-auto">
                             <table class="min-w-full leading-normal">
                                 <thead>
@@ -70,7 +99,10 @@
                                 </thead>
                                 <tbody>
                                     @foreach ($campaigns as $campaign)
-                                        <tr>
+                                        <tr class="campaign-row" 
+                                            data-name="{{ strtolower($campaign->name) }}" 
+                                            data-type="{{ $campaign->type }}" 
+                                            data-status="{{ $campaign->status }}">
                                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                                 <a href="{{ route('campaigns.show', $campaign) }}" class="text-indigo-600 hover:text-indigo-900">
                                                     {{ $campaign->name }}
@@ -166,4 +198,47 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchCampaign');
+            const statusFilter = document.getElementById('filterStatus');
+            const campaignRows = document.querySelectorAll('.campaign-row');
+            const noSearchResultsMessage = document.getElementById('noSearchResultsMessage');
+            const noCampaignsMessage = document.getElementById('noCampaignsMessage');
+            
+            function filterCampaigns() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const selectedStatus = statusFilter.value;
+                
+                let visibleCount = 0;
+                
+                campaignRows.forEach(row => {
+                    const campaignName = row.dataset.name;
+                    const campaignStatus = row.dataset.status;
+                    
+                    const matchesSearch = campaignName.includes(searchTerm);
+                    const matchesStatus = selectedStatus === '' || campaignStatus === selectedStatus;
+                    
+                    if (matchesSearch && matchesStatus) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                // Afficher un message si aucun résultat
+                if (visibleCount === 0 && campaignRows.length > 0) {
+                    noSearchResultsMessage.classList.remove('hidden');
+                } else {
+                    noSearchResultsMessage.classList.add('hidden');
+                }
+            }
+            
+            // Événements de recherche et de filtrage
+            searchInput.addEventListener('input', filterCampaigns);
+            statusFilter.addEventListener('change', filterCampaigns);
+        });
+    </script>
 </x-app-layout> 

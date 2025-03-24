@@ -132,109 +132,82 @@
             </div>
 
             <!-- Factures associées -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('Factures utilisant ce produit') }}</h3>
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mt-4">
+                <div class="p-6 bg-white border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Factures contenant ce produit</h3>
                     
-                    <!-- Recherche de factures -->
                     <div class="mb-4">
-                        <form method="GET" action="{{ route('products.show', $product) }}" class="flex space-x-4">
-                            <div class="flex-1">
-                                <div class="relative">
-                                    <input type="text" name="bill_search" value="{{ request('bill_search') }}" placeholder="Rechercher une facture par référence, client ou date..." class="w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                                    <button type="submit" class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 bg-gray-50 rounded-r-md border-l">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition">
-                                    {{ __('Rechercher') }}
-                                </button>
-                                
-                                @if(request()->has('bill_search'))
-                                    <a href="{{ route('products.show', $product) }}" class="inline-flex items-center px-4 py-2 ml-2 bg-gray-200 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 active:bg-gray-400 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition">
-                                        {{ __('Réinitialiser') }}
-                                    </a>
-                                @endif
-                            </div>
-                        </form>
+                        <input type="text" id="searchInvoice" placeholder="Rechercher par référence, client ou date..." class="w-full sm:w-96 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     </div>
-                    
-                    @if(count($filteredBills) > 0)
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('Référence') }}
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('Client') }}
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('Date') }}
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('Quantité') }}
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('Prix unitaire') }}
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('Total') }}
-                                    </th>
-                                    <th class="px-6 py-3"></th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($filteredBills as $bill)
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <a href="{{ route('bills.show', $bill) }}" class="text-indigo-600 hover:text-indigo-900">
-                                            {{ $bill->reference }}
-                                        </a>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        {{ $bill->client->name }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        {{ $bill->date->format('d/m/Y') }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        {{ $bill->pivot->quantity }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        {{ number_format($bill->pivot->unit_price, 0, ',', ' ') }} FCFA
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap font-medium">
-                                        {{ number_format($bill->pivot->total, 0, ',', ' ') }} FCFA
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
-                                        <a href="{{ route('bills.show', $bill) }}" class="text-indigo-600 hover:text-indigo-900">
-                                            {{ __('Voir') }}
-                                        </a>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Pagination pour les factures filtrées -->
-                    @if ($filteredBills instanceof \Illuminate\Pagination\LengthAwarePaginator)
-                        <div class="mt-4">
-                            {{ $filteredBills->withQueryString()->links() }}
-                        </div>
-                    @endif
-                    
+
+                    @if($invoices->isEmpty())
+                        <p class="text-gray-500">Aucune facture ne contient ce produit pour le moment.</p>
                     @else
-                    <div class="text-center py-8 text-gray-500">
-                        <p>{{ __('Aucune facture trouvée correspondant à vos critères') }}</p>
-                    </div>
+                        <div id="noInvoiceResults" class="text-gray-500 py-4 hidden">
+                            <p>Aucune facture ne correspond à votre recherche.</p>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full leading-normal">
+                                <thead>
+                                    <tr>
+                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            Référence
+                                        </th>
+                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            Client
+                                        </th>
+                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            Date
+                                        </th>
+                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            Statut
+                                        </th>
+                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            Quantité
+                                        </th>
+                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            Total
+                                        </th>
+                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($invoices as $invoice)
+                                        <tr class="invoice-row" 
+                                           data-reference="{{ strtolower($invoice->reference) }}" 
+                                           data-client="{{ strtolower($invoice->client->name) }}" 
+                                           data-date="{{ $invoice->date->format('d/m/Y') }}">
+                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                                <a href="{{ route('bills.show', $invoice) }}" class="text-indigo-600 hover:text-indigo-900">{{ $invoice->reference }}</a>
+                                            </td>
+                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                                {{ $invoice->client->name }}
+                                            </td>
+                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                                {{ $invoice->date->format('d/m/Y') }}
+                                            </td>
+                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                                {{ $invoice->status }}
+                                            </td>
+                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                                {{ $invoice->pivot->quantity }}
+                                            </td>
+                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                                {{ number_format($invoice->pivot->total, 0, ',', ' ') }} FCFA
+                                            </td>
+                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                                <a href="{{ route('bills.show', $invoice) }}" class="text-indigo-600 hover:text-indigo-900">
+                                                    {{ __('Voir') }}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -244,4 +217,43 @@
     @push('styles')
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @endpush
+
+    <script>
+        // Graphique des ventes
+        document.addEventListener('DOMContentLoaded', function() {
+            // Code existant pour le graphique (si présent)
+            
+            // Fonctionnalité de recherche pour les factures
+            const searchInput = document.getElementById('searchInvoice');
+            const invoiceRows = document.querySelectorAll('.invoice-row');
+            const noInvoiceResults = document.getElementById('noInvoiceResults');
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    let visibleCount = 0;
+                    
+                    invoiceRows.forEach(row => {
+                        const reference = row.dataset.reference;
+                        const client = row.dataset.client;
+                        const date = row.dataset.date;
+                        
+                        if (reference.includes(searchTerm) || client.includes(searchTerm) || date.includes(searchTerm)) {
+                            row.style.display = '';
+                            visibleCount++;
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                    
+                    // Afficher un message si aucun résultat
+                    if (visibleCount === 0 && invoiceRows.length > 0) {
+                        noInvoiceResults.classList.remove('hidden');
+                    } else {
+                        noInvoiceResults.classList.add('hidden');
+                    }
+                });
+            }
+        });
+    </script>
 </x-app-layout>

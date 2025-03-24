@@ -90,30 +90,12 @@ class ProductController extends Controller
             ->with('success', 'Produit créé avec succès');
     }
 
-    public function show(Request $request, Product $product)
+    public function show(Product $product)
     {
-        // Chargement des factures avec recherche si nécessaire
-        $billsQuery = $product->bills()->with('client');
+        // Charger les factures pour le produit
+        $invoices = $product->bills()->with('client')->latest('date')->get();
         
-        if ($request->filled('bill_search')) {
-            $search = $request->bill_search;
-            $billsQuery->where(function($query) use ($search) {
-                $query->where('reference', 'like', "%{$search}%")
-                    ->orWhereHas('client', function($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%")
-                          ->orWhere('email', 'like', "%{$search}%");
-                    })
-                    ->orWhereDate('date', 'like', "%{$search}%");
-            });
-        }
-        
-        // Ordonner par date
-        $billsQuery->latest('date');
-        
-        // Paginer les résultats pour l'affichage
-        $filteredBills = $billsQuery->paginate(10)->withQueryString();
-        
-        // Charger toutes les factures pour les statistiques (sans filtre)
+        // Charger toutes les factures pour les statistiques
         $allBills = $product->bills;
 
         // Statistiques du produit
@@ -152,7 +134,7 @@ class ProductController extends Controller
             ->orderByDesc('usage_count')
             ->get();
 
-        return view('products.show', compact('product', 'stats', 'monthlyStats', 'priceHistory', 'filteredBills'));
+        return view('products.show', compact('product', 'stats', 'monthlyStats', 'priceHistory', 'invoices'));
     }
 
     public function edit(Product $product)
@@ -179,10 +161,23 @@ class ProductController extends Controller
     {
         // Vérifier si le produit est utilisé dans des factures
         if ($product->bills()->exists()) {
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Impossible de supprimer un produit utilisé dans des factures'
+                ], 422);
+            }
             return back()->with('error', 'Impossible de supprimer un produit utilisé dans des factures');
         }
 
         $product->delete();
+
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Produit supprimé avec succès'
+            ]);
+        }
 
         return redirect()
             ->route('products.index')

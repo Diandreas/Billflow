@@ -13,11 +13,16 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Charting Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    @stack('styles')
 </head>
 <body class="font-sans antialiased">
 <div class="min-h-screen bg-gray-100">
@@ -37,6 +42,54 @@
         {{ $slot }}
     </main>
 </div>
+
+@if (session('success'))
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Succès',
+        text: "{{ session('success') }}",
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        background: '#fff',
+        iconColor: '#4F46E5',
+        customClass: {
+            popup: 'colored-toast'
+        }
+    });
+</script>
+@endif
+
+@if (session('error'))
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: "{{ session('error') }}",
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true,
+        background: '#fff',
+        iconColor: '#EF4444',
+        customClass: {
+            popup: 'colored-toast'
+        }
+    });
+</script>
+@endif
+
+<style>
+    .colored-toast {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+        border-radius: 1rem !important;
+        padding: 1rem 1.5rem !important;
+    }
+</style>
 
 @stack('scripts')
 </body>
