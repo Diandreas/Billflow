@@ -70,7 +70,7 @@
                         <p>Essayez de modifier vos filtres ou votre recherche</p>
                     </div>
 
-                    @if($client->bills->count() > 0)
+                    @if($bills->count() > 0)
                         <div class="overflow-x-auto rounded-lg">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
@@ -100,7 +100,7 @@
                                 </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200" id="bills-table-body">
-                                @foreach($client->bills as $bill)
+                                @foreach($bills as $bill)
                                     <tr class="bill-row hover:bg-gray-50 transition-colors duration-150"
                                         data-status="{{ $bill->status }}"
                                         data-date="{{ $bill->date->format('Y-m-d') }}"
@@ -165,6 +165,11 @@
                                 @endforeach
                                 </tbody>
                             </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="mt-4">
+                            {{ $bills->links() }}
                         </div>
                     @else
                         <div class="bg-white rounded-lg p-8 text-center">

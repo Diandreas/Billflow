@@ -477,7 +477,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="quickProductResults" class="max-h-60 overflow-y-auto">
+                <div id="productSearchResults" class="max-h-60 overflow-y-auto">
                     <!-- Results will be populated here -->
                 </div>
                 <div class="mt-4 flex justify-between items-center pt-3 border-t">
@@ -788,81 +788,51 @@
             }
             
             // Ajouter une ligne de produit
-            function addProductRow() {
-                rowCounter++;
-                const container = document.getElementById('productsContainer');
-                const rowId = `product-row-${rowCounter}`;
+            function addProductRow(product = null, quantity = 1, price = 0) {
+                const rowId = `row-${Date.now()}`;
+                const isService = product && product.type === 'service';
                 
-                const row = document.createElement('tr');
-                row.id = rowId;
-                row.className = 'animate-fadeIn';
-                row.innerHTML = `
-                    <td class="px-6 py-4">
-                        <button type="button" onclick="openProductSearch('${rowId}')" class="w-full text-left flex items-center">
-                            <div id="${rowId}-product-info" class="hidden">
-                                <div class="flex items-center">
-                                    <span class="font-medium text-gray-900 product-name"></span>
-                                    <span class="ml-2 text-xs text-gray-500 product-ref"></span>
-                                </div>
+                const rowHtml = `
+                    <tr id="${rowId}" class="product-row">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <button type="button" onclick="openProductSearch('${rowId}')" class="w-full text-left flex items-center">
+                                    <span id="${rowId}-product-name" class="text-sm font-medium text-gray-900 mr-2">
+                                        ${product ? product.name : 'Sélectionner un produit'}
+                                    </span>
+                                    ${product && product.type === 'service' ? 
+                                        '<span class="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800">Service</span>' : 
+                                        ''}
+                                </button>
                             </div>
-                            <div id="${rowId}-product-placeholder" class="text-gray-500 text-sm flex items-center">
-                                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            <input type="hidden" name="products[]" id="${rowId}-product-id" value="${product ? product.id : ''}" required>
+                            <input type="hidden" name="product_types[]" id="${rowId}-product-type" value="${product ? product.type : ''}">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <input type="number" name="quantities[]" id="${rowId}-quantity" value="${quantity}" min="1" ${isService ? '' : 'max="'+product?.stock_quantity+'"'} class="w-32 rounded-md border-gray-300" required onchange="updateRowTotal('${rowId}')">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex rounded-md shadow-sm">
+                                <input type="number" name="prices[]" id="${rowId}-price" value="${price}" min="0" step="0.01" class="w-32 rounded-md border-gray-300" required onchange="updateRowTotal('${rowId}')">
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <span id="${rowId}-total" class="text-gray-900 font-semibold">
+                                ${formatPrice(quantity * price)}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button type="button" onclick="removeProductRow('${rowId}')" class="text-red-600 hover:text-red-900">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
-                                Sélectionner un produit
-                            </div>
-                        </button>
-                        <input type="hidden" name="products[]" id="${rowId}-product-id" required>
-                    </td>
-                    <td class="px-6 py-4">
-                        <input type="number"
-                               name="quantities[]"
-                               id="${rowId}-quantity"
-                               value="1"
-                               min="1"
-                               required
-                               class="quantity w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                               onchange="calculateRowTotal('${rowId}')">
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="relative">
-                            <input type="number"
-                                   name="prices[]"
-                                   id="${rowId}-price"
-                                   class="price w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                   required
-                                   step="100"
-                                   min="0"
-                                   onchange="calculateRowTotal('${rowId}')">
-                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                <span class="text-gray-500">FCFA</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span id="${rowId}-total" class="row-total font-medium">0 FCFA</span>
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                        <button type="button"
-                                onclick="removeRow('${rowId}')"
-                                class="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                        </button>
-                    </td>
+                            </button>
+                        </td>
+                    </tr>
                 `;
                 
-                container.appendChild(row);
-                
-                // Cacher l'état vide
-                checkEmptyProductsState();
-                
-                // Ouvrir la recherche de produit immédiatement
-                openProductSearch(rowId);
-                
-                return rowId;
+                document.getElementById('productsContainer').insertAdjacentHTML('beforeend', rowHtml);
+                recalculateTotal();
             }
             
             // Ouvrir la recherche rapide de produit
@@ -905,44 +875,113 @@
             
             // Afficher les résultats de recherche de produits
             function renderQuickProductResults(products) {
-                const resultsContainer = document.getElementById('quickProductResults');
+                const resultsContainer = document.getElementById('productSearchResults');
                 resultsContainer.innerHTML = '';
                 
                 if (products.length === 0) {
-                    resultsContainer.innerHTML = `
-                        <div class="p-4 text-center">
-                            <p class="text-sm text-gray-500">Aucun produit trouvé</p>
-                        </div>
-                    `;
+                    resultsContainer.innerHTML = '<div class="py-4 text-center text-gray-500">Aucun produit trouvé</div>';
                     return;
                 }
                 
-                // Créer une grille pour les résultats
-                const grid = document.createElement('div');
-                grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-2';
+                // Grouper les produits par type
+                const groupedProducts = {
+                    physical: [],
+                    service: []
+                };
                 
                 products.forEach(product => {
-                    const resultItem = document.createElement('div');
-                    resultItem.className = 'search-result p-3 hover:bg-gray-50 cursor-pointer border border-gray-200 rounded-md';
-                    
-                    resultItem.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm font-medium text-gray-900">${product.name}</p>
-                                <p class="text-xs text-gray-500">${product.reference || 'Sans référence'}</p>
-                            </div>
-                            <span class="text-sm font-semibold text-indigo-600">${formatPrice(product.default_price)}</span>
+                    if (product.type === 'service') {
+                        groupedProducts.service.push(product);
+                    } else {
+                        groupedProducts.physical.push(product);
+                    }
+                });
+                
+                // Afficher les produits physiques en premier
+                if (groupedProducts.physical.length > 0) {
+                    resultsContainer.innerHTML += `
+                        <div class="py-2 px-4 bg-blue-50 text-blue-800 font-medium text-sm">
+                            ${__('Produits physiques')}
                         </div>
                     `;
                     
-                    resultItem.addEventListener('click', function() {
-                        selectProduct(product);
+                    groupedProducts.physical.forEach(product => {
+                        resultsContainer.innerHTML += `
+                            <div class="product-search-item p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-200" 
+                                 data-id="${product.id}" 
+                                 data-name="${product.name}" 
+                                 data-price="${product.default_price || 0}"
+                                 data-type="physical"
+                                 data-stock="${product.stock_quantity || 0}">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-medium">${product.name}</div>
+                                        <div class="text-sm text-gray-500">${product.description || ''}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="font-medium">${formatPrice(product.default_price || 0)}</div>
+                                        <div class="text-sm ${product.stock_quantity > 0 ? 'text-green-600' : 'text-red-600'}">
+                                            ${product.stock_quantity > 0 
+                                                ? `Stock: ${product.stock_quantity}` 
+                                                : 'Rupture de stock'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
                     });
-                    
-                    grid.appendChild(resultItem);
-                });
+                }
                 
-                resultsContainer.appendChild(grid);
+                // Afficher les services
+                if (groupedProducts.service.length > 0) {
+                    resultsContainer.innerHTML += `
+                        <div class="py-2 px-4 bg-purple-50 text-purple-800 font-medium text-sm">
+                            ${__('Services')}
+                        </div>
+                    `;
+                    
+                    groupedProducts.service.forEach(product => {
+                        resultsContainer.innerHTML += `
+                            <div class="product-search-item p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-200" 
+                                 data-id="${product.id}" 
+                                 data-name="${product.name}" 
+                                 data-price="${product.default_price || 0}"
+                                 data-type="service">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-medium">${product.name}</div>
+                                        <div class="text-sm text-gray-500">${product.description || ''}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="font-medium">${formatPrice(product.default_price || 0)}</div>
+                                        <div class="text-sm text-gray-500">Service</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                // Ajouter les écouteurs d'événements
+                document.querySelectorAll('.product-search-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        const selectedProduct = {
+                            id: this.dataset.id,
+                            name: this.dataset.name,
+                            price: parseFloat(this.dataset.price),
+                            type: this.dataset.type
+                        };
+                        
+                        if (selectedProduct.type === 'physical' && parseInt(this.dataset.stock) <= 0) {
+                            if (!confirm('Ce produit est en rupture de stock. Voulez-vous quand même l\'ajouter à la facture?')) {
+                                return;
+                            }
+                        }
+                        
+                        selectProduct(selectedProduct);
+                        toggleProductSearchModal();
+                    });
+                });
             }
             
             // Sélectionner un produit
@@ -951,7 +990,7 @@
                 
                 // Mettre à jour les champs
                 document.getElementById(`${rowId}-product-id`).value = product.id;
-                document.getElementById(`${rowId}-price`).value = product.default_price;
+                document.getElementById(`${rowId}-price`).value = product.price || 0;
                 
                 // Mettre à jour l'affichage
                 const infoDiv = document.getElementById(`${rowId}-product-info`);
@@ -1132,7 +1171,7 @@
                 
                 // Ajouter chaque produit
                 templateProducts.forEach(product => {
-                    const rowId = addProductRow();
+                    const rowId = addProductRow(product, product.quantity, product.price);
                     
                     // Simuler un court délai pour l'animation
                     setTimeout(() => {

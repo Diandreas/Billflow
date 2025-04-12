@@ -71,6 +71,11 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Pagination -->
+                    <div class="mt-4">
+                        {{ $phones->links() }}
+                    </div>
                 </div>
             </div>
         </div>

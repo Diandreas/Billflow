@@ -69,16 +69,64 @@
                 </div>
             </div>
 
+            <!-- Filtres -->
+            <div class="mb-4">
+                <form action="{{ route('products.index') }}" method="GET" class="flex flex-wrap gap-2">
+                    <div class="flex-1 min-w-[200px]">
+                        <input type="text" name="search" value="{{ request('search') }}" 
+                               placeholder="{{ __('Rechercher un produit...') }}" 
+                               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    
+                    <div class="w-full sm:w-auto">
+                        <select name="type" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="">{{ __('Tous les types') }}</option>
+                            <option value="physical" {{ request('type') == 'physical' ? 'selected' : '' }}>{{ __('Produits physiques') }}</option>
+                            <option value="service" {{ request('type') == 'service' ? 'selected' : '' }}>{{ __('Services') }}</option>
+                        </select>
+                    </div>
+                    
+                    <div class="w-full sm:w-auto">
+                        <select name="stock" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="">{{ __('Tous les stocks') }}</option>
+                            <option value="available" {{ request('stock') == 'available' ? 'selected' : '' }}>{{ __('En stock') }}</option>
+                            <option value="low" {{ request('stock') == 'low' ? 'selected' : '' }}>{{ __('Stock bas') }}</option>
+                            <option value="out" {{ request('stock') == 'out' ? 'selected' : '' }}>{{ __('Épuisé') }}</option>
+                        </select>
+                    </div>
+                    
+                    <div class="w-full sm:w-auto">
+                        <select name="sort" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="name" {{ request('sort') == 'name' ? 'selected' : '' }}>{{ __('Nom') }}</option>
+                            <option value="default_price" {{ request('sort') == 'default_price' ? 'selected' : '' }}>{{ __('Prix') }}</option>
+                            <option value="created_at" {{ request('sort', 'created_at') == 'created_at' ? 'selected' : '' }}>{{ __('Date de création') }}</option>
+                            <option value="stock_quantity" {{ request('sort') == 'stock_quantity' ? 'selected' : '' }}>{{ __('Stock') }}</option>
+                            <option value="usage_count" {{ request('sort') == 'usage_count' ? 'selected' : '' }}>{{ __('Utilisation') }}</option>
+                            <option value="total_sales" {{ request('sort') == 'total_sales' ? 'selected' : '' }}>{{ __('Ventes') }}</option>
+                        </select>
+                    </div>
+                    
+                    <div class="w-full sm:w-auto">
+                        <select name="direction" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>{{ __('Croissant') }}</option>
+                            <option value="desc" {{ request('direction', 'desc') == 'desc' ? 'selected' : '' }}>{{ __('Décroissant') }}</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+                        {{ __('Filtrer') }}
+                    </button>
+                    
+                    @if(request()->anyFilled(['search', 'type', 'stock', 'sort', 'direction']))
+                        <a href="{{ route('products.index') }}" class="px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
+                            {{ __('Réinitialiser') }}
+                        </a>
+                    @endif
+                </form>
+            </div>
+
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
-                    <!-- Search Bar -->
-                    <div class="mb-6 relative">
-                        <i class="bi bi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" id="search"
-                               class="w-full pl-10 pr-4 py-2 rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                               placeholder="Rechercher un produit...">
-                    </div>
-
                     <!-- Products Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         @foreach($products as $product)
@@ -154,13 +202,18 @@
                         <label for="default_price" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Prix par défaut') }} (FCFA)</label>
                         <input type="number" min="0" name="default_price" id="default_price" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     </div>
-                    <div class="flex justify-end pt-4">
-                        <button type="button" onclick="toggleModal('newProductModal')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2.5 px-4 rounded-xl mr-2 shadow-sm">
-                            {{ __('Annuler') }}
-                        </button>
-                        <button type="submit" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium py-2.5 px-6 rounded-xl shadow-sm transition duration-200">
-                            <i class="bi bi-check-lg mr-1"></i>{{ __('Créer') }}
-                        </button>
+                    <div class="flex justify-between pt-4">
+                        <a href="{{ route('products.create') }}" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium py-2.5 px-4 rounded-xl shadow-sm flex items-center transition duration-200">
+                            <i class="bi bi-plus-lg mr-1"></i>{{ __('Créer un produit complet') }}
+                        </a>
+                        <div>
+                            <button type="button" onclick="toggleModal('newProductModal')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2.5 px-4 rounded-xl mr-2 shadow-sm">
+                                {{ __('Annuler') }}
+                            </button>
+                            <button type="submit" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium py-2.5 px-6 rounded-xl shadow-sm transition duration-200">
+                                <i class="bi bi-check-lg mr-1"></i>{{ __('Créer') }}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>

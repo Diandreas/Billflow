@@ -1,70 +1,86 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Détails du numéro de téléphone') }}
-            </h2>
-            <div class="flex space-x-2">
-                <a href="{{ route('phones.edit', $phone) }}" class="inline-flex items-center px-4 py-2 bg-yellow-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-700 focus:bg-yellow-700 active:bg-yellow-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                    <i class="fas fa-edit mr-2"></i> {{ __('Modifier') }}
+            <div>
+                <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
+                    {{ __('Numéro') }}: {{ $phone->number }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ __('Détails du numéro de téléphone et clients associés') }}
+                </p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ route('phones.edit', $phone) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-700">
+                    <i class="bi bi-pencil mr-2"></i>
+                    {{ __('Modifier') }}
                 </a>
-                <a href="{{ route('phones.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                    <i class="fas fa-arrow-left mr-2"></i> {{ __('Retour') }}
+                <a href="{{ route('phones.index') }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-50">
+                    <i class="bi bi-arrow-left mr-2"></i>
+                    {{ __('Retour') }}
                 </a>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    <h3 class="text-lg font-medium mb-4">{{ __('Informations du numéro') }}</h3>
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('Informations du numéro') }}</h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="text-sm text-gray-500">ID</p>
+                            <p class="text-sm text-gray-500">{{ __('ID') }}</p>
                             <p class="font-medium">{{ $phone->id }}</p>
                         </div>
                         
                         <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="text-sm text-gray-500">Numéro</p>
-                            <p class="font-medium">{{ $phone->number }}</p>
+                            <p class="text-sm text-gray-500">{{ __('Numéro') }}</p>
+                            <p class="font-medium text-xl">{{ $phone->number }}</p>
                         </div>
                         
                         <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="text-sm text-gray-500">Créé le</p>
+                            <p class="text-sm text-gray-500">{{ __('Créé le') }}</p>
                             <p class="font-medium">{{ $phone->created_at->format('d/m/Y H:i') }}</p>
                         </div>
                         
                         <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="text-sm text-gray-500">Dernière modification</p>
+                            <p class="text-sm text-gray-500">{{ __('Dernière modification') }}</p>
                             <p class="font-medium">{{ $phone->updated_at->format('d/m/Y H:i') }}</p>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <h3 class="text-lg font-medium mt-8 mb-4">{{ __('Clients associés') }}</h3>
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">{{ __('Clients associés') }}</h3>
+                        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                            {{ $phone->clients->count() }} {{ __('clients') }}
+                        </span>
+                    </div>
                     
                     @if($phone->clients->count() > 0)
                         <div class="overflow-x-auto">
-                            <table class="min-w-full bg-white">
-                                <thead class="bg-gray-100">
+                            <table class="min-w-full bg-white divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="py-2 px-4 border-b text-left">ID</th>
-                                        <th class="py-2 px-4 border-b text-left">Nom</th>
-                                        <th class="py-2 px-4 border-b text-left">Email</th>
-                                        <th class="py-2 px-4 border-b text-left">Actions</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('ID') }}</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Nom') }}</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Email') }}</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Actions') }}</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody class="bg-white divide-y divide-gray-200">
                                     @foreach($phone->clients as $client)
                                         <tr class="hover:bg-gray-50">
-                                            <td class="py-2 px-4 border-b">{{ $client->id }}</td>
-                                            <td class="py-2 px-4 border-b">{{ $client->name }}</td>
-                                            <td class="py-2 px-4 border-b">{{ $client->email }}</td>
-                                            <td class="py-2 px-4 border-b">
-                                                <a href="{{ route('clients.show', $client) }}" class="text-blue-600 hover:text-blue-900">
-                                                    <i class="fas fa-eye"></i> Voir
+                                            <td class="px-6 py-4 whitespace-nowrap">{{ $client->id }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{{ $client->name }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">{{ $client->email ?: '-' }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <a href="{{ route('clients.show', $client) }}" class="text-indigo-600 hover:text-indigo-900 font-medium">
+                                                    <i class="bi bi-eye mr-1"></i> {{ __('Voir') }}
                                                 </a>
                                             </td>
                                         </tr>
@@ -73,10 +89,17 @@
                             </table>
                         </div>
                     @else
-                        <p class="text-gray-500 italic">Aucun client associé à ce numéro</p>
+                        <div class="bg-gray-50 rounded-lg p-6 text-center">
+                            <i class="bi bi-exclamation-circle text-gray-400 text-4xl mb-3"></i>
+                            <p class="text-gray-500">{{ __('Aucun client associé à ce numéro') }}</p>
+                        </div>
                     @endif
                 </div>
             </div>
         </div>
     </div>
+    
+    @push('styles')
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    @endpush
 </x-app-layout> 

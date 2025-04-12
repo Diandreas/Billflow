@@ -1,139 +1,84 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex justify-between items-center">
-            <div>
-                <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
-                    {{ __('Tableau de bord') }}
-                </h2>
-                <p class="mt-1 text-sm text-gray-500">
-                    {{ __('Aperçu général et performances de votre activité') }}
-                </p>
-            </div>
-            <div class="flex space-x-3">
-                <a href="{{ route('stats.export') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm inline-flex items-center transition-colors duration-150"
-                   title="{{ __('Télécharger les statistiques globales au format CSV') }}">
-                    <i class="bi bi-cloud-download mr-2"></i>
-                    {{ __('Exporter les statistiques') }}
-                </a>
-            </div>
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ __('Tableau de bord') }}
+            </h2>
+            <a href="{{ route('stats.export') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm inline-flex items-center transition-colors duration-150">
+                <i class="bi bi-cloud-download mr-2"></i>
+                Exporter les statistiques
+            </a>
         </div>
     </x-slot>
 
-    <div class="py-6">
+    <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            
-            <!-- Actions rapides -->
-            <div class="mb-6 bg-gradient-to-r from-indigo-600 to-blue-500 rounded-xl shadow-lg">
-                <div class="p-6">
-                    <h3 class="text-xl font-bold text-white mb-4">{{ __('Actions rapides') }}</h3>
-                    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                        <a href="{{ route('bills.create') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-4 text-white flex flex-col items-center justify-center transition duration-200"
-                           title="{{ __('Créer une nouvelle facture rapidement') }}">
-                            <i class="bi bi-receipt text-3xl mb-2"></i>
-                            <span class="font-medium">{{ __('Nouvelle facture') }}</span>
-                        </a>
-                        <a href="{{ route('clients.create') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-4 text-white flex flex-col items-center justify-center transition duration-200"
-                           title="{{ __('Ajouter un nouveau client à votre base de données') }}">
-                            <i class="bi bi-person-plus text-3xl mb-2"></i>
-                            <span class="font-medium">{{ __('Nouveau client') }}</span>
-                        </a>
-                        <a href="{{ route('products.create') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-4 text-white flex flex-col items-center justify-center transition duration-200"
-                           title="{{ __('Ajouter un nouveau produit ou service à votre catalogue') }}">
-                            <i class="bi bi-box-seam text-3xl mb-2"></i>
-                            <span class="font-medium">{{ __('Nouveau produit') }}</span>
-                        </a>
-                        <a href="{{ route('inventory.receive') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-4 text-white flex flex-col items-center justify-center transition duration-200"
-                           title="{{ __('Enregistrer une entrée de stock pour vos produits') }}">
-                            <i class="bi bi-truck text-3xl mb-2"></i>
-                            <span class="font-medium">{{ __('Réception stock') }}</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
             <!-- Statistiques sommaires -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg" title="{{ __('Nombre total de factures créées depuis le début.') }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 flex items-start">
                         <div class="rounded-full p-3 bg-indigo-100 mr-4">
                             <i class="bi bi-receipt text-xl text-indigo-600"></i>
                         </div>
                         <div>
-                            <div class="text-sm font-medium text-gray-500">{{ __('Total Factures') }}</div>
+                            <div class="text-sm font-medium text-gray-500">Total Factures</div>
                             <div class="text-2xl font-bold text-gray-900">{{ $globalStats['totalBills'] ?? 0 }}</div>
-                            <div class="text-sm text-gray-500">{{ __('Toutes périodes confondues') }}</div>
-                            <a href="{{ route('bills.index') }}" class="text-xs text-indigo-600 hover:text-indigo-800 inline-flex items-center mt-1">
-                                {{ __('Voir toutes les factures') }} <i class="bi bi-arrow-right ml-1"></i>
-                            </a>
+                            <div class="text-sm text-gray-500">Toutes périodes confondues</div>
                         </div>
                     </div>
                 </div>
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg" title="{{ __('Nombre de factures créées ce mois-ci et comparaison avec le mois précédent.') }}">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 flex items-start">
                         <div class="rounded-full p-3 bg-green-100 mr-4">
                             <i class="bi bi-calendar-check text-xl text-green-600"></i>
                         </div>
                         <div>
-                            <div class="text-sm font-medium text-gray-500">{{ __('Ce mois') }}</div>
+                            <div class="text-sm font-medium text-gray-500">Ce mois</div>
                             <div class="text-2xl font-bold text-gray-900">{{ $globalStats['monthlyBills'] ?? 0 }}</div>
                             <div class="text-sm text-gray-500">
                                 @if(isset($globalStats['monthlyBillsPercentChange']))
-                                    <span class="{{ $globalStats['monthlyBillsPercentChange'] >= 0 ? 'text-green-600' : 'text-red-600' }}"
-                                          title="{{ $globalStats['monthlyBillsPercentChange'] >= 0 ? __('Augmentation par rapport au mois dernier') : __('Diminution par rapport au mois dernier') }}">
+                                    <span class="{{ $globalStats['monthlyBillsPercentChange'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                         <i class="bi {{ $globalStats['monthlyBillsPercentChange'] >= 0 ? 'bi-arrow-up' : 'bi-arrow-down' }}"></i>
                                         {{ abs($globalStats['monthlyBillsPercentChange']) }}% vs. mois dernier
                                     </span>
                                 @endif
                             </div>
-                            <a href="#" id="showMonthlyChart" class="text-xs text-green-600 hover:text-green-800 inline-flex items-center mt-1">
-                                {{ __('Voir l\'évolution') }} <i class="bi bi-arrow-right ml-1"></i>
-                            </a>
                         </div>
                     </div>
                 </div>
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg" title="{{ __('Revenu total généré par toutes les factures depuis le début.') }}">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 flex items-start">
                         <div class="rounded-full p-3 bg-blue-100 mr-4">
                             <i class="bi bi-cash-coin text-xl text-blue-600"></i>
                         </div>
                         <div>
-                            <div class="text-sm font-medium text-gray-500">{{ __('Revenu Total') }}</div>
+                            <div class="text-sm font-medium text-gray-500">Revenu Total</div>
                             <div class="text-2xl font-bold text-gray-900">{{ $globalStats['totalRevenue'] ?? '0 FCFA' }}</div>
-                            <div class="text-sm text-gray-500">{{ __('Depuis le début') }}</div>
-                            <a href="#" id="showRevenueChart" class="text-xs text-blue-600 hover:text-blue-800 inline-flex items-center mt-1">
-                                {{ __('Voir les tendances') }} <i class="bi bi-arrow-right ml-1"></i>
-                            </a>
+                            <div class="text-sm text-gray-500">Depuis le début</div>
                         </div>
                     </div>
                 </div>
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg" title="{{ __('Montant moyen de chaque facture sur l\'ensemble des factures.') }}">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 flex items-start">
                         <div class="rounded-full p-3 bg-yellow-100 mr-4">
                             <i class="bi bi-cart-check text-xl text-yellow-600"></i>
                         </div>
                         <div>
-                            <div class="text-sm font-medium text-gray-500">{{ __('Panier Moyen') }}</div>
+                            <div class="text-sm font-medium text-gray-500">Panier Moyen</div>
                             <div class="text-2xl font-bold text-gray-900">{{ $globalStats['averageTicket'] ?? '0 FCFA' }}</div>
-                            <div class="text-sm text-gray-500">{{ __('Sur toutes les factures') }}</div>
-                            <a href="#" id="showAverageChart" class="text-xs text-yellow-600 hover:text-yellow-800 inline-flex items-center mt-1">
-                                {{ __('Analyser les détails') }} <i class="bi bi-arrow-right ml-1"></i>
-                            </a>
+                            <div class="text-sm text-gray-500">Sur toutes les factures</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Graphique principal dynamique -->
+            <!-- Graphique -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-8">
                 <div class="p-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-semibold text-xl text-gray-800">
-                            <i class="bi bi-graph-up-arrow text-indigo-500 mr-2"></i>
-                            {{ __('Analyse des ventes') }}
-                        </h3>
+                        <h3 class="font-semibold text-xl text-gray-800">Analyse des ventes</h3>
                         <div class="flex gap-2">
-                            <button id="downloadChartBtn" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                                    title="{{ __('Télécharger le graphique actuel en image PNG') }}">
+                            <button id="downloadChartBtn" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 <i class="bi bi-download mr-2"></i> Télécharger
                             </button>
                         </div>
@@ -142,8 +87,7 @@
                     <div class="mb-6 grid grid-cols-1 md:grid-cols-5 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                            <select id="chartType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                    title="{{ __('Choisir le type de graphique (Barres ou Lignes)') }}">
+                            <select id="chartType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                 <option value="bar">Barres</option>
                                 <option value="line">Lignes</option>
                             </select>
@@ -151,8 +95,7 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Période</label>
-                            <select id="timeRange" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                    title="{{ __('Sélectionner une période prédéfinie ou personnalisée') }}">
+                            <select id="timeRange" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                 <option value="month" selected>Ce mois</option>
                                 <option value="quarter">Ce trimestre</option>
                                 <option value="year">Cette année</option>
@@ -163,21 +106,18 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
                             <input type="date" id="startDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                   max="{{ now()->format('Y-m-d') }}"
-                                   title="{{ __('Date de début pour la période personnalisée') }}">
+                                   max="{{ now()->format('Y-m-d') }}">
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
                             <input type="date" id="endDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                   max="{{ now()->format('Y-m-d') }}"
-                                   title="{{ __('Date de fin pour la période personnalisée') }}">
+                                   max="{{ now()->format('Y-m-d') }}">
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Métrique</label>
-                            <select id="metric" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                    title="{{ __('Choisir la donnée à visualiser (Nombre de factures ou Montant total)') }}">
+                            <select id="metric" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                 <option value="count">Nombre de factures</option>
                                 <option value="amount">Montant total</option>
                             </select>
@@ -186,26 +126,17 @@
 
                     <!-- Statistiques dynamiques de la plage -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div class="bg-gray-100 p-4 rounded-lg" title="{{ __('Revenu total généré sur la période sélectionnée.') }}">
+                        <div class="bg-gray-100 p-4 rounded-lg">
                             <div class="text-sm font-medium text-gray-600">Revenu Total</div>
-                            <div id="totalRevenueSpan" class="text-xl font-bold text-gray-900 flex items-center">
-                                0 FCFA
-                                <span id="revenueChange" class="ml-2 text-xs"></span>
-                            </div>
+                            <div id="totalRevenueSpan" class="text-xl font-bold text-gray-900">0 FCFA</div>
                         </div>
-                        <div class="bg-gray-100 p-4 rounded-lg" title="{{ __('Panier moyen (montant moyen par facture) sur la période sélectionnée.') }}">
+                        <div class="bg-gray-100 p-4 rounded-lg">
                             <div class="text-sm font-medium text-gray-600">Panier Moyen</div>
-                            <div id="averageTicketSpan" class="text-xl font-bold text-gray-900 flex items-center">
-                                0 FCFA
-                                <span id="ticketChange" class="ml-2 text-xs"></span>
-                            </div>
+                            <div id="averageTicketSpan" class="text-xl font-bold text-gray-900">0 FCFA</div>
                         </div>
-                        <div class="bg-gray-100 p-4 rounded-lg" title="{{ __('Nombre total de factures émises sur la période sélectionnée.') }}">
+                        <div class="bg-gray-100 p-4 rounded-lg">
                             <div class="text-sm font-medium text-gray-600">Nombre de Factures</div>
-                            <div id="billCountSpan" class="text-xl font-bold text-gray-900 flex items-center">
-                                0
-                                <span id="countChange" class="ml-2 text-xs"></span>
-                            </div>
+                            <div id="billCountSpan" class="text-xl font-bold text-gray-900">0</div>
                         </div>
                     </div>
 
@@ -215,29 +146,15 @@
                 </div>
             </div>
 
-            <!-- Section des analyses par thèmes -->
-            <h3 class="font-semibold text-xl text-gray-800 mb-4">
-                <i class="bi bi-clipboard-data text-indigo-500 mr-2"></i>
-                {{ __('Tableaux de bord thématiques') }}
-            </h3>
-
-            <!-- Thème: Performance des ventes -->
+            <!-- Aperçu de l'activité récente -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <div class="lg:col-span-2">
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                            <div>
-                                <h3 class="font-semibold text-xl">
-                                    <i class="bi bi-currency-dollar text-green-500 mr-2"></i>
-                                    {{ __('Performance des ventes') }}
-                                </h3>
-                                <p class="text-sm text-gray-500">Comparaison des 30 derniers jours</p>
-                            </div>
-                            <div class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded" title="{{ __('Analyse financière') }}">
-                                {{ __('Financier') }}
-                            </div>
+                            <h3 class="font-semibold text-xl">Aperçu des revenus</h3>
+                            <div class="text-sm text-gray-500">Comparaison des 30 derniers jours</div>
                         </div>
-                        <div class="p-6" title="{{ __('Graphique comparant les revenus des 30 derniers jours avec la période précédente.') }}">
+                        <div class="p-6">
                             <div class="h-64">
                                 <canvas id="revenueComparisonChart"></canvas>
                             </div>
@@ -247,17 +164,9 @@
                 <div>
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6 border-b border-gray-200">
-                            <div class="flex justify-between items-center">
-                                <h3 class="font-semibold text-xl">
-                                    <i class="bi bi-pie-chart text-blue-500 mr-2"></i>
-                                    {{ __('Statut des factures') }}
-                                </h3>
-                                <div class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded" title="{{ __('Répartition des factures par statut de paiement') }}">
-                                    {{ __('Paiements') }}
-                                </div>
-                            </div>
+                            <h3 class="font-semibold text-xl">Statut des factures</h3>
                         </div>
-                        <div class="p-6" title="{{ __('Graphique montrant la proportion des factures payées, en attente ou annulées.') }}">
+                        <div class="p-6">
                             <div class="h-64">
                                 <canvas id="invoiceStatusChart"></canvas>
                             </div>
@@ -266,73 +175,13 @@
                 </div>
             </div>
 
-            <!-- Thème: Activité clients et produits -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <div>
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                            <div>
-                                <h3 class="font-semibold text-xl">
-                                    <i class="bi bi-people text-purple-500 mr-2"></i>
-                                    {{ __('Acquisitions') }}
-                                </h3>
-                                <p class="text-sm text-gray-500">Nouveaux clients par période</p>
-                            </div>
-                            <div class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded" title="{{ __('Analyse des clients') }}">
-                                {{ __('Clients') }}
-                            </div>
-                        </div>
-                        <div class="p-6" title="{{ __('Graphique montrant le nombre de nouveaux clients acquis par mois/trimestre/année.') }}">
-                            <div class="h-64">
-                                <canvas id="clientAcquisitionChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="lg:col-span-2">
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                            <div>
-                                <h3 class="font-semibold text-xl">
-                                    <i class="bi bi-box-seam text-amber-500 mr-2"></i>
-                                    {{ __('Top produits') }}
-                                </h3>
-                                <p class="text-sm text-gray-500">Produits les plus vendus du mois</p>
-                            </div>
-                            <div class="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded" title="{{ __('Analyse des produits') }}">
-                                {{ __('Produits') }}
-                            </div>
-                        </div>
-                        <div class="p-6" title="{{ __('Graphique montrant les produits qui génèrent le plus de revenus ou sont le plus souvent vendus.') }}">
-                            <div class="h-64">
-                                <canvas id="topProductsChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Tables (améliorées) -->
-            <h3 class="font-semibold text-xl text-gray-800 mb-4">
-                <i class="bi bi-table text-indigo-500 mr-2"></i>
-                {{ __('Données récentes') }}
-            </h3>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Dernières Factures -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                        <div>
-                            <h3 class="font-semibold text-xl">
-                                <i class="bi bi-receipt text-indigo-500 mr-2"></i>
-                                {{ __('Dernières Factures') }}
-                            </h3>
-                            <p class="text-sm text-gray-500">Les 5 factures les plus récentes</p>
-                        </div>
-                        <a href="{{ route('bills.index') }}" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium inline-flex items-center"
-                           title="{{ __('Voir toutes les factures') }}">
-                            {{ __('Voir tout') }} 
-                            <i class="bi bi-arrow-right ml-1"></i>
-                        </a>
+                        <h3 class="font-semibold text-xl">Dernières Factures</h3>
+                        <a href="{{ route('bills.index') }}" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Voir tout <i class="bi bi-arrow-right"></i></a>
                     </div>
                     <div class="p-6">
                         <div class="overflow-x-auto">
@@ -348,7 +197,7 @@
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach($latestBills as $bill)
-                                    <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                    <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <a href="{{ route('bills.show', $bill) }}" class="text-indigo-600 hover:text-indigo-900">
                                                 {{ $bill->reference }}
@@ -366,11 +215,7 @@
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                                 {{ $bill->status === 'paid' ? 'bg-green-100 text-green-800' : 
                                                    ($bill->status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                                                    'bg-red-100 text-red-800') }}"
-                                                title="{{ $bill->status === 'paid' ? __('Payée') : ($bill->status === 'pending' ? __('En attente') : __('Annulée')) }}">
-                                                <i class="bi {{ $bill->status === 'paid' ? 'bi-check-circle' : 
-                                                   ($bill->status === 'pending' ? 'bi-clock' : 
-                                                    'bi-exclamation-circle') }} mr-1"></i>
+                                                    'bg-red-100 text-red-800') }}">
                                                 {{ ucfirst($bill->status ?? 'pending') }}
                                             </span>
                                         </td>
@@ -388,18 +233,8 @@
                 <!-- Top Clients -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                        <div>
-                            <h3 class="font-semibold text-xl">
-                                <i class="bi bi-star text-amber-500 mr-2"></i>
-                                {{ __('Top Clients') }}
-                            </h3>
-                            <p class="text-sm text-gray-500">Les clients les plus actifs</p>
-                        </div>
-                        <a href="{{ route('clients.index') }}" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium inline-flex items-center"
-                           title="{{ __('Voir tous les clients') }}">
-                            {{ __('Voir tout') }}
-                            <i class="bi bi-arrow-right ml-1"></i>
-                        </a>
+                        <h3 class="font-semibold text-xl">Top Clients</h3>
+                        <a href="{{ route('clients.index') }}" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Voir tout <i class="bi bi-arrow-right"></i></a>
                     </div>
                     <div class="p-6">
                         <div class="overflow-x-auto">
@@ -414,7 +249,7 @@
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach($topClients as $client)
-                                    <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                    <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                            <a>
                                             {{-- <a href="{{ route('clients.show', $client) }}" class="text-indigo-600 hover:text-indigo-900"> --}}
@@ -425,9 +260,8 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $client->total }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                                             @if(isset($client->trend) && $client->trend !== 0)
-                                                <span class="{{ $client->trend > 0 ? 'text-green-600' : 'text-red-600' }} inline-flex items-center"
-                                                      title="{{ __('Évolution du chiffre d\'affaires par rapport à la période précédente') }}">
-                                                    <i class="bi {{ $client->trend > 0 ? 'bi-arrow-up' : 'bi-arrow-down' }} mr-1"></i>
+                                                <span class="{{ $client->trend > 0 ? 'text-green-600' : 'text-red-600' }}">
+                                                    <i class="bi {{ $client->trend > 0 ? 'bi-arrow-up' : 'bi-arrow-down' }}"></i>
                                                     {{ abs($client->trend) }}%
                                                 </span>
                                             @else

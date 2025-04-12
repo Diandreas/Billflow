@@ -22,6 +22,30 @@ class ProductController extends Controller
             });
         }
 
+        // Filtre par type
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        // Filtre par état de stock (seulement pour les produits physiques)
+        if ($request->filled('stock')) {
+            switch ($request->stock) {
+                case 'available':
+                    $query->where('type', '!=', 'service')
+                          ->where('stock_quantity', '>', 0);
+                    break;
+                case 'low':
+                    $query->where('type', '!=', 'service')
+                          ->whereColumn('stock_quantity', '<=', 'stock_alert_threshold')
+                          ->where('stock_alert_threshold', '>', 0);
+                    break;
+                case 'out':
+                    $query->where('type', '!=', 'service')
+                          ->where('stock_quantity', '<=', 0);
+                    break;
+            }
+        }
+
         // Tri
         if ($request->filled('sort')) {
             $sortField = $request->sort;
@@ -73,7 +97,27 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'default_price' => 'nullable|numeric|min:0',
+            'type' => 'nullable|string|max:50',
+            'sku' => 'nullable|string|max:50',
+            'stock_quantity' => 'nullable|integer|min:0',
+            'stock_alert_threshold' => 'nullable|integer|min:0',
+            'accounting_category' => 'nullable|string|max:50',
+            'tax_category' => 'nullable|string|max:50',
+            'cost_price' => 'nullable|numeric|min:0',
+            'status' => 'nullable|string|in:actif,inactif',
+            'category_id' => 'nullable|exists:product_categories,id',
         ]);
+
+        // Si le type n'est pas spécifié, considérer comme un service par défaut
+        if (empty($validated['type'])) {
+            $validated['type'] = 'service';
+        }
+
+        // Pour les services, mettre les valeurs de stock à zéro
+        if ($validated['type'] === 'service') {
+            $validated['stock_quantity'] = 0;
+            $validated['stock_alert_threshold'] = 0;
+        }
 
         $product = Product::create($validated);
 
@@ -92,8 +136,8 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        // Charger les factures pour le produit
-        $invoices = $product->bills()->with('client')->latest('date')->get();
+        // Charger les factures pour le produit avec pagination
+        $invoices = $product->bills()->with('client')->latest('date')->paginate(10);
         
         // Charger toutes les factures pour les statistiques
         $allBills = $product->bills;
@@ -148,7 +192,27 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'default_price' => 'nullable|numeric|min:0',
+            'type' => 'nullable|string|max:50',
+            'sku' => 'nullable|string|max:50',
+            'stock_quantity' => 'nullable|integer|min:0',
+            'stock_alert_threshold' => 'nullable|integer|min:0',
+            'accounting_category' => 'nullable|string|max:50',
+            'tax_category' => 'nullable|string|max:50',
+            'cost_price' => 'nullable|numeric|min:0',
+            'status' => 'nullable|string|in:actif,inactif',
+            'category_id' => 'nullable|exists:product_categories,id',
         ]);
+
+        // Si le type n'est pas spécifié, considérer comme un service par défaut
+        if (empty($validated['type'])) {
+            $validated['type'] = 'service';
+        }
+
+        // Pour les services, mettre les valeurs de stock à zéro
+        if ($validated['type'] === 'service') {
+            $validated['stock_quantity'] = 0;
+            $validated['stock_alert_threshold'] = 0;
+        }
 
         $product->update($validated);
 

@@ -44,6 +44,10 @@
                         {{ __('Produits') }}
                     </x-nav-link>
 
+                    <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">
+                        {{ __('Inventaire') }}
+                    </x-nav-link>
+
                     <x-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -55,7 +59,7 @@
                     </x-nav-link>
 
                     <!-- Messages Promotionnels -->
-                    <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
+                    {{-- <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
                         <x-nav-link :href="route('campaigns.index')" :active="request()->routeIs('campaigns.*')">
                             <i class="bi bi-megaphone-fill mr-1"></i>
                             {{ __('Messages Promotionnels') }}
@@ -68,7 +72,7 @@
                             <i class="bi bi-credit-card-fill mr-1"></i>
                             {{ __('Abonnements') }}
                         </x-nav-link>
-                    </div>
+                    </div> --}}
                 </div>
             </div>
 
@@ -131,6 +135,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('products.index')" :active="request()->routeIs('products.*')">
                 {{ __('Produits') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">
+                {{ __('Inventaire') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
                 {{ __('Paramètres') }}

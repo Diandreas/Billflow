@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use App\Models\InventoryMovement;
 
 class BillController extends Controller
 {
@@ -122,6 +123,20 @@ class BillController extends Controller
                     'unit_price' => $price,
                     'total' => $quantity * $price
                 ]);
+                
+                // Mise à jour du stock
+                $product = Product::find($productId);
+                if ($product && $product->type === 'physical' && $product->stock_quantity > 0) {
+                    // Créer un mouvement de sortie pour la vente
+                    InventoryMovement::createExit(
+                        $productId,
+                        $quantity,
+                        $price,
+                        'Facture: ' . $bill->reference,
+                        $bill->id,
+                        'Vente via facture'
+                    );
+                }
             }
         }
 
@@ -161,6 +176,11 @@ class BillController extends Controller
             'status' => 'nullable|string|in:pending,paid,cancelled',
         ]);
 
+        // Sauvegarder les anciens produits pour les restaurer en stock si nécessaire
+        $oldProducts = $bill->products->mapWithKeys(function ($product) {
+            return [$product->id => $product->pivot->quantity];
+        })->toArray();
+        
         // Mettre à jour la facture
         $bill->update([
             'client_id' => $validated['client_id'],
@@ -188,9 +208,68 @@ class BillController extends Controller
                     'unit_price' => $price,
                     'total' => $quantity * $price
                 ]);
+                
+                // Gestion du stock pour les produits modifiés
+                $product = Product::find($productId);
+                if ($product && $product->type === 'physical') {
+                    $oldQuantity = $oldProducts[$productId] ?? 0;
+                    
+                    // Si le produit était déjà dans la facture, on ajuste la différence
+                    if (array_key_exists($productId, $oldProducts)) {
+                        $quantityDiff = $quantity - $oldQuantity;
+                        
+                        if ($quantityDiff > 0) {
+                            // Retirer la différence supplémentaire du stock
+                            InventoryMovement::createExit(
+                                $productId,
+                                $quantityDiff,
+                                $price,
+                                'Facture modifiée: ' . $bill->reference,
+                                $bill->id,
+                                'Ajustement après modification de facture'
+                            );
+                        } elseif ($quantityDiff < 0) {
+                            // Remettre en stock la différence
+                            InventoryMovement::createEntry(
+                                $productId,
+                                abs($quantityDiff),
+                                $price,
+                                'Facture modifiée: ' . $bill->reference,
+                                'Ajustement après modification de facture'
+                            );
+                        }
+                        
+                        // Supprimer de la liste des anciens produits
+                        unset($oldProducts[$productId]);
+                    } else {
+                        // Nouveau produit ajouté à la facture
+                        InventoryMovement::createExit(
+                            $productId,
+                            $quantity,
+                            $price,
+                            'Facture modifiée: ' . $bill->reference,
+                            $bill->id,
+                            'Nouveau produit ajouté à la facture'
+                        );
+                    }
+                }
             }
         }
-
+        
+        // Remettre en stock les produits qui ont été supprimés de la facture
+        foreach ($oldProducts as $productId => $quantity) {
+            $product = Product::find($productId);
+            if ($product && $product->type === 'physical') {
+                InventoryMovement::createEntry(
+                    $productId,
+                    $quantity,
+                    null,
+                    'Facture modifiée: ' . $bill->reference,
+                    'Produit retiré de la facture'
+                );
+            }
+        }
+        
         // Recalculer les totaux
         $bill->calculateTotals();
 

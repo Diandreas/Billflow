@@ -10,6 +10,8 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\PhoneController;
+use App\Http\Controllers\ProductCategoryController;
+use App\Http\Controllers\InventoryController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DashboardController::class, 'index'])
@@ -35,7 +37,6 @@ Route::middleware('auth')->group(function () {
 
     // Routes pour les produits
     Route::resource('products', ProductController::class);
-//    Route::resource('products', ProductController::class);
     Route::get('/api/products/search', [ProductController::class, 'search'])->name('products.search');
     Route::post('/api/products/quick-create', [ProductController::class, 'quickCreate'])->name('products.quick-create');
     Route::get('/api/products/{product}/price-history', [ProductController::class, 'priceHistory'])->name('products.price-history');
@@ -43,6 +44,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/clients/search', [ClientController::class, 'search']);
     Route::get('/products/search', [ProductController::class, 'search']);
     Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
+    
+    // Routes pour les catégories de produits
+    Route::resource('product-categories', ProductCategoryController::class);
+    Route::get('/api/product-categories', [ProductCategoryController::class, 'getAll'])->name('api.product-categories');
+    
+    // Routes pour la gestion de l'inventaire
+    Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    Route::get('/inventory/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
+    Route::get('/inventory/adjustment', [InventoryController::class, 'adjustment'])->name('inventory.adjustment');
+    Route::post('/inventory/adjustment', [InventoryController::class, 'processAdjustment'])->name('inventory.process-adjustment');
+    Route::get('/inventory/receive', [InventoryController::class, 'receive'])->name('inventory.receive');
+    Route::post('/inventory/receive', [InventoryController::class, 'processReceive'])->name('inventory.process-receive');
+    Route::get('/api/inventory/product/{productId}/stock', [InventoryController::class, 'getProductStock'])->name('api.inventory.product-stock');
+    
     // Routes pour les factures
     Route::resource('bills', BillController::class);
 

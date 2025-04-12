@@ -130,8 +130,11 @@ class ClientController extends Controller
                     'average' => $bills->average('total')
                 ];
             });
+            
+        // Factures avec pagination
+        $paginatedBills = $client->bills()->with('products')->latest()->paginate(10);
 
-        return view('clients.show', compact('client', 'stats', 'monthlyStats'));
+        return view('clients.show', compact('client', 'stats', 'monthlyStats', 'paginatedBills'));
     }
 
     public function edit(Client $client)
@@ -270,11 +273,9 @@ class ClientController extends Controller
      */
     public function billsIndex(Client $client)
     {
-        $client->load(['bills' => function($query) {
-            $query->latest()->with('products');
-        }]);
+        $bills = $client->bills()->latest()->with('products')->paginate(10);
         
-        return view('clients.bills.index', compact('client'));
+        return view('clients.bills.index', compact('client', 'bills'));
     }
 
     /**

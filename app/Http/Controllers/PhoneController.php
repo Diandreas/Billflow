@@ -12,7 +12,7 @@ class PhoneController extends Controller
      */
     public function index()
     {
-        $phones = Phone::with('clients')->get();
+        $phones = Phone::with('clients')->paginate(10);
         return view('phones.index', compact('phones'));
     }
 
