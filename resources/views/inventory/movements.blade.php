@@ -44,6 +44,17 @@
                                 <input type="date" id="date_to" name="date_to" value="{{ request('date_to') }}" class="w-full rounded-md border-gray-300">
                             </div>
                             
+                            <div>
+                                <label for="per_page" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Éléments par page') }}</label>
+                                <select id="per_page" name="per_page" class="w-full rounded-md border-gray-300">
+                                    @foreach([25, 50, 100, 200] as $value)
+                                        <option value="{{ $value }}" {{ request('per_page', 25) == $value ? 'selected' : '' }}>
+                                            {{ $value }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
                             <div class="md:col-span-4 flex justify-end">
                                 <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
                                     {{ __('Filtrer') }}
@@ -145,8 +156,16 @@
                     </div>
 
                     <!-- Pagination -->
-                    <div class="mt-4">
-                        {{ $movements->links() }}
+                    <div class="mt-4 flex flex-col sm:flex-row justify-between items-center">
+                        <div class="text-sm text-gray-700 mb-2 sm:mb-0">
+                            {{ __('Affichage de') }} <span class="font-medium">{{ $movements->firstItem() ?? 0 }}</span> 
+                            {{ __('à') }} <span class="font-medium">{{ $movements->lastItem() ?? 0 }}</span> 
+                            {{ __('sur') }} <span class="font-medium">{{ $movements->total() }}</span> 
+                            {{ __('mouvements') }}
+                        </div>
+                        <div>
+                            {{ $movements->links() }}
+                        </div>
                     </div>
                 </div>
             </div>

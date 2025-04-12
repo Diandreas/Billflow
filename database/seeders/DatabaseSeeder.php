@@ -12,9 +12,9 @@ class DatabaseSeeder extends Seeder
             SettingsSeeder::class,
             ProductsSeeder::class,
             ClientsSeeder::class,
-            PhonesSeeder::class,
             BillsSeeder::class,
-            SubscriptionPlanSeeder::class,
+            InventoryMovementSeeder::class,
+            // SubscriptionPlanSeeder::class,
         ]);
     }
 }

@@ -17,10 +17,22 @@ class SubscriptionPlan extends Model
         'sms_quota',
         'sms_personal_quota',
         'sms_rollover_percent',
-        'is_active'
+        'is_active',
     ];
 
-    // Relations
+    /**
+     * Les caractéristiques associées à ce plan d'abonnement
+     */
+    public function features()
+    {
+        return $this->belongsToMany(Feature::class, 'subscription_plan_feature')
+            ->withPivot('value')
+            ->withTimestamps();
+    }
+
+    /**
+     * Les abonnements liés à ce plan
+     */
     public function subscriptions()
     {
         return $this->hasMany(Subscription::class);

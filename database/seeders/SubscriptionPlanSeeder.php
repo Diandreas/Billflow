@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\SubscriptionPlan;
 use App\Models\Feature;
+use Illuminate\Support\Str;
 use Faker\Factory as Faker;
 
 class SubscriptionPlanSeeder extends Seeder
@@ -45,8 +46,6 @@ class SubscriptionPlanSeeder extends Seeder
             $feat = Feature::create([
                 'name' => $feature['name'],
                 'description' => $feature['description'],
-                'created_at' => now(),
-                'updated_at' => now()
             ]);
             
             $featureIds[$feature['name']] = $feat->id;
@@ -56,14 +55,15 @@ class SubscriptionPlanSeeder extends Seeder
         $plans = [
             [
                 'name' => 'Gratuit',
+                'code' => 'FREE',
                 'description' => 'Plan de base pour les petites entreprises et les freelances débutants',
                 'price' => 0,
                 'billing_cycle' => 'monthly',
-                'max_users' => 1,
-                'trial_days' => 0,
+                'max_clients' => 20,
+                'campaigns_per_cycle' => 2,
+                'sms_quota' => 50,
+                'sms_personal_quota' => 10,
                 'is_active' => true,
-                'is_featured' => false,
-                'details' => 'Accès limité aux fonctionnalités de base',
                 'features' => [
                     ['name' => 'Nombre de factures mensuelles', 'value' => '10'],
                     ['name' => 'Nombre de clients', 'value' => '20'],
@@ -75,14 +75,15 @@ class SubscriptionPlanSeeder extends Seeder
             ],
             [
                 'name' => 'Essentiel',
+                'code' => 'ESSENTIAL',
                 'description' => 'Parfait pour les petites entreprises qui commencent à se développer',
-            'price' => 15000,
-            'billing_cycle' => 'monthly',
-                'max_users' => 3,
-                'trial_days' => 14,
+                'price' => 15000,
+                'billing_cycle' => 'monthly',
+                'max_clients' => 100,
+                'campaigns_per_cycle' => 5,
+                'sms_quota' => 200,
+                'sms_personal_quota' => 50,
                 'is_active' => true,
-                'is_featured' => true,
-                'details' => 'Toutes les fonctionnalités de base avec quelques fonctionnalités avancées',
                 'features' => [
                     ['name' => 'Nombre de factures mensuelles', 'value' => '100'],
                     ['name' => 'Nombre de clients', 'value' => '100'],
@@ -97,14 +98,15 @@ class SubscriptionPlanSeeder extends Seeder
             ],
             [
                 'name' => 'Professionnel',
+                'code' => 'PRO',
                 'description' => 'Solution complète pour les PME et entreprises en pleine croissance',
                 'price' => 45000,
                 'billing_cycle' => 'monthly',
-                'max_users' => 10,
-                'trial_days' => 14,
+                'max_clients' => 500,
+                'campaigns_per_cycle' => 10,
+                'sms_quota' => 1000,
+                'sms_personal_quota' => 200,
                 'is_active' => true,
-                'is_featured' => true,
-                'details' => 'Fonctionnalités avancées et support prioritaire',
                 'features' => [
                     ['name' => 'Nombre de factures mensuelles', 'value' => 'Illimité'],
                     ['name' => 'Nombre de clients', 'value' => '500'],
@@ -125,14 +127,15 @@ class SubscriptionPlanSeeder extends Seeder
             ],
             [
                 'name' => 'Entreprise',
+                'code' => 'ENTERPRISE',
                 'description' => 'Solution complète et personnalisable pour grandes entreprises',
                 'price' => 90000,
                 'billing_cycle' => 'monthly',
-                'max_users' => 30,
-                'trial_days' => 30,
+                'max_clients' => 1000,
+                'campaigns_per_cycle' => 30,
+                'sms_quota' => 5000,
+                'sms_personal_quota' => 500,
                 'is_active' => true,
-                'is_featured' => false,
-                'details' => 'Toutes les fonctionnalités avec personnalisation et support dédié',
                 'features' => [
                     ['name' => 'Nombre de factures mensuelles', 'value' => 'Illimité'],
                     ['name' => 'Nombre de clients', 'value' => 'Illimité'],
@@ -155,22 +158,6 @@ class SubscriptionPlanSeeder extends Seeder
                     ['name' => 'Mode hors ligne', 'value' => 'Inclus'],
                 ]
             ],
-            [
-                'name' => 'Sur Mesure',
-                'description' => 'Solution entièrement personnalisée pour besoins spécifiques',
-                'price' => null, // Prix à définir selon besoins
-                'billing_cycle' => 'yearly',
-                'max_users' => null, // Illimité ou à définir
-                'trial_days' => 0,
-                'is_active' => true,
-                'is_featured' => false,
-                'details' => 'Contactez notre équipe commerciale pour une solution adaptée à vos besoins spécifiques',
-                'features' => [
-                    ['name' => 'Personnalisation', 'value' => 'Complète et sur mesure'],
-                    ['name' => 'Support technique', 'value' => 'Support VIP avec équipe dédiée'],
-                    ['name' => 'Formation incluse', 'value' => 'Programme de formation complet'],
-                ]
-            ],
         ];
         
         // Créer également des plans annuels avec remise pour les plans payants
@@ -179,10 +166,10 @@ class SubscriptionPlanSeeder extends Seeder
             if ($plan['price'] > 0) {
                 $annualPlan = $plan;
                 $annualPlan['name'] = $plan['name'] . ' (Annuel)';
+                $annualPlan['code'] = $plan['code'] . '_ANNUAL';
                 $annualPlan['description'] = 'Version annuelle du plan ' . $plan['name'] . ' avec 15% de réduction';
                 $annualPlan['price'] = $plan['price'] * 12 * 0.85; // 15% de réduction sur le prix annuel
                 $annualPlan['billing_cycle'] = 'yearly';
-                $annualPlan['is_featured'] = false;
                 
                 $annualPlans[] = $annualPlan;
             }
@@ -196,14 +183,6 @@ class SubscriptionPlanSeeder extends Seeder
             $planFeatures = $planData['features'];
             unset($planData['features']);
             
-            // Si le prix est null, mettre "Sur devis" dans la description
-            if ($planData['price'] === null) {
-                $planData['price_description'] = 'Sur devis';
-            } else {
-                $planData['price_description'] = number_format($planData['price'], 0, ',', ' ') . ' FCFA/' . 
-                    ($planData['billing_cycle'] === 'monthly' ? 'mois' : 'an');
-            }
-            
             // Créer le plan
             $plan = SubscriptionPlan::create($planData);
             
@@ -211,69 +190,10 @@ class SubscriptionPlanSeeder extends Seeder
             foreach ($planFeatures as $feature) {
                 if (isset($featureIds[$feature['name']])) {
                     $plan->features()->attach($featureIds[$feature['name']], [
-                        'value' => $feature['value'],
-                        'created_at' => now(),
-                        'updated_at' => now()
+                        'value' => $feature['value']
                     ]);
                 }
             }
-        }
-        
-        // Créer quelques offres promotionnelles pour les plans
-        $promotions = [
-            [
-                'name' => 'Offre de lancement',
-                'description' => 'Profitez de 30% de réduction sur les 3 premiers mois',
-                'discount_percentage' => 30,
-                'valid_from' => Carbon\Carbon::now()->subMonth(),
-                'valid_until' => Carbon\Carbon::now()->addMonths(2),
-                'code' => 'LAUNCH30',
-                'plans' => ['Essentiel', 'Professionnel']
-            ],
-            [
-                'name' => 'Offre Black Friday',
-                'description' => '50% de réduction sur le premier trimestre pour toute souscription annuelle',
-                'discount_percentage' => 50,
-                'valid_from' => Carbon\Carbon::now(),
-                'valid_until' => Carbon\Carbon::now()->addWeeks(2),
-                'code' => 'BLACKFRIDAY50',
-                'plans' => ['Essentiel (Annuel)', 'Professionnel (Annuel)', 'Entreprise (Annuel)']
-            ],
-            [
-                'name' => 'Offre Fidélité',
-                'description' => '20% de réduction supplémentaire pour les clients existants',
-                'discount_percentage' => 20,
-                'valid_from' => Carbon\Carbon::now(),
-                'valid_until' => Carbon\Carbon::now()->addMonths(6),
-                'code' => 'FIDELITE20',
-                'plans' => ['Professionnel', 'Entreprise']
-            ]
-        ];
-        
-        // Pour chaque promotion, créer l'entrée dans la base de données
-        foreach ($promotions as $promo) {
-            $planIds = [];
-            foreach ($promo['plans'] as $planName) {
-                $plan = SubscriptionPlan::where('name', $planName)->first();
-                if ($plan) {
-                    $planIds[] = $plan->id;
-                }
-            }
-            
-            // Créer la promotion
-            $promotion = \App\Models\Promotion::create([
-                'name' => $promo['name'],
-                'description' => $promo['description'],
-                'discount_percentage' => $promo['discount_percentage'],
-                'valid_from' => $promo['valid_from'],
-                'valid_until' => $promo['valid_until'],
-                'code' => $promo['code'],
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-            
-            // Attacher les plans à cette promotion
-            $promotion->plans()->attach($planIds);
         }
     }
 } 

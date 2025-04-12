@@ -52,12 +52,18 @@ class Product extends Model
 
     public function isLowStock()
     {
+        // Les services n'ont pas de stock à gérer
+        if ($this->type !== 'physical') return false;
+        
         if (!$this->stock_alert_threshold) return false;
         return $this->stock_quantity <= $this->stock_alert_threshold;
     }
 
     public function isOutOfStock()
     {
+        // Les services n'ont pas de stock à gérer
+        if ($this->type !== 'physical') return false;
+        
         return $this->stock_quantity <= 0;
     }
 

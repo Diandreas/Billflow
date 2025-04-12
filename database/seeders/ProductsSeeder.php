@@ -380,7 +380,7 @@ class ProductsSeeder extends Seeder
                 'default_price' => 850000.00,
                 'category' => 'Produits Physiques',
                 'sku' => 'PHY-001',
-                'type' => 'physique',
+                'type' => 'physical',
                 'stock_quantity' => 15,
                 'stock_alert_threshold' => 3,
                 'cost_price' => 650000.00
@@ -391,7 +391,7 @@ class ProductsSeeder extends Seeder
                 'default_price' => 250000.00,
                 'category' => 'Produits Physiques',
                 'sku' => 'PHY-002',
-                'type' => 'physique',
+                'type' => 'physical',
                 'stock_quantity' => 8,
                 'stock_alert_threshold' => 2,
                 'cost_price' => 180000.00
@@ -402,7 +402,7 @@ class ProductsSeeder extends Seeder
                 'default_price' => 85000.00,
                 'category' => 'Produits Physiques',
                 'sku' => 'PHY-003',
-                'type' => 'physique',
+                'type' => 'physical',
                 'stock_quantity' => 25,
                 'stock_alert_threshold' => 5,
                 'cost_price' => 55000.00
@@ -413,7 +413,7 @@ class ProductsSeeder extends Seeder
                 'default_price' => 45000.00,
                 'category' => 'Produits Physiques',
                 'sku' => 'PHY-004',
-                'type' => 'physique',
+                'type' => 'physical',
                 'stock_quantity' => 30,
                 'stock_alert_threshold' => 8,
                 'cost_price' => 28000.00
@@ -424,7 +424,7 @@ class ProductsSeeder extends Seeder
                 'default_price' => 325000.00,
                 'category' => 'Produits Physiques',
                 'sku' => 'PHY-005',
-                'type' => 'physique',
+                'type' => 'physical',
                 'stock_quantity' => 5,
                 'stock_alert_threshold' => 2,
                 'cost_price' => 250000.00
@@ -435,7 +435,7 @@ class ProductsSeeder extends Seeder
                 'default_price' => 120000.00,
                 'category' => 'Produits Physiques',
                 'sku' => 'PHY-006',
-                'type' => 'physique',
+                'type' => 'physical',
                 'stock_quantity' => 20,
                 'stock_alert_threshold' => 5,
                 'cost_price' => 85000.00
@@ -446,7 +446,7 @@ class ProductsSeeder extends Seeder
                 'default_price' => 2500000.00,
                 'category' => 'Produits Physiques',
                 'sku' => 'PHY-007',
-                'type' => 'physique',
+                'type' => 'physical',
                 'stock_quantity' => 3,
                 'stock_alert_threshold' => 1,
                 'cost_price' => 1800000.00
@@ -457,7 +457,7 @@ class ProductsSeeder extends Seeder
                 'default_price' => 450000.00,
                 'category' => 'Produits Physiques',
                 'sku' => 'PHY-008',
-                'type' => 'physique',
+                'type' => 'physical',
                 'stock_quantity' => 7,
                 'stock_alert_threshold' => 2,
                 'cost_price' => 320000.00
@@ -468,7 +468,7 @@ class ProductsSeeder extends Seeder
                 'default_price' => 280000.00,
                 'category' => 'Produits Physiques',
                 'sku' => 'PHY-009',
-                'type' => 'physique',
+                'type' => 'physical',
                 'stock_quantity' => 6,
                 'stock_alert_threshold' => 2,
                 'cost_price' => 210000.00
@@ -479,7 +479,7 @@ class ProductsSeeder extends Seeder
                 'default_price' => 75000.00,
                 'category' => 'Produits Physiques',
                 'sku' => 'PHY-010',
-                'type' => 'physique',
+                'type' => 'physical',
                 'stock_quantity' => 12,
                 'stock_alert_threshold' => 3,
                 'cost_price' => 45000.00
@@ -511,7 +511,7 @@ class ProductsSeeder extends Seeder
             
             // Déterminer si c'est un produit physique ou un service
             $isPhysical = $categoryName === 'Produits Physiques' || $faker->boolean(20);
-            $type = $isPhysical ? 'physique' : 'service';
+            $type = $isPhysical ? 'physical' : 'service';
             
             // Générer des valeurs de stock uniquement pour les produits physiques
             $stockQuantity = $isPhysical ? $faker->numberBetween(0, 50) : 0;

@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bill;
+use App\Models\Product;
+use App\Models\Client;
+use App\Models\InventoryMovement;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -68,9 +71,6 @@ class DashboardController extends Controller
                 $currentDate->addDay();
             }
 
-            // Ajoutez cette ligne pour déboguer
-            Log::info('Filled Data:', $filledData);
-
             return response()->json($filledData);
 
         } catch (\Exception $e) {
@@ -79,8 +79,6 @@ class DashboardController extends Controller
             ], 500);
         }
     }
-
-
 
     /**
      * Récupérer les données détaillées du mois en cours et précédent
@@ -146,10 +144,30 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        // Calcul du pourcentage de changement mensuel pour les factures
+        $thisMonth = now()->month;
+        $lastMonth = now()->subMonth()->month;
+        $thisYear = now()->year;
+        $lastYear = now()->subMonth()->year;
+        
+        $currentMonthBills = Bill::whereYear('created_at', $thisYear)
+            ->whereMonth('created_at', $thisMonth)
+            ->count();
+            
+        $lastMonthBills = Bill::whereYear('created_at', $lastYear)
+            ->whereMonth('created_at', $lastMonth)
+            ->count();
+        
+        $monthlyBillsPercentChange = 0;
+        if ($lastMonthBills > 0) {
+            $monthlyBillsPercentChange = round((($currentMonthBills - $lastMonthBills) / $lastMonthBills) * 100, 1);
+        }
+
         // Statistiques globales
         $globalStats = [
             'totalBills' => Bill::count(),
-            'monthlyBills' => Bill::whereMonth('created_at', now()->month)->count(),
+            'monthlyBills' => $currentMonthBills,
+            'monthlyBillsPercentChange' => $monthlyBillsPercentChange,
             'totalRevenue' => number_format(Bill::sum('total'), 0, ',', ' ') . ' FCFA',
             'averageTicket' => number_format(Bill::avg('total') ?? 0, 0, ',', ' ') . ' FCFA'
         ];
@@ -175,11 +193,177 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($client) {
                 $client->total = number_format($client->total, 0, ',', ' ') . ' FCFA';
-                $client->trend = rand(-10, 10);
+                
+                // Calculer la tendance réelle des achats du client
+                $clientBillsCurrentMonth = Bill::where('client_id', $client->id)
+                    ->whereMonth('created_at', now()->month)
+                    ->whereYear('created_at', now()->year)
+                    ->sum('total');
+                
+                $clientBillsLastMonth = Bill::where('client_id', $client->id)
+                    ->whereMonth('created_at', now()->subMonth()->month)
+                    ->whereYear('created_at', now()->subMonth()->year)
+                    ->sum('total');
+                
+                $client->trend = 0;
+                if ($clientBillsLastMonth > 0) {
+                    $client->trend = round((($clientBillsCurrentMonth - $clientBillsLastMonth) / $clientBillsLastMonth) * 100, 1);
+                }
+                
                 return $client;
             });
 
         return view('dashboard', compact('globalStats', 'latestBills', 'topClients'));
+    }
+
+    /**
+     * Récupérer les données pour le graphique de comparaison des revenus
+     */
+    public function getRevenueComparison()
+    {
+        try {
+            $currentMonth = now();
+            $previousMonth = now()->subMonth();
+            
+            // Divisez le mois en 4 semaines
+            $weeks = [
+                [
+                    'start' => $currentMonth->copy()->startOfMonth(),
+                    'end' => $currentMonth->copy()->startOfMonth()->addDays(6)
+                ],
+                [
+                    'start' => $currentMonth->copy()->startOfMonth()->addDays(7),
+                    'end' => $currentMonth->copy()->startOfMonth()->addDays(13)
+                ],
+                [
+                    'start' => $currentMonth->copy()->startOfMonth()->addDays(14),
+                    'end' => $currentMonth->copy()->startOfMonth()->addDays(20)
+                ],
+                [
+                    'start' => $currentMonth->copy()->startOfMonth()->addDays(21),
+                    'end' => $currentMonth->copy()->endOfMonth()
+                ]
+            ];
+            
+            $prevWeeks = [
+                [
+                    'start' => $previousMonth->copy()->startOfMonth(),
+                    'end' => $previousMonth->copy()->startOfMonth()->addDays(6)
+                ],
+                [
+                    'start' => $previousMonth->copy()->startOfMonth()->addDays(7),
+                    'end' => $previousMonth->copy()->startOfMonth()->addDays(13)
+                ],
+                [
+                    'start' => $previousMonth->copy()->startOfMonth()->addDays(14),
+                    'end' => $previousMonth->copy()->startOfMonth()->addDays(20)
+                ],
+                [
+                    'start' => $previousMonth->copy()->startOfMonth()->addDays(21),
+                    'end' => $previousMonth->copy()->endOfMonth()
+                ]
+            ];
+            
+            $currentData = [];
+            $previousData = [];
+            $labels = [];
+            
+            foreach ($weeks as $index => $week) {
+                $revenue = Bill::whereBetween('created_at', [$week['start'], $week['end']])->sum('total');
+                $currentData[] = $revenue;
+                $labels[] = 'Semaine ' . ($index + 1);
+            }
+            
+            foreach ($prevWeeks as $week) {
+                $revenue = Bill::whereBetween('created_at', [$week['start'], $week['end']])->sum('total');
+                $previousData[] = $revenue;
+            }
+            
+            return response()->json([
+                'labels' => $labels,
+                'currentData' => $currentData,
+                'previousData' => $previousData
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Récupérer les données pour le graphique de statut des factures
+     */
+    public function getInvoiceStatus()
+    {
+        try {
+            $statusCounts = Bill::select('status', DB::raw('count(*) as count'))
+                ->groupBy('status')
+                ->get()
+                ->mapWithKeys(function ($item) {
+                    return [$item->status => $item->count];
+                })
+                ->toArray();
+            
+            // Assurer la présence des statuts communs même s'ils sont à zéro
+            $statuses = ['Payé', 'En attente', 'Annulé'];
+            $data = [];
+            $labels = [];
+            
+            foreach ($statuses as $status) {
+                $labels[] = $status;
+                $data[] = $statusCounts[$status] ?? 0;
+            }
+            
+            return response()->json([
+                'labels' => $labels,
+                'data' => $data
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Récupérer les statistiques d'inventaire pour le dashboard
+     */
+    public function getInventoryStats()
+    {
+        try {
+            // Produits avec stock bas (sous le seuil d'alerte)
+            $lowStockProducts = Product::whereRaw('stock_quantity <= stock_alert_threshold')
+                ->where('type', 'physique')
+                ->where('stock_alert_threshold', '>', 0)
+                ->count();
+            
+            // Mouvements d'inventaire récents
+            $recentMovements = InventoryMovement::with(['product'])
+                ->latest()
+                ->take(5)
+                ->get();
+            
+            // Valeur totale du stock
+            $stockValue = Product::where('type', 'physique')
+                ->whereNotNull('cost_price')
+                ->select(DB::raw('SUM(stock_quantity * cost_price) as total_value'))
+                ->first()
+                ->total_value ?? 0;
+            
+            return response()->json([
+                'lowStockProducts' => $lowStockProducts,
+                'recentMovements' => $recentMovements,
+                'stockValue' => number_format($stockValue, 0, ',', ' ') . ' FCFA'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -248,56 +432,31 @@ class DashboardController extends Controller
             // En-têtes CSV - Statistiques générales
             fputcsv($file, ['Statistiques Générales']);
             fputcsv($file, ['Métrique', 'Valeur']);
-            fputcsv($file, ['Total Clients', $stats['totalClients']]);
             fputcsv($file, ['Total Factures', $stats['totalBills']]);
-            fputcsv($file, ['Total Revenus', $stats['totalRevenue']]);
-            fputcsv($file, ['Panier Moyen', $stats['averageBill']]);
-            fputcsv($file, ['Clients ce mois', $stats['clientsThisMonth']]);
-            fputcsv($file, ['Revenus ce mois', $stats['revenueThisMonth']]);
+            fputcsv($file, ['Factures ce mois', $stats['monthlyBills']]);
+            fputcsv($file, ['Revenu Total', $stats['totalRevenue']]);
+            fputcsv($file, ['Panier Moyen', $stats['averageTicket']]);
+            fputcsv($file, ['']);
             
-            // Ligne vide pour séparer les sections
-            fputcsv($file, []);
+            // En-têtes CSV - Top clients
+            fputcsv($file, ['Top 5 Clients']);
+            fputcsv($file, ['Client', 'Nombre de factures', 'Montant total']);
             
-            // Statistiques mensuelles
+            foreach ($stats['topClients'] as $client) {
+                fputcsv($file, [$client->name, $client->count, $client->total]);
+            }
+            
+            fputcsv($file, ['']);
+            
+            // En-têtes CSV - Statistiques mensuelles
             fputcsv($file, ['Statistiques Mensuelles']);
-            fputcsv($file, ['Mois', 'Clients', 'Factures', 'Revenus']);
+            fputcsv($file, ['Mois', 'Nombre de factures', 'Revenu Total']);
             
             foreach ($stats['monthlyStats'] as $month => $data) {
                 fputcsv($file, [
-                    $month,
-                    $data['clients'] ?? 0,
-                    $data['bills'] ?? 0,
-                    $data['revenue'] ?? 0
-                ]);
-            }
-            
-            // Ligne vide pour séparer les sections
-            fputcsv($file, []);
-            
-            // Top clients
-            fputcsv($file, ['Top Clients']);
-            fputcsv($file, ['Nom', 'Total Factures', 'Total Dépensé']);
-            
-            foreach ($stats['topClients'] as $client) {
-                fputcsv($file, [
-                    $client['name'] ?? 'Client inconnu',
-                    $client['bills_count'] ?? 0,
-                    $client['total_spent'] ?? 0
-                ]);
-            }
-            
-            // Ligne vide pour séparer les sections
-            fputcsv($file, []);
-            
-            // Produits les plus vendus
-            fputcsv($file, ['Produits les plus vendus']);
-            fputcsv($file, ['Nom', 'Quantité vendue', 'Revenus générés']);
-            
-            foreach ($stats['topProducts'] as $product) {
-                fputcsv($file, [
-                    $product['name'] ?? 'Produit inconnu',
-                    $product['quantity_sold'] ?? 0,
-                    $product['revenue'] ?? 0
+                    $month, 
+                    $data['count'],
+                    number_format($data['amount'], 0, ',', ' ') . ' FCFA'
                 ]);
             }
             
@@ -306,80 +465,56 @@ class DashboardController extends Controller
         
         return response()->stream($callback, 200, $headers);
     }
-    
+
     /**
-     * Obtenir les données de statistiques pour l'exportation
+     * Récupérer les données complètes pour l'exportation des statistiques
      */
     private function getStatsData()
     {
         // Statistiques globales
-        $totalClients = \App\Models\Client::count();
-        $totalBills = \App\Models\Bill::count();
-        $totalRevenue = \App\Models\Bill::sum('total');
-        $averageBill = $totalBills > 0 ? \App\Models\Bill::avg('total') : 0;
+        $stats = [
+            'totalBills' => Bill::count(),
+            'monthlyBills' => Bill::whereMonth('created_at', now()->month)->count(),
+            'totalRevenue' => number_format(Bill::sum('total'), 0, ',', ' ') . ' FCFA',
+            'averageTicket' => number_format(Bill::avg('total') ?? 0, 0, ',', ' ') . ' FCFA'
+        ];
         
-        // Statistiques du mois en cours
-        $currentMonth = now()->startOfMonth();
-        $clientsThisMonth = \App\Models\Client::where('created_at', '>=', $currentMonth)->count();
-        $revenueThisMonth = \App\Models\Bill::where('date', '>=', $currentMonth)->sum('total');
+        // Top clients
+        $stats['topClients'] = DB::table('bills')
+            ->join('clients', 'bills.client_id', '=', 'clients.id')
+            ->select(
+                'clients.name',
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(total) as total')
+            )
+            ->groupBy('clients.name')
+            ->orderByDesc('total')
+            ->take(5)
+            ->get()
+            ->map(function ($client) {
+                $client->total = number_format($client->total, 0, ',', ' ') . ' FCFA';
+                return $client;
+            });
         
-        // Statistiques mensuelles (12 derniers mois)
+        // Statistiques mensuelles (6 derniers mois)
         $monthlyStats = [];
-        for ($i = 11; $i >= 0; $i--) {
+        for ($i = 5; $i >= 0; $i--) {
             $month = now()->subMonths($i);
-            $monthStart = $month->copy()->startOfMonth();
-            $monthEnd = $month->copy()->endOfMonth();
-            $monthKey = $month->format('Y-m');
+            $monthStr = $month->format('Y-m');
+            $monthLabel = $month->translatedFormat('F Y');
             
-            $monthlyStats[$monthKey] = [
-                'clients' => \App\Models\Client::whereBetween('created_at', [$monthStart, $monthEnd])->count(),
-                'bills' => \App\Models\Bill::whereBetween('date', [$monthStart, $monthEnd])->count(),
-                'revenue' => \App\Models\Bill::whereBetween('date', [$monthStart, $monthEnd])->sum('total')
+            $bills = Bill::whereYear('created_at', $month->year)
+                ->whereMonth('created_at', $month->month)
+                ->get();
+            
+            $monthlyStats[$monthLabel] = [
+                'count' => $bills->count(),
+                'amount' => $bills->sum('total')
             ];
         }
         
-        // Top clients
-        $topClients = \App\Models\Client::withCount('bills')
-            ->withSum('bills as total_spent', 'total')
-            ->orderByDesc('total_spent')
-            ->limit(10)
-            ->get()
-            ->map(function($client) {
-                return [
-                    'name' => $client->name,
-                    'bills_count' => $client->bills_count,
-                    'total_spent' => $client->total_spent
-                ];
-            });
+        $stats['monthlyStats'] = $monthlyStats;
         
-        // Top produits
-        $topProducts = \App\Models\Product::withCount(['bills as quantity_sold' => function($query) {
-                $query->select(\Illuminate\Support\Facades\DB::raw('SUM(bill_products.quantity)'));
-            }])
-            ->withCount(['bills as revenue' => function($query) {
-                $query->select(\Illuminate\Support\Facades\DB::raw('SUM(bill_products.quantity * bill_products.unit_price)'));
-            }])
-            ->orderByDesc('revenue')
-            ->limit(10)
-            ->get()
-            ->map(function($product) {
-                return [
-                    'name' => $product->name,
-                    'quantity_sold' => $product->quantity_sold,
-                    'revenue' => $product->revenue
-                ];
-            });
-        
-        return [
-            'totalClients' => $totalClients,
-            'totalBills' => $totalBills,
-            'totalRevenue' => $totalRevenue,
-            'averageBill' => $averageBill,
-            'clientsThisMonth' => $clientsThisMonth,
-            'revenueThisMonth' => $revenueThisMonth,
-            'monthlyStats' => $monthlyStats,
-            'topClients' => $topClients,
-            'topProducts' => $topProducts
-        ];
+        return $stats;
     }
 }

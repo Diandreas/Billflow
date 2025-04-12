@@ -10,26 +10,25 @@ class PhonesSeeder extends Seeder
 {
     public function run()
     {
+        // Le PhonesSeeder n'est plus nécessaire car les téléphones 
+        // sont déjà créés dans le ClientsSeeder
+        
+        // Mais on pourrait ajouter des téléphones supplémentaires ici si besoin
+        // Exemple:
+        /*
         $phones = [
-            '+33 6 12 34 56 78', '+33 6 23 45 67 89', '+33 6 34 56 78 90', '+33 6 45 67 89 01', '+33 6 56 78 90 12',
-            '+237 655 123 456', '+237 699 234 567', '+237 677 345 678', '+237 651 456 789', '+237 694 567 890',
-            '+237 676 678 901', '+237 698 789 012', '+237 652 890 123', '+237 697 901 234', '+237 675 012 345',
-            '+237 655 234 567', '+237 699 345 678', '+237 677 456 789', '+237 651 567 890', '+237 694 678 901',
+            '+33 7 12 34 56 78', '+33 7 23 45 67 89', '+33 7 34 56 78 90',
+            '+237 650 123 456', '+237 691 234 567', '+237 671 345 678',
         ];
 
-        $clients = Client::all();
-
-        foreach ($clients as $index => $client) {
-            // Utiliser un numéro de téléphone existant si l'index dépasse la taille du tableau $phones
-            $phoneNumber = $phones[$index % count($phones)];
-
-            $phone = Phone::create([
-                'number' => $phoneNumber,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $client->phones()->attach($phone->id);
+        foreach ($phones as $phoneNumber) {
+            // Vérifier si le numéro existe déjà
+            if (!Phone::where('number', $phoneNumber)->exists()) {
+                Phone::create([
+                    'number' => $phoneNumber,
+                ]);
+            }
         }
+        */
     }
 }

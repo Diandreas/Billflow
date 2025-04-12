@@ -11,6 +11,7 @@ class Bill extends Model
         'description',
         'total',
         'date',
+        'due_date',
         'tax_rate',
         'tax_amount',
         'user_id',
@@ -20,6 +21,7 @@ class Bill extends Model
 
     protected $casts = [
         'date' => 'datetime',
+        'due_date' => 'datetime',
         'total' => 'decimal:2',
         'tax_rate' => 'decimal:2',
         'tax_amount' => 'decimal:2',

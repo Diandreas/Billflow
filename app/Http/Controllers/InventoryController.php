@@ -14,21 +14,29 @@ class InventoryController extends Controller
      */
     public function index()
     {
-        // Statistiques globales de stock
+        // Statistiques globales de stock (uniquement produits physiques)
         $stats = [
-            'total_products' => Product::count(),
-            'out_of_stock' => Product::where('stock_quantity', '<=', 0)->count(),
-            'low_stock' => Product::whereColumn('stock_quantity', '<=', 'stock_alert_threshold')
+            'total_products' => Product::where('type', 'physical')->count(),
+            'out_of_stock' => Product::where('type', 'physical')->where('stock_quantity', '<=', 0)->count(),
+            'low_stock' => Product::where('type', 'physical')
+                ->whereColumn('stock_quantity', '<=', 'stock_alert_threshold')
                 ->where('stock_alert_threshold', '>', 0)
                 ->count(),
-            'total_stock_value' => Product::selectRaw('SUM(stock_quantity * default_price) as value')->first()->value ?? 0,
-            'total_cost_value' => Product::selectRaw('SUM(stock_quantity * cost_price) as value')->first()->value ?? 0,
+            'total_stock_value' => Product::where('type', 'physical')
+                ->selectRaw('SUM(stock_quantity * default_price) as value')
+                ->first()->value ?? 0,
+            'total_cost_value' => Product::where('type', 'physical')
+                ->selectRaw('SUM(stock_quantity * cost_price) as value')
+                ->first()->value ?? 0,
         ];
 
-        // Produits en rupture ou faible stock
-        $lowStockProducts = Product::whereColumn('stock_quantity', '<=', 'stock_alert_threshold')
-            ->where('stock_alert_threshold', '>', 0)
-            ->orWhere('stock_quantity', '<=', 0)
+        // Produits physiques en rupture ou faible stock 
+        $lowStockProducts = Product::where('type', 'physical')
+            ->where(function($query) {
+                $query->whereColumn('stock_quantity', '<=', 'stock_alert_threshold')
+                    ->where('stock_alert_threshold', '>', 0)
+                    ->orWhere('stock_quantity', '<=', 0);
+            })
             ->with('category')
             ->orderBy('stock_quantity')
             ->get();
@@ -71,10 +79,16 @@ class InventoryController extends Controller
         // Tri
         $query->latest();
 
-        $movements = $query->paginate(20);
-        $products = Product::orderBy('name')->get();
+        // Nombre d'éléments par page (défaut: 25)
+        $perPage = $request->input('per_page', 25);
+        // Limiter les valeurs possibles pour éviter les problèmes de performance
+        $perPage = in_array($perPage, [25, 50, 100, 200]) ? $perPage : 25;
 
-        return view('inventory.movements', compact('movements', 'products'));
+        $movements = $query->paginate($perPage)->appends($request->except('page'));
+        // Ne lister que les produits physiques dans les filtres
+        $products = Product::where('type', 'physical')->orderBy('name')->get();
+
+        return view('inventory.movements', compact('movements', 'products', 'perPage'));
     }
 
     /**
@@ -82,7 +96,8 @@ class InventoryController extends Controller
      */
     public function adjustment()
     {
-        $products = Product::orderBy('name')->get();
+        // Ne lister que les produits physiques pour l'ajustement de stock
+        $products = Product::where('type', 'physical')->orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
 
         return view('inventory.adjustment', compact('products', 'categories'));
@@ -149,7 +164,8 @@ class InventoryController extends Controller
      */
     public function receive()
     {
-        $products = Product::orderBy('name')->get();
+        // Ne lister que les produits physiques pour la réception de stock
+        $products = Product::where('type', 'physical')->orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
 
         return view('inventory.receive', compact('products', 'categories'));
