@@ -108,6 +108,11 @@ class ProductController extends Controller
             'category_id' => 'nullable|exists:product_categories,id',
         ]);
 
+        // S'assurer que le prix par défaut n'est jamais NULL
+        if (!isset($validated['default_price']) || $validated['default_price'] === null) {
+            $validated['default_price'] = 0;
+        }
+
         // Si le type n'est pas spécifié, considérer comme un service par défaut
         if (empty($validated['type'])) {
             $validated['type'] = 'service';
@@ -121,7 +126,7 @@ class ProductController extends Controller
 
         $product = Product::create($validated);
 
-        if ($request->ajax()) {
+        if ($request->ajax() || $request->expectsJson() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'product' => $product,
@@ -275,6 +280,14 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'default_price' => 'nullable|numeric|min:0',
         ]);
+
+        // S'assurer que le prix par défaut n'est jamais NULL
+        if (!isset($validated['default_price']) || $validated['default_price'] === null) {
+            $validated['default_price'] = 0;
+        }
+
+        // Définir un type par défaut
+        $validated['type'] = 'service';
 
         $product = Product::create($validated);
 

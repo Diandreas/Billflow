@@ -354,10 +354,10 @@ class DashboardController extends Controller
         
         // Top produits
         $topProducts = \App\Models\Product::withCount(['bills as quantity_sold' => function($query) {
-                $query->select(\Illuminate\Support\Facades\DB::raw('SUM(bill_product.quantity)'));
+                $query->select(\Illuminate\Support\Facades\DB::raw('SUM(bill_products.quantity)'));
             }])
             ->withCount(['bills as revenue' => function($query) {
-                $query->select(\Illuminate\Support\Facades\DB::raw('SUM(bill_product.quantity * bill_product.price)'));
+                $query->select(\Illuminate\Support\Facades\DB::raw('SUM(bill_products.quantity * bill_products.unit_price)'));
             }])
             ->orderByDesc('revenue')
             ->limit(10)

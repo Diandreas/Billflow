@@ -46,14 +46,23 @@
                                     <!-- Les lignes de produits seront ajoutées ici -->
                                     <div class="product-row grid grid-cols-12 gap-4 mb-4 items-center">
                                         <div class="col-span-5">
-                                            <select name="product_id[]" class="w-full rounded-md border-gray-300" required>
-                                                <option value="">{{ __('Sélectionner un produit') }}</option>
-                                                @foreach($products as $product)
-                                                    <option value="{{ $product->id }}" data-stock="{{ $product->stock_quantity }}" data-cost="{{ $product->cost_price }}">
-                                                        {{ $product->name }} ({{ __('Stock actuel') }}: {{ $product->stock_quantity }})
-                                                    </option>
-                                                @endforeach
-                                            </select>
+                                            <div class="flex items-center space-x-2">
+                                                <input type="hidden" name="product_id[]" class="product-id" required>
+                                                <div class="product-display flex-1 bg-gray-100 p-3 rounded-md">
+                                                    <span class="product-placeholder text-gray-500">{{ __('Sélectionner un produit') }}</span>
+                                                    <div class="product-info hidden">
+                                                        <div class="font-medium product-name"></div>
+                                                        <div class="text-sm text-gray-600">
+                                                            {{ __('Stock actuel') }}: <span class="product-stock"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="select-product bg-indigo-600 text-white p-2 rounded-md hover:bg-indigo-700">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </div>
                                         <div class="col-span-2">
                                             <input type="number" name="quantity[]" min="1" value="1" class="w-full rounded-md border-gray-300" required>
@@ -94,19 +103,90 @@
         </div>
     </div>
 
+    <!-- Modal de sélection de produit -->
+    <div id="productSelectModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 transform transition-all">
+            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-lg p-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-medium text-white">
+                        {{ __('Sélectionner un produit') }}
+                    </h3>
+                    <button type="button" class="close-modal text-white hover:text-gray-200">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="mb-4">
+                    <input type="text" id="productSearchInput" class="w-full rounded-md border-gray-300" placeholder="{{ __('Rechercher un produit...') }}">
+                </div>
+                <div class="max-h-96 overflow-y-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Nom') }}</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Type') }}</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Stock') }}</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Prix d\'achat') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="productList">
+                            @foreach($products as $product)
+                                <tr class="product-item hover:bg-gray-50 cursor-pointer" 
+                                    data-id="{{ $product->id }}" 
+                                    data-name="{{ $product->name }}" 
+                                    data-stock="{{ $product->stock_quantity }}" 
+                                    data-cost="{{ $product->cost_price }}">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="font-medium text-gray-900">{{ $product->name }}</div>
+                                        <div class="text-sm text-gray-500">{{ Str::limit($product->description, 50) }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs rounded-full {{ $product->type === 'physical' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
+                                            {{ $product->type === 'physical' ? __('Produit') : __('Service') }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {{ $product->stock_quantity }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {{ $product->cost_price ? number_format($product->cost_price, 0, ',', ' ') . ' FCFA' : '-' }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('products-container');
             const addButton = document.getElementById('add-product');
+            const modal = document.getElementById('productSelectModal');
+            const productSearchInput = document.getElementById('productSearchInput');
+            let currentProductRow = null;
             
             // Fonction pour ajouter un produit
             function addProductRow() {
                 const row = document.querySelector('.product-row').cloneNode(true);
                 
                 // Réinitialiser les valeurs
-                row.querySelector('select[name="product_id[]"]').value = '';
+                row.querySelector('input.product-id').value = '';
+                row.querySelector('.product-placeholder').classList.remove('hidden');
+                row.querySelector('.product-info').classList.add('hidden');
                 row.querySelector('input[name="quantity[]"]').value = '1';
                 row.querySelector('input[name="cost_price[]"]').value = '';
+                
+                // Configurer le bouton de sélection de produit
+                const selectBtn = row.querySelector('.select-product');
+                selectBtn.addEventListener('click', function() {
+                    openProductModal(row);
+                });
                 
                 // Afficher le bouton de suppression
                 row.querySelector('.remove-product').style.display = 'block';
@@ -117,21 +197,99 @@
                 container.appendChild(row);
             }
             
+            // Configurer le bouton de sélection de produit pour la première ligne
+            const firstRowSelectBtn = document.querySelector('.product-row .select-product');
+            firstRowSelectBtn.addEventListener('click', function() {
+                openProductModal(firstRowSelectBtn.closest('.product-row'));
+            });
+            
             // Événement pour ajouter un produit
             addButton.addEventListener('click', addProductRow);
             
-            // Afficher le prix d'achat quand un produit est sélectionné
-            container.addEventListener('change', function(e) {
-                if (e.target.name === 'product_id[]') {
-                    const row = e.target.closest('.product-row');
-                    const costInput = row.querySelector('input[name="cost_price[]"]');
-                    const option = e.target.options[e.target.selectedIndex];
-                    
-                    if (option && option.dataset.cost) {
-                        costInput.value = option.dataset.cost;
-                    }
+            // Ouvrir le modal de sélection de produit
+            function openProductModal(row) {
+                currentProductRow = row;
+                modal.classList.remove('hidden');
+                productSearchInput.value = '';
+                productSearchInput.focus();
+                filterProducts('');
+            }
+            
+            // Fermer le modal
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    modal.classList.add('hidden');
+                });
+            });
+            
+            // Cliquer en dehors du modal pour fermer
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
                 }
             });
+            
+            // Filtrer les produits
+            productSearchInput.addEventListener('input', function() {
+                filterProducts(this.value.toLowerCase());
+            });
+            
+            function filterProducts(searchTerm) {
+                const rows = document.querySelectorAll('#productList tr.product-item');
+                
+                rows.forEach(row => {
+                    const name = row.querySelector('td:first-child').textContent.toLowerCase();
+                    if (name.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Sélectionner un produit
+            document.querySelectorAll('#productList tr.product-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    selectProduct(this);
+                });
+            });
+            
+            function selectProduct(productElement) {
+                const id = productElement.dataset.id;
+                const name = productElement.dataset.name;
+                const stock = productElement.dataset.stock;
+                const cost = productElement.dataset.cost;
+                
+                // Mettre à jour les champs dans la ligne
+                currentProductRow.querySelector('input.product-id').value = id;
+                currentProductRow.querySelector('.product-name').textContent = name;
+                currentProductRow.querySelector('.product-stock').textContent = stock;
+                
+                // Afficher les infos du produit
+                currentProductRow.querySelector('.product-placeholder').classList.add('hidden');
+                currentProductRow.querySelector('.product-info').classList.remove('hidden');
+                
+                // Mettre à jour le prix d'achat si disponible
+                if (cost) {
+                    currentProductRow.querySelector('input[name="cost_price[]"]').value = cost;
+                }
+                
+                // Fermer le modal
+                modal.classList.add('hidden');
+                
+                // Notification de succès
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Produit sélectionné',
+                    text: `${name} a été ajouté à la réception`,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    background: '#fff',
+                    iconColor: '#10B981'
+                });
+            }
             
             // Activer le bouton de suppression sur la première ligne si on ajoute d'autres lignes
             addButton.addEventListener('click', function() {
@@ -141,6 +299,69 @@
                     firstRow.remove();
                 });
             });
+            
+            // Validation et confirmation du formulaire
+            document.querySelector('form').addEventListener('submit', function(e) {
+                e.preventDefault(); // Empêcher la soumission par défaut
+                
+                const productIds = document.querySelectorAll('input.product-id');
+                let valid = true;
+                let emptyProductRow = false;
+                
+                // Vérifier si au moins un produit est sélectionné
+                for (let i = 0; i < productIds.length; i++) {
+                    if (!productIds[i].value) {
+                        emptyProductRow = true;
+                        valid = false;
+                        break;
+                    }
+                }
+                
+                if (emptyProductRow) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erreur',
+                        text: 'Veuillez sélectionner un produit pour chaque ligne ou supprimer les lignes vides',
+                        confirmButtonColor: '#4F46E5'
+                    });
+                    return;
+                }
+                
+                if (valid) {
+                    // Confirmation avant soumission
+                    Swal.fire({
+                        title: 'Confirmer la réception',
+                        text: 'Êtes-vous sûr de vouloir enregistrer cette réception de stock ?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#4F46E5',
+                        cancelButtonColor: '#EF4444',
+                        confirmButtonText: 'Oui, enregistrer',
+                        cancelButtonText: 'Annuler'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Soumettre le formulaire
+                            this.submit();
+                            
+                            // Montrer un indicateur de chargement
+                            Swal.fire({
+                                title: 'Enregistrement en cours...',
+                                text: 'Veuillez patienter',
+                                allowOutsideClick: false,
+                                showConfirmButton: false,
+                                willOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                        }
+                    });
+                }
+            });
         });
     </script>
+    
+    @push('scripts')
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @endpush
 </x-app-layout> 

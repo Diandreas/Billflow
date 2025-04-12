@@ -141,7 +141,7 @@
                                         <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" onclick="event.stopPropagation();" class="text-red-600 hover:text-red-900 bg-white p-1.5 rounded-full shadow-sm">
+                                            <button type="submit" onclick="event.stopPropagation();" class="text-red-600 hover:text-red-900 bg-white p-1.5 rounded-full shadow-sm delete-product-btn">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
@@ -200,7 +200,14 @@
                     </div>
                     <div>
                         <label for="default_price" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Prix par défaut') }} (FCFA)</label>
-                        <input type="number" min="0" name="default_price" id="default_price" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <input type="number" min="0" name="default_price" id="default_price" value="0" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    <div>
+                        <label for="type" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Type de produit') }}</label>
+                        <select name="type" id="type" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="physical">{{ __('Produit physique') }}</option>
+                            <option value="service" selected>{{ __('Service') }}</option>
+                        </select>
                     </div>
                     <div class="flex justify-between pt-4">
                         <a href="{{ route('products.create') }}" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium py-2.5 px-4 rounded-xl shadow-sm flex items-center transition duration-200">
@@ -243,6 +250,8 @@
     @endpush
 
     @push('scripts')
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Toggle modal avec animation
         function toggleModal(modalId) {
@@ -274,61 +283,105 @@
         }
 
         // Soumission du formulaire de création de produit
-        document.getElementById('newProductForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Récupération des données du formulaire
-            const formData = new FormData(this);
-            
-            // Conversion en objet JSON
-            const jsonData = {};
-            formData.forEach((value, key) => {
-                jsonData[key] = value;
-            });
-            
-            // Envoi de la requête
-            fetch(this.action, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify(jsonData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Fermer le modal
-                    toggleModal('newProductModal');
-                    
-                    // Afficher un message de succès
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Produit créé',
-                        text: data.message,
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 3000,
-                        timerProgressBar: true,
-                        background: '#fff',
-                        iconColor: '#4F46E5',
-                        customClass: {
-                            popup: 'colored-toast'
+        const newProductForm = document.getElementById('newProductForm');
+        if (newProductForm) {
+            newProductForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // S'assurer que default_price a une valeur
+                const defaultPriceInput = document.getElementById('default_price');
+                if (!defaultPriceInput.value || defaultPriceInput.value === '') {
+                    defaultPriceInput.value = '0';
+                }
+                
+                // Récupération des données du formulaire
+                const formData = new FormData(this);
+                
+                // Conversion en objet JSON avec gestion spécifique de default_price
+                const jsonData = {};
+                formData.forEach((value, key) => {
+                    if (key === 'default_price') {
+                        jsonData[key] = value === '' ? 0 : Number(value);
+                    } else {
+                        jsonData[key] = value;
+                    }
+                });
+                
+                // Définir explicitement un type s'il n'est pas présent
+                if (!jsonData.type) {
+                    jsonData.type = 'service';
+                }
+                
+                // Envoi de la requête
+                fetch(this.action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'  // Indique une requête AJAX
+                    },
+                    body: JSON.stringify(jsonData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.headers.get('content-type')?.includes('text/html')) {
+                            throw new Error('Le serveur a répondu avec une page HTML au lieu de JSON');
                         }
-                    });
-                    
-                    // Recharger la page après un court délai
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    // Afficher un message d'erreur
+                        throw new Error('Erreur réseau ou côté serveur: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Fermer le modal
+                        toggleModal('newProductModal');
+                        
+                        // Afficher un message de succès
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Produit créé',
+                            text: data.message,
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                            background: '#fff',
+                            iconColor: '#4F46E5',
+                            customClass: {
+                                popup: 'colored-toast'
+                            }
+                        });
+                        
+                        // Recharger la page après un court délai
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        // Afficher un message d'erreur
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erreur',
+                            text: data.message || 'Une erreur est survenue',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 4000,
+                            background: '#fff',
+                            iconColor: '#EF4444',
+                            customClass: {
+                                popup: 'colored-toast'
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
                     Swal.fire({
                         icon: 'error',
                         title: 'Erreur',
-                        text: data.message || 'Une erreur est survenue',
+                        text: 'Une erreur est survenue lors de la création du produit',
                         toast: true,
                         position: 'top-end',
                         showConfirmButton: false,
@@ -339,45 +392,31 @@
                             popup: 'colored-toast'
                         }
                     });
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Erreur',
-                    text: 'Une erreur est survenue lors de la création du produit',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 4000,
-                    background: '#fff',
-                    iconColor: '#EF4444',
-                    customClass: {
-                        popup: 'colored-toast'
+                });
+            });
+        }
+
+        // Filtrage des produits avec la barre de recherche
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                document.querySelectorAll('.grid > div').forEach(product => {
+                    const name = product.querySelector('h3').textContent.toLowerCase();
+                    const description = product.querySelector('p').textContent.toLowerCase();
+                    
+                    if (name.includes(searchTerm) || description.includes(searchTerm)) {
+                        product.style.display = '';
+                    } else {
+                        product.style.display = 'none';
                     }
                 });
             });
-        });
-
-        // Filtrage des produits avec la barre de recherche
-        document.getElementById('search').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            document.querySelectorAll('.grid > div').forEach(product => {
-                const name = product.querySelector('h3').textContent.toLowerCase();
-                const description = product.querySelector('p').textContent.toLowerCase();
-                
-                if (name.includes(searchTerm) || description.includes(searchTerm)) {
-                    product.style.display = '';
-                } else {
-                    product.style.display = 'none';
-                }
-            });
-        });
+        }
 
         // Confirmation de suppression avec SweetAlert
         document.addEventListener('click', function(e) {
-            const deleteButton = e.target.closest('button[type="submit"]');
+            const deleteButton = e.target.closest('.delete-product-btn');
             if (deleteButton && deleteButton.closest('form[action*="products"]') && deleteButton.closest('form[method="POST"]')) {
                 e.preventDefault();
                 const form = deleteButton.closest('form');
@@ -399,7 +438,7 @@
                     if (result.isConfirmed) {
                         // Soumettre le formulaire via AJAX pour éviter le rechargement de la page
                         const url = form.getAttribute('action');
-                        const token = document.querySelector('meta[name="csrf-token"]').content;
+                        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                         
                         fetch(url, {
                             method: 'POST',
@@ -412,7 +451,12 @@
                                 _method: 'DELETE'
                             })
                         })
-                        .then(response => response.json())
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Erreur serveur: ' + response.status);
+                            }
+                            return response.json();
+                        })
                         .then(data => {
                             if (data.success) {
                                 Swal.fire({
