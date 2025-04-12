@@ -8,6 +8,7 @@ use App\Models\Setting;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use App\Models\InventoryMovement;
+use Illuminate\Support\Facades\Log;
 
 class BillController extends Controller
 {
@@ -83,51 +84,87 @@ class BillController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'client_id' => 'required|exists:clients,id',
-            'date' => 'required|date',
-            'tax_rate' => 'required|numeric',
-            'description' => 'nullable|string',
-            'products' => 'required|array',
-            'quantities' => 'required|array',
-            'prices' => 'required|array',
-        ]);
+        try {
+            // Validation des données avec des messages d'erreur personnalisés
+            $validated = $request->validate([
+                'client_id' => 'required|exists:clients,id',
+                'date' => 'required|date',
+                'tax_rate' => 'required|numeric',
+                'notes' => 'nullable|string',
+                'reference' => 'nullable|string|max:255',
+                'products' => 'required|array|min:1',
+                'quantities' => 'required|array|min:1',
+                'prices' => 'required|array|min:1',
+                'unit_prices' => 'array', // Assure la compatibilité avec les deux noms de champs possibles
+                'status' => 'nullable|string|in:pending,paid,overdue',
+                'due_date' => 'nullable|date|after_or_equal:date',
+                'discount_percent' => 'nullable|numeric|min:0|max:100',
+                'discount_amount' => 'nullable|numeric|min:0',
+            ], [
+                'client_id.required' => 'Veuillez sélectionner un client',
+                'client_id.exists' => 'Le client sélectionné n\'existe pas',
+                'products.required' => 'Veuillez ajouter au moins un produit',
+                'products.min' => 'Veuillez ajouter au moins un produit',
+            ]);
 
-        // Générer une référence unique
-        $reference = Bill::generateReference();
+            // Gérer à la fois unit_prices et prices
+            $pricesField = $request->has('unit_prices') ? 'unit_prices' : 'prices';
 
-        // Créer la facture
-        $bill = Bill::create([
-            'reference' => $reference,
-            'client_id' => $validated['client_id'],
-            'date' => $validated['date'],
-            'tax_rate' => $validated['tax_rate'],
-            'description' => $validated['description'] ?? null,
-            'user_id' => 1, // Utilisateur par défaut
-            'status' => 'pending',
-        ]);
+            // Générer une référence unique
+            $reference = $request->input('reference') ?: Bill::generateReference();
 
-        // Ajouter les produits
-        $products = $request->input('products', []);
-        $quantities = $request->input('quantities', []);
-        $prices = $request->input('prices', []);
+            // Créer la facture
+            $bill = Bill::create([
+                'reference' => $reference,
+                'client_id' => $validated['client_id'],
+                'date' => $validated['date'],
+                'due_date' => $request->input('due_date'),
+                'tax_rate' => $validated['tax_rate'],
+                'description' => $validated['notes'] ?? null,
+                'status' => $request->input('status', 'pending'),
+                'user_id' => $request->user() ? $request->user()->id : 1,
+                'total' => 0, // Valeur par défaut pour éviter l'erreur MySQL
+                'tax_amount' => 0, // Valeur par défaut pour éviter l'erreur MySQL
+            ]);
 
-        for ($i = 0; $i < count($products); $i++) {
-            if (isset($products[$i]) && isset($quantities[$i]) && isset($prices[$i])) {
+            // Ajouter les produits
+            $products = $request->input('products', []);
+            $quantities = $request->input('quantities', []);
+            $prices = $request->input($pricesField, []);
+
+            // Vérification des données de produits
+            if (count($products) != count($quantities) || count($products) != count($prices)) {
+                throw new \Exception('Les données de produits sont incomplètes ou non valides.');
+            }
+
+            // Initialisation du total
+            $subtotal = 0;
+
+            for ($i = 0; $i < count($products); $i++) {
+                if (empty($products[$i])) {
+                    continue; // Ignorer les lignes vides
+                }
+                
                 $productId = $products[$i];
-                $quantity = $quantities[$i];
-                $price = $prices[$i];
+                $quantity = floatval($quantities[$i]);
+                $price = floatval($prices[$i]);
+                
+                if ($quantity <= 0 || $price < 0) {
+                    continue; // Ignorer les quantités négatives ou nulles
+                }
+                
+                $lineTotal = $quantity * $price;
+                $subtotal += $lineTotal;
                 
                 $bill->products()->attach($productId, [
                     'quantity' => $quantity,
                     'unit_price' => $price,
-                    'total' => $quantity * $price
+                    'total' => $lineTotal
                 ]);
                 
-                // Mise à jour du stock
+                // Mise à jour du stock si nécessaire
                 $product = Product::find($productId);
                 if ($product && $product->type === 'physical' && $product->stock_quantity > 0) {
-                    // Créer un mouvement de sortie pour la vente
                     InventoryMovement::createExit(
                         $productId,
                         $quantity,
@@ -138,14 +175,33 @@ class BillController extends Controller
                     );
                 }
             }
+
+            // Appliquer la remise si présente
+            $discount = 0;
+            if ($request->filled('discount_percent')) {
+                $discount = $subtotal * ($request->discount_percent / 100);
+            } elseif ($request->filled('discount_amount')) {
+                $discount = $request->discount_amount;
+            }
+
+            // Calculer les totaux
+            $bill->calculateTotals();
+
+            return redirect()
+                ->route('bills.show', $bill)
+                ->with('success', 'Facture créée avec succès');
+                
+        } catch (\Exception $e) {
+            // Enregistrement de l'erreur pour le débogage
+            Log::error('Erreur lors de la création de facture: ' . $e->getMessage(), [
+                'data' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()
+                ->withInput()
+                ->with('error', 'Erreur lors de la création de la facture: ' . $e->getMessage());
         }
-
-        // Calculer les totaux
-        $bill->calculateTotals();
-
-        return redirect()
-            ->route('bills.show', $bill)
-            ->with('success', 'Facture créée avec succès');
     }
 
     public function show(Bill $bill)
@@ -284,6 +340,43 @@ class BillController extends Controller
         return redirect()
             ->route('bills.index')
             ->with('success', 'Facture supprimée avec succès');
+    }
+
+    /**
+     * Mettre à jour le statut d'une facture
+     */
+    public function updateStatus(Request $request, Bill $bill)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,paid,cancelled'
+        ]);
+
+        $oldStatus = $bill->status;
+        $newStatus = $request->status;
+        
+        // Mettre à jour le statut
+        $bill->update(['status' => $newStatus]);
+        
+        // Messages personnalisés selon le changement de statut
+        if ($oldStatus !== $newStatus) {
+            if ($newStatus === 'paid') {
+                $message = 'La facture a été marquée comme payée.';
+            } elseif ($newStatus === 'pending') {
+                $message = 'La facture a été marquée comme en attente de paiement.';
+            } elseif ($newStatus === 'cancelled') {
+                $message = 'La facture a été annulée.';
+            }
+        } else {
+            $message = 'Le statut de la facture a été mis à jour.';
+        }
+        
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+        
+        return redirect()
+            ->route('bills.show', $bill)
+            ->with('success', $message);
     }
 
     public function downloadPdf(Bill $bill)

@@ -29,6 +29,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
     Route::get('/dashboard/data', [DashboardController::class, 'getDashboardData'])
         ->name('dashboard.data');
+    Route::get('/dashboard/invoice-status', [DashboardController::class, 'getInvoiceStatus']);
+    Route::get('/dashboard/revenue-comparison', [DashboardController::class, 'getRevenueComparison']);
+    Route::get('/dashboard/inventory-stats', [DashboardController::class, 'getInventoryStats']);
     // Routes pour les clients
     Route::resource('clients', ClientController::class);
     Route::get('clients/{client}/bills', [ClientController::class, 'billsIndex'])->name('clients.bills.index');
@@ -61,6 +64,7 @@ Route::middleware('auth')->group(function () {
     
     // Routes pour les factures
     Route::resource('bills', BillController::class);
+    Route::patch('bills/{bill}/status', [BillController::class, 'updateStatus'])->name('bills.update-status');
 
     // Routes pour les paramètres
     Route::get('language/{locale}', [LanguageController::class, 'switch'])->name('language.switch');

@@ -465,7 +465,7 @@ class DashboardController extends Controller
         
         return response()->stream($callback, 200, $headers);
     }
-
+    
     /**
      * Récupérer les données complètes pour l'exportation des statistiques
      */

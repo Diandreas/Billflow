@@ -21,6 +21,41 @@
 
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            @if(session('error'))
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded shadow-sm" role="alert">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm">{{ session('error') }}</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+            
+            @if($errors->any())
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded shadow-sm" role="alert">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium">{{ __('Veuillez corriger les erreurs suivantes:') }}</p>
+                            <ul class="mt-1 text-sm list-disc list-inside">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            @endif
+            
             <div class="mb-5 bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-4">
                     <!-- Progress bar -->
@@ -209,6 +244,42 @@
                                         </button>
                                     </div>
                                 </div>
+
+                                <!-- Template for product row -->
+                                <template id="productTemplate">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div id="product-placeholder" class="w-full">
+                                                    <select name="products[]" class="product-select w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                        <option value="">{{ __('Sélectionner un produit') }}</option>
+                                                        @foreach($products as $product)
+                                                            <option value="{{ $product->id }}" data-price="{{ $product->default_price }}">
+                                                                {{ $product->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <input type="number" name="quantities[]" value="1" min="1" class="product-quantity w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <input type="number" name="prices[]" value="0" min="0" step="0.01" class="product-price w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <span class="product-total">0 FCFA</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <button type="button" class="remove-product-btn text-red-600 hover:text-red-900">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
 
                                 <!-- Products Table -->
                                 <div id="productsTableContainer" class="overflow-x-auto">
@@ -558,6 +629,66 @@
 
     @push('scripts')
         <script>
+            // Initialiser les event listeners pour les modals
+            document.addEventListener('DOMContentLoaded', function() {
+                // Gestionnaire pour le bouton Nouveau Client
+                const newClientBtn = document.getElementById('newClientBtn');
+                if (newClientBtn) {
+                    newClientBtn.addEventListener('click', function() {
+                        toggleNewClientModal();
+                    });
+                }
+                
+                // Gestionnaire pour les autres boutons qui ouvrent des modals
+                const quickClientBtns = document.querySelectorAll('[data-modal="newClientModal"]');
+                quickClientBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        toggleNewClientModal();
+                    });
+                });
+            });
+            
+            // Fonction pour basculer l'affichage du modal "Nouveau client"
+            function toggleNewClientModal() {
+                const modal = document.getElementById('newClientModal');
+                if (modal) {
+                    if (modal.classList.contains('hidden')) {
+                        modal.classList.remove('hidden');
+                        // Réinitialiser le formulaire
+                        const form = document.getElementById('quickClientForm');
+                        if (form) form.reset();
+                        // Focus sur le premier champ
+                        setTimeout(() => {
+                            const nameField = document.getElementById('quick_client_name');
+                            if (nameField) nameField.focus();
+                        }, 100);
+                    } else {
+                        modal.classList.add('hidden');
+                    }
+                } else {
+                    console.error("Modal 'newClientModal' non trouvé");
+                }
+            }
+            
+            // Fonction pour basculer l'affichage du modal de recherche de produits
+            function toggleProductSearchModal() {
+                const modal = document.getElementById('productSearchModal');
+                if (modal) {
+                    if (modal.classList.contains('hidden')) {
+                        modal.classList.remove('hidden');
+                        // Focus sur le champ de recherche
+                        setTimeout(() => {
+                            const searchField = document.getElementById('quickProductSearch');
+                            if (searchField) searchField.focus();
+                        }, 100);
+                    } else {
+                        modal.classList.add('hidden');
+                    }
+                } else {
+                    console.error("Modal 'productSearchModal' non trouvé");
+                }
+            }
+            
             // Données des clients et produits
             const clients = @json($clients);
             const products = @json($products);
@@ -787,52 +918,66 @@
                 showToast('Client créé avec succès: ' + name, 'success');
             }
             
-            // Ajouter une ligne de produit
-            function addProductRow(product = null, quantity = 1, price = 0) {
-                const rowId = `row-${Date.now()}`;
-                const isService = product && product.type === 'service';
+            // Add product row
+            function addProductRow() {
+                // Utiliser le template de produit
+                const template = document.getElementById('productTemplate');
                 
-                const rowHtml = `
-                    <tr id="${rowId}" class="product-row">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <button type="button" onclick="openProductSearch('${rowId}')" class="w-full text-left flex items-center">
-                                    <span id="${rowId}-product-name" class="text-sm font-medium text-gray-900 mr-2">
-                                        ${product ? product.name : 'Sélectionner un produit'}
-                                    </span>
-                                    ${product && product.type === 'service' ? 
-                                        '<span class="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800">Service</span>' : 
-                                        ''}
-                                </button>
-                            </div>
-                            <input type="hidden" name="products[]" id="${rowId}-product-id" value="${product ? product.id : ''}" required>
-                            <input type="hidden" name="product_types[]" id="${rowId}-product-type" value="${product ? product.type : ''}">
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <input type="number" name="quantities[]" id="${rowId}-quantity" value="${quantity}" min="1" ${isService ? '' : 'max="'+product?.stock_quantity+'"'} class="w-32 rounded-md border-gray-300" required onchange="updateRowTotal('${rowId}')">
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex rounded-md shadow-sm">
-                                <input type="number" name="prices[]" id="${rowId}-price" value="${price}" min="0" step="0.01" class="w-32 rounded-md border-gray-300" required onchange="updateRowTotal('${rowId}')">
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <span id="${rowId}-total" class="text-gray-900 font-semibold">
-                                ${formatPrice(quantity * price)}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button type="button" onclick="removeProductRow('${rowId}')" class="text-red-600 hover:text-red-900">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>
-                        </td>
-                    </tr>
-                `;
+                // Vérifier si le template existe
+                if (!template) {
+                    console.error("Le template de produit n'a pas été trouvé");
+                    return;
+                }
                 
-                document.getElementById('productsContainer').insertAdjacentHTML('beforeend', rowHtml);
-                recalculateTotal();
+                // Cloner le contenu du template
+                const clone = template.content.cloneNode(true);
+                
+                // Ajouter la ligne au tableau
+                document.getElementById('productsContainer').appendChild(clone);
+                
+                // Récupérer l'élément nouvellement ajouté (le dernier enfant)
+                const newItem = document.getElementById('productsContainer').lastElementChild;
+                
+                // Ajouter les événements
+                const productSelect = newItem.querySelector('.product-select');
+                if (productSelect) {
+                    productSelect.addEventListener('change', function() {
+                        const selectedOption = this.options[this.selectedIndex];
+                        const defaultPrice = selectedOption.dataset.price || 0;
+                        newItem.querySelector('.product-price').value = defaultPrice;
+                        calculateTotals();
+                    });
+                }
+                
+                // Set up quantity and price change handlers
+                const quantityInput = newItem.querySelector('.product-quantity');
+                if (quantityInput) {
+                    quantityInput.addEventListener('input', calculateTotals);
+                }
+                
+                const priceInput = newItem.querySelector('.product-price');
+                if (priceInput) {
+                    priceInput.addEventListener('input', calculateTotals);
+                }
+                
+                // Set up remove button
+                const removeBtn = newItem.querySelector('.remove-product-btn');
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', function() {
+                        newItem.remove();
+                        calculateTotals();
+                    });
+                }
+                
+                // Mettre à jour les totaux
+                calculateTotals();
+                
+                // Afficher le tableau si caché
+                const tableContainer = document.getElementById('productsTableContainer');
+                const emptyState = document.getElementById('emptyProductsState');
+                
+                if (tableContainer) tableContainer.classList.remove('hidden');
+                if (emptyState) emptyState.classList.add('hidden');
             }
             
             // Ouvrir la recherche rapide de produit
@@ -1037,11 +1182,24 @@
                 const productRows = document.querySelectorAll('#productsContainer tr');
                 
                 productRows.forEach(row => {
-                    const rowId = row.id;
-                    const quantity = parseFloat(document.getElementById(`${rowId}-quantity`).value) || 0;
-                    const price = parseFloat(document.getElementById(`${rowId}-price`).value) || 0;
-                    subtotal += quantity * price;
-                    itemCount += quantity;
+                    // Utiliser querySelector sur la ligne pour trouver les éléments par classe
+                    const quantityInput = row.querySelector('.product-quantity');
+                    const priceInput = row.querySelector('.product-price');
+                    const totalSpan = row.querySelector('.product-total');
+                    
+                    if (quantityInput && priceInput) {
+                        const quantity = parseFloat(quantityInput.value) || 0;
+                        const price = parseFloat(priceInput.value) || 0;
+                        const total = quantity * price;
+                        
+                        // Mettre à jour le total de la ligne
+                        if (totalSpan) {
+                            totalSpan.textContent = formatPrice(total);
+                        }
+                        
+                        subtotal += total;
+                        itemCount += quantity;
+                    }
                 });
                 
                 // Gérer les remises
@@ -1353,25 +1511,39 @@
                 return isValid;
             }
             
-            // Toggle modals
-            function toggleNewClientModal() {
-                const modal = document.getElementById('newClientModal');
-                modal.classList.toggle('hidden');
+            // Fonction utilitaire globale pour traduire
+            function __(text) {
+                // Cette fonction devrait être remplacée par une vraie fonction de traduction
+                // Pour l'instant, on retourne simplement le texte
+                return text;
+            }
+        </script>
+    @endpush
+
+    @push('scripts')
+        <script>
+            // Test pour vérifier si les modals fonctionnent
+            console.log("Script de test des modals chargé");
+            
+            // Fonction pour tester les modals directement
+            function testModals() {
+                console.log("Test des modals...");
+                const newClientModal = document.getElementById('newClientModal');
+                const productSearchModal = document.getElementById('productSearchModal');
                 
-                if (!modal.classList.contains('hidden')) {
-                    // Reset form
-                    document.getElementById('quickClientForm').reset();
-                    // Focus on first field
-                    setTimeout(() => {
-                        document.getElementById('quick_client_name').focus();
-                    }, 100);
+                console.log("Modal client trouvé:", !!newClientModal);
+                console.log("Modal produit trouvé:", !!productSearchModal);
+                
+                if (newClientModal) {
+                    console.log("Classe du modal client:", newClientModal.className);
                 }
             }
             
-            function toggleProductSearchModal() {
-                const modal = document.getElementById('productSearchModal');
-                modal.classList.toggle('hidden');
-            }
+            // Exécuter le test après chargement de la page
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log("DOM chargé, exécution du test des modals");
+                setTimeout(testModals, 1000);
+            });
         </script>
     @endpush
 </x-app-layout>

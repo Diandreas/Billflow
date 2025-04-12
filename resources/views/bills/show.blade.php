@@ -136,6 +136,48 @@
                         <span>{{ __('En attente') }}</span>
                         <span>{{ __('Payée') }}</span>
                     </div>
+                    
+                    <!-- Boutons de changement de statut -->
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <form action="{{ route('bills.update-status', $bill) }}" method="POST" class="inline status-update-form">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="paid">
+                            <button type="submit" 
+                                class="inline-flex items-center px-3 py-1.5 {{ $bill->status === 'paid' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800 hover:bg-green-600 hover:text-white' }} border border-green-600 rounded-md text-sm font-medium transition-colors duration-200"
+                                {{ $bill->status === 'paid' ? 'disabled' : '' }}
+                                title="{{ __('Marquer cette facture comme payée') }}">
+                                <i class="bi bi-check-circle-fill mr-1"></i>
+                                {{ __('Marquer comme Payée') }}
+                            </button>
+                        </form>
+                        
+                        <form action="{{ route('bills.update-status', $bill) }}" method="POST" class="inline status-update-form">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="pending">
+                            <button type="submit" 
+                                class="inline-flex items-center px-3 py-1.5 {{ $bill->status === 'pending' ? 'bg-yellow-600 text-white' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-600 hover:text-white' }} border border-yellow-600 rounded-md text-sm font-medium transition-colors duration-200"
+                                {{ $bill->status === 'pending' ? 'disabled' : '' }}
+                                title="{{ __('Marquer cette facture comme en attente de paiement') }}">
+                                <i class="bi bi-clock-fill mr-1"></i>
+                                {{ __('Marquer comme En attente') }}
+                            </button>
+                        </form>
+                        
+                        <form action="{{ route('bills.update-status', $bill) }}" method="POST" class="inline status-update-form">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="cancelled">
+                            <button type="submit" 
+                                class="inline-flex items-center px-3 py-1.5 {{ $bill->status === 'cancelled' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-800 hover:bg-red-600 hover:text-white' }} border border-red-600 rounded-md text-sm font-medium transition-colors duration-200"
+                                {{ $bill->status === 'cancelled' ? 'disabled' : '' }}
+                                title="{{ __('Marquer cette facture comme annulée') }}">
+                                <i class="bi bi-x-circle-fill mr-1"></i>
+                                {{ __('Marquer comme Annulée') }}
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
                 <!-- Informations client et entreprise -->
@@ -306,3 +348,135 @@
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @endpush
 </x-app-layout>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestionnaire pour les formulaires de mise à jour de statut
+        const statusForms = document.querySelectorAll('.status-update-form');
+        
+        statusForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(form);
+                const url = form.getAttribute('action');
+                const newStatus = formData.get('status');
+                
+                // Désactiver tous les boutons pendant la requête
+                document.querySelectorAll('.status-update-form button').forEach(btn => {
+                    btn.disabled = true;
+                });
+                
+                fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erreur réseau');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Mise à jour du badge de statut dans le résumé
+                    const statusBadge = document.querySelector('.flex.justify-between.items-center.mb-4 span');
+                    
+                    if (statusBadge) {
+                        // Mise à jour des classes du badge
+                        statusBadge.className = 'px-4 py-2 inline-flex items-center text-sm font-semibold rounded-full ' + 
+                            (newStatus === 'paid' ? 'bg-green-100 text-green-800' : 
+                            (newStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-red-100 text-red-800'));
+                        
+                        // Mise à jour de l'icône
+                        let iconClass = newStatus === 'paid' ? 'bi-check-circle' :
+                                      (newStatus === 'pending' ? 'bi-clock' : 'bi-exclamation-circle');
+                        
+                        statusBadge.innerHTML = `<i class="bi ${iconClass} mr-2"></i>${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}`;
+                    }
+                    
+                    // Mise à jour de la barre de progression
+                    const progressBar = document.querySelector('.w-full.bg-gray-200.rounded-full.h-2\.5.mb-2 div');
+                    
+                    if (progressBar) {
+                        progressBar.className = 'h-2.5 rounded-full ' + 
+                            (newStatus === 'paid' ? 'bg-green-600' : 
+                            (newStatus === 'pending' ? 'bg-yellow-400' : 'bg-red-600'));
+                        
+                        progressBar.style.width = newStatus === 'paid' ? '100%' : 
+                                               (newStatus === 'pending' ? '50%' : '25%');
+                    }
+                    
+                    // Réactiver et mettre à jour le style des boutons
+                    document.querySelectorAll('.status-update-form').forEach(form => {
+                        const formStatus = form.querySelector('input[name="status"]').value;
+                        const button = form.querySelector('button');
+                        
+                        button.disabled = formStatus === newStatus;
+                        
+                        if (formStatus === 'paid') {
+                            button.className = `inline-flex items-center px-3 py-1.5 ${formStatus === newStatus ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800 hover:bg-green-600 hover:text-white'} border border-green-600 rounded-md text-sm font-medium transition-colors duration-200`;
+                        } else if (formStatus === 'pending') {
+                            button.className = `inline-flex items-center px-3 py-1.5 ${formStatus === newStatus ? 'bg-yellow-600 text-white' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-600 hover:text-white'} border border-yellow-600 rounded-md text-sm font-medium transition-colors duration-200`;
+                        } else {
+                            button.className = `inline-flex items-center px-3 py-1.5 ${formStatus === newStatus ? 'bg-red-600 text-white' : 'bg-red-100 text-red-800 hover:bg-red-600 hover:text-white'} border border-red-600 rounded-md text-sm font-medium transition-colors duration-200`;
+                        }
+                    });
+                    
+                    // Afficher un message de succès
+                    const messagesContainer = document.createElement('div');
+                    messagesContainer.className = 'p-4 mb-4 text-green-700 bg-green-100 rounded-lg fixed top-4 right-4 shadow-md animate-fade';
+                    messagesContainer.style.zIndex = '9999';
+                    messagesContainer.style.maxWidth = '300px';
+                    messagesContainer.innerHTML = `
+                        <div class="flex items-center">
+                            <i class="bi bi-check-circle-fill mr-2 text-green-500"></i>
+                            <span>${data.message}</span>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(messagesContainer);
+                    
+                    // Supprimer le message après 3 secondes
+                    setTimeout(() => {
+                        messagesContainer.remove();
+                    }, 3000);
+                })
+                .catch(error => {
+                    console.error('Error updating bill status:', error);
+                    // Réactiver tous les boutons en cas d'erreur
+                    document.querySelectorAll('.status-update-form button').forEach(btn => {
+                        btn.disabled = false;
+                    });
+                    
+                    // Afficher un message d'erreur
+                    const errorContainer = document.createElement('div');
+                    errorContainer.className = 'p-4 mb-4 text-red-700 bg-red-100 rounded-lg fixed top-4 right-4 shadow-md';
+                    errorContainer.style.zIndex = '9999';
+                    errorContainer.style.maxWidth = '300px';
+                    errorContainer.innerHTML = `
+                        <div class="flex items-center">
+                            <i class="bi bi-exclamation-circle-fill mr-2 text-red-500"></i>
+                            <span>Une erreur est survenue lors de la mise à jour du statut.</span>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(errorContainer);
+                    
+                    // Supprimer le message après 3 secondes
+                    setTimeout(() => {
+                        errorContainer.remove();
+                    }, 3000);
+                });
+            });
+        });
+    });
+</script>
+@endpush
