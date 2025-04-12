@@ -12,6 +12,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\PhoneController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DashboardController::class, 'index'])
@@ -102,6 +103,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/clients/export/csv', [ClientController::class, 'export'])->name('clients.export');
     Route::get('/bills/export/csv', [BillController::class, 'export'])->name('bills.export');
     Route::get('/stats/export/csv', [DashboardController::class, 'exportStats'])->name('stats.export');
+
+    // Routes pour les notifications
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+
 });
 
 require __DIR__.'/auth.php';

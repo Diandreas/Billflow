@@ -76,8 +76,67 @@
                 </div>
             </div>
 
-            <!-- Settings Dropdown -->
+            <!-- Notifications and Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ml-6">
+                <!-- Notifications Dropdown -->
+                <x-dropdown align="right" width="96">
+                    <x-slot name="trigger">
+                        <button class="relative inline-flex items-center p-2 border border-transparent text-sm leading-4 font-medium rounded-full text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                            <i class="bi bi-bell text-xl"></i>
+                            <span class="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">3</span> <!-- Badge Count -->
+                        </button>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        <div class="p-2 border-b border-gray-200">
+                            <span class="text-sm font-semibold text-gray-700">{{ __('Notifications') }}</span>
+                        </div>
+                        <div class="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                            <!-- Example Notification Items -->
+                            <a href="#" class="block px-4 py-3 hover:bg-gray-100 transition duration-150">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 bg-yellow-100 p-2 rounded-full mr-3">
+                                        <i class="bi bi-exclamation-triangle text-yellow-600"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">{{ __('Stock faible') }}</div>
+                                        <p class="text-xs text-gray-500">{{ __('Le produit \'Produit XYZ\' est bientôt épuisé.') }}</p>
+                                        <p class="text-xs text-gray-400 mt-1">{{ __('Il y a 10 minutes') }}</p>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="#" class="block px-4 py-3 hover:bg-gray-100 transition duration-150">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 bg-green-100 p-2 rounded-full mr-3">
+                                        <i class="bi bi-check-circle text-green-600"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">{{ __('Paiement reçu') }}</div>
+                                        <p class="text-xs text-gray-500">{{ __('La facture FACT-00123 a été payée.') }}</p>
+                                        <p class="text-xs text-gray-400 mt-1">{{ __('Il y a 2 heures') }}</p>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="#" class="block px-4 py-3 hover:bg-gray-100 transition duration-150">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 bg-blue-100 p-2 rounded-full mr-3">
+                                        <i class="bi bi-receipt text-blue-600"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">{{ __('Nouvelle facture') }}</div>
+                                        <p class="text-xs text-gray-500">{{ __('Une nouvelle facture a été créée pour Client ABC.') }}</p>
+                                        <p class="text-xs text-gray-400 mt-1">{{ __('Hier') }}</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="p-2 text-center border-t border-gray-200">
+                            <a href="#" class="text-xs text-indigo-600 hover:text-indigo-800">{{ __('Voir toutes les notifications') }}</a>
+                        </div>
+                    </x-slot>
+                </x-dropdown>
+
+                <!-- Settings Dropdown -->
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
@@ -111,6 +170,12 @@
 
             <!-- Hamburger -->
             <div class="-mr-2 flex items-center sm:hidden">
+                <!-- Mobile Notifications Icon -->
+                <button class="relative inline-flex items-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out mr-2">
+                    <i class="bi bi-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">3</span>
+                </button>
+                
                 <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
