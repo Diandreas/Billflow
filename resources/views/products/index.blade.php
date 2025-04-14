@@ -19,7 +19,7 @@
     <div class="py-12 bg-gray-50">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <!-- Statistiques -->
-            <div class="mb-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="mb-8 grid grid-cols-1 md:grid-cols-5 gap-6">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                     <div class="flex items-center">
                         <div class="p-3 rounded-full bg-indigo-100 text-indigo-600 mr-4">
@@ -64,6 +64,18 @@
                         <div>
                             <p class="text-sm font-medium text-gray-500">{{ __('Prix moyen') }}</p>
                             <p class="text-2xl font-bold text-gray-900">{{ number_format($stats['average_price'], 0, ',', ' ') }} FCFA</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-amber-100 text-amber-600 mr-4">
+                            <i class="bi bi-box2 text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">{{ __('Produits physiques') }}</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ $stats['physical_products'] }}</p>
                         </div>
                     </div>
                 </div>
@@ -117,6 +129,10 @@
                         {{ __('Filtrer') }}
                     </button>
                     
+                    <a href="{{ route('products.index', ['type' => 'physical', 'stock' => 'low']) }}" class="px-4 py-2 bg-amber-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-amber-700">
+                        {{ __('Produits à réapprovisionner') }}
+                    </a>
+                    
                     @if(request()->anyFilled(['search', 'type', 'stock', 'sort', 'direction']))
                         <a href="{{ route('products.index') }}" class="px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
                             {{ __('Réinitialiser') }}
@@ -146,8 +162,21 @@
                                             </button>
                                         </form>
                                     </div>
-
-                                    <h3 class="text-lg font-semibold text-indigo-900 mb-1">{{ $product->name }}</h3>
+                                    
+                                    <div class="flex items-center mb-2">
+                                        <h3 class="text-lg font-semibold text-indigo-900 mr-2">{{ $product->name }}</h3>
+                                        @if($product->type === 'physical')
+                                            @if($product->isOutOfStock())
+                                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">{{ __('Épuisé') }}</span>
+                                            @elseif($product->isLowStock())
+                                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800">{{ __('Stock bas') }}</span>
+                                            @else
+                                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">{{ __('En stock') }}</span>
+                                            @endif
+                                        @else
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">{{ __('Service') }}</span>
+                                        @endif
+                                    </div>
                                     <p class="text-indigo-700 font-medium">{{ number_format($product->default_price, 0, ',', ' ') }} FCFA</p>
                                 </div>
                                 <div class="p-4">
@@ -161,6 +190,16 @@
                                             {{ number_format($product->total_sales ?? 0, 0, ',', ' ') }} FCFA
                                         </div>
                                     </div>
+                                    @if($product->type === 'physical')
+                                    <div class="mt-2 flex justify-between items-center text-sm border-t pt-2">
+                                        <div class="text-gray-500">
+                                            {{ __('Stock:') }}
+                                        </div>
+                                        <div class="font-medium {{ $product->isOutOfStock() ? 'text-red-600' : ($product->isLowStock() ? 'text-amber-600' : 'text-green-600') }}">
+                                            {{ number_format($product->stock_quantity, 0, ',', ' ') }} {{ __('unités') }}
+                                        </div>
+                                    </div>
+                                    @endif
                                 </div>
                             </div>
                         @endforeach

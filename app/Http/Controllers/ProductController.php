@@ -11,7 +11,8 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $query = Product::withCount('bills')
-            ->withSum('bills as total_sales', DB::raw('bill_products.unit_price * bill_products.quantity'));
+            ->withSum('bills as total_sales', DB::raw('bill_products.unit_price * bill_products.quantity'))
+            ->select('products.*'); // S'assurer que toutes les colonnes sont chargées pour les méthodes isLowStock et isOutOfStock
 
         // Recherche
         if ($request->filled('search')) {
@@ -68,6 +69,7 @@ class ProductController extends Controller
         $stats = [
             'total_products' => Product::count(),
             'active_products' => Product::has('bills')->count(),
+            'physical_products' => Product::where('type', 'physical')->count(),
             'total_revenue' => DB::table('bill_products')
                 ->join('products', 'bill_products.product_id', '=', 'products.id')
                 ->sum(DB::raw('unit_price * quantity')),
@@ -141,26 +143,23 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        // Charger les factures pour le produit avec pagination
-        $invoices = $product->bills()->with('client')->latest('date')->paginate(10);
+        // Charger toutes les factures sans pagination
+        $invoices = $product->bills()->with('client')->latest('date')->get();
         
-        // Charger toutes les factures pour les statistiques
-        $allBills = $product->bills;
-
         // Statistiques du produit
         $stats = [
-            'total_sales' => $allBills->sum(function($bill) {
+            'total_sales' => $invoices->sum(function($bill) {
                 return $bill->pivot->unit_price * $bill->pivot->quantity;
             }),
-            'total_quantity' => $allBills->sum('pivot.quantity'),
-            'average_price' => $allBills->avg('pivot.unit_price'),
-            'usage_count' => $allBills->count(),
-            'first_use' => $allBills->last()?->date,
-            'last_use' => $allBills->first()?->date,
+            'total_quantity' => $invoices->sum('pivot.quantity'),
+            'average_price' => $invoices->avg('pivot.unit_price'),
+            'usage_count' => $invoices->count(),
+            'first_use' => $invoices->last()?->date,
+            'last_use' => $invoices->first()?->date,
         ];
 
         // Évolution mensuelle
-        $monthlyStats = $allBills
+        $monthlyStats = $invoices
             ->groupBy(function($bill) {
                 return $bill->date->format('Y-m');
             })

@@ -261,6 +261,74 @@
                             {{ $bill->products->count() }} {{ __('articles') }}
                         </span>
                     </div>
+
+                    <!-- Barre de recherche et filtres -->
+                    <div class="mb-4 flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4">
+                        <input type="text" id="searchProduct" placeholder="Rechercher un produit..." class="w-full sm:w-96 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        
+                        <div class="flex items-center">
+                            <span class="mr-2 text-sm text-gray-600">{{ __('Filtrer par prix:') }}</span>
+                            <select id="priceFilter" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                <option value="">{{ __('Tous les prix') }}</option>
+                                @php
+                                    $uniquePrices = $bill->products->pluck('pivot.unit_price')->unique()->sort();
+                                    $priceGroups = $bill->products->groupBy('pivot.unit_price');
+                                @endphp
+                                @foreach($uniquePrices as $price)
+                                    <option value="{{ $price }}">
+                                        {{ number_format($price, 0, ',', ' ') }} FCFA
+                                        ({{ $priceGroups[$price]->count() }} produit(s))
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <button id="resetFilters" class="inline-flex items-center px-3 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-gray-700 font-medium text-sm">
+                            <i class="bi bi-x-circle mr-1"></i>
+                            {{ __('Réinitialiser') }}
+                        </button>
+                    </div>
+
+                    <!-- Récapitulatif des prix utilisés dans cette facture -->
+                    <div class="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">{{ __('Récapitulatif des prix utilisés dans cette facture') }}</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            @foreach($priceGroups as $price => $products)
+                                <div class="price-card bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
+                                     onclick="document.getElementById('priceFilter').value='{{ $price }}'; filterProducts();">
+                                    <div class="text-lg font-bold text-indigo-700">{{ number_format($price, 0, ',', ' ') }} FCFA</div>
+                                    <div class="flex justify-between items-center mt-1">
+                                        <span class="text-sm text-gray-600">{{ $products->count() }} produit(s)</span>
+                                        <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">
+                                            {{ number_format(($products->count() / $bill->products->count()) * 100, 0) }}% du total
+                                        </span>
+                                    </div>
+                                    <div class="text-sm text-gray-600 mt-1">
+                                        Total: {{ number_format($products->sum('pivot.total'), 0, ',', ' ') }} FCFA
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Compteur de totaux -->
+                    <div id="price-summary" class="hidden mb-4 bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="text-sm font-medium text-indigo-700">{{ __('Analyse des prix') }}</h4>
+                                <p id="price-count" class="text-sm text-indigo-600 mt-1"></p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-gray-600">{{ __('Total pour ce prix:') }}</p>
+                                <p id="price-total" class="text-lg font-bold text-indigo-700"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="noProductResults" class="text-gray-500 py-4 hidden">
+                        <p>{{ __('Aucun produit ne correspond à votre recherche.') }}</p>
+                    </div>
+
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
@@ -281,7 +349,9 @@
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach($bill->products as $product)
-                                <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                <tr class="product-row hover:bg-gray-50 transition-colors duration-150" 
+                                    data-name="{{ strtolower($product->name) }}"
+                                    data-price="{{ $product->pivot->unit_price }}">
                                     <td class="px-6 py-4">
                                         <div class="text-sm font-medium text-gray-900">
                                             <a href="{{ route('products.show', $product) }}" class="text-indigo-600 hover:text-indigo-900 inline-flex items-center">
@@ -301,7 +371,29 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-right text-sm text-gray-500">
-                                        {{ number_format($product->pivot->unit_price, 0, ',', ' ') }} FCFA
+                                        <div class="price-display font-medium">
+                                            {{ number_format($product->pivot->unit_price, 0, ',', ' ') }} FCFA
+                                        </div>
+                                        <div class="text-xs text-gray-400 mt-1">
+                                            @if($product->default_price != $product->pivot->unit_price)
+                                                <span title="Prix par défaut du produit">
+                                                    Prix catalogue: {{ number_format($product->default_price, 0, ',', ' ') }} FCFA
+                                                </span>
+                                                @if($product->default_price > $product->pivot->unit_price)
+                                                    <span class="text-green-600 block">
+                                                        <i class="bi bi-arrow-down"></i>
+                                                        -{{ number_format(($product->default_price - $product->pivot->unit_price) / $product->default_price * 100, 0) }}%
+                                                    </span>
+                                                @elseif($product->default_price < $product->pivot->unit_price)
+                                                    <span class="text-red-600 block">
+                                                        <i class="bi bi-arrow-up"></i>
+                                                        +{{ number_format(($product->pivot->unit_price - $product->default_price) / $product->default_price * 100, 0) }}%
+                                                    </span>
+                                                @endif
+                                            @else
+                                                <span>Prix standard</span>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 text-right text-sm text-gray-900 font-medium">
                                         {{ number_format($product->pivot->total, 0, ',', ' ') }} FCFA
@@ -477,6 +569,148 @@
                 });
             });
         });
+
+        // Fonctionnalité de recherche pour les produits
+        const searchInput = document.getElementById('searchProduct');
+        const priceFilter = document.getElementById('priceFilter');
+        const productRows = document.querySelectorAll('.product-row');
+        const noProductResults = document.getElementById('noProductResults');
+        const resetButton = document.getElementById('resetFilters');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                filterProducts();
+            });
+        }
+        
+        if (priceFilter) {
+            priceFilter.addEventListener('change', function() {
+                filterProducts();
+            });
+        }
+        
+        if (resetButton) {
+            resetButton.addEventListener('click', function() {
+                if (searchInput) searchInput.value = '';
+                if (priceFilter) priceFilter.value = '';
+                filterProducts();
+            });
+        }
+        
+        function filterProducts() {
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const selectedPrice = priceFilter ? priceFilter.value : '';
+            let visibleCount = 0;
+            let totalForPrice = 0;
+            
+            productRows.forEach(row => {
+                const name = row.dataset.name;
+                const price = row.dataset.price;
+                
+                const matchesSearch = !searchTerm || name.includes(searchTerm);
+                const matchesPrice = !selectedPrice || price === selectedPrice;
+                
+                // Pour le calcul du total pour un prix spécifique
+                if (price === selectedPrice) {
+                    // Extraire le total du produit de la cellule correspondante
+                    const totalText = row.cells[3].textContent.trim().replace(/[^\d]/g, '');
+                    totalForPrice += parseInt(totalText) || 0;
+                }
+                
+                if (matchesSearch && matchesPrice) {
+                    row.style.display = '';
+                    row.classList.add('bg-indigo-50');
+                    row.classList.add('found-product');
+                    
+                    // Mise en évidence du prix si filtré par prix
+                    if (selectedPrice) {
+                        const priceDisplay = row.querySelector('.price-display');
+                        if (priceDisplay) {
+                            priceDisplay.classList.add('text-indigo-700', 'font-bold');
+                        }
+                    }
+                    
+                    visibleCount++;
+                } else {
+                    if (!selectedPrice && !searchTerm) {
+                        // Si aucun filtre n'est appliqué, tout afficher normalement
+                        row.style.display = '';
+                        row.classList.remove('bg-indigo-50');
+                        row.classList.remove('found-product');
+                        
+                        // Réinitialiser la mise en évidence du prix
+                        const priceDisplay = row.querySelector('.price-display');
+                        if (priceDisplay) {
+                            priceDisplay.classList.remove('text-indigo-700', 'font-bold');
+                        }
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+            
+            // Afficher le récapitulatif des prix si un prix est sélectionné
+            const priceSummary = document.getElementById('price-summary');
+            if (selectedPrice && !searchTerm) {
+                priceSummary.classList.remove('hidden');
+                
+                const priceCount = document.getElementById('price-count');
+                const priceTotal = document.getElementById('price-total');
+                
+                // Formater les nombres
+                const formatter = new Intl.NumberFormat('fr-FR');
+                
+                if (priceCount) {
+                    priceCount.textContent = `${visibleCount} produit(s) au prix de ${formatter.format(selectedPrice)} FCFA`;
+                }
+                
+                if (priceTotal) {
+                    priceTotal.textContent = `${formatter.format(totalForPrice)} FCFA`;
+                }
+            } else {
+                priceSummary.classList.add('hidden');
+            }
+            
+            // Afficher un message si aucun résultat
+            if (visibleCount === 0 && productRows.length > 0 && (selectedPrice || searchTerm)) {
+                noProductResults.classList.remove('hidden');
+            } else {
+                noProductResults.classList.add('hidden');
+            }
+            
+            // Mettre à jour les cartes de prix
+            document.querySelectorAll('.price-card').forEach(card => {
+                card.classList.remove('ring-2', 'ring-indigo-500');
+                if (card.textContent.includes(selectedPrice)) {
+                    card.classList.add('ring-2', 'ring-indigo-500');
+                }
+            });
+            
+            // Afficher un résumé des résultats de recherche textuelle
+            if (searchTerm && !selectedPrice) {
+                const summary = document.createElement('div');
+                summary.id = 'filter-summary';
+                summary.className = 'text-sm text-indigo-700 mb-2';
+                summary.innerHTML = `<strong>${visibleCount}</strong> produit(s) trouvé(s) contenant "<strong>${searchTerm}</strong>"`;
+                
+                // Supprimer le résumé existant s'il y en a un
+                const existingSummary = document.getElementById('filter-summary');
+                if (existingSummary) {
+                    existingSummary.remove();
+                }
+                
+                // Ajouter le nouveau résumé
+                if (visibleCount > 0) {
+                    noProductResults.insertAdjacentElement('beforebegin', summary);
+                }
+            } else if (!selectedPrice) {
+                // Supprimer le résumé s'il n'y a pas de filtre
+                const existingSummary = document.getElementById('filter-summary');
+                if (existingSummary) {
+                    existingSummary.remove();
+                }
+            }
+        }
     });
 </script>
 @endpush

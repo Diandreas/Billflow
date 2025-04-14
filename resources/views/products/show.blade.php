@@ -1,430 +1,339 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex justify-between items-center">
-            <div>
-                <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
-                    {{ $product->name }}
-                </h2>
-                <p class="mt-1 text-sm text-gray-500">
-                    {{ __('Détails du produit et statistiques') }}
-                </p>
-            </div>
-            <div class="flex space-x-4">
-                <a href="{{ route('products.edit', $product) }}"
-                   class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-700"
-                   title="{{ __('Modifier les informations de ce produit') }}">
-                    <i class="bi bi-pencil mr-2"></i>
-                    {{ __('Modifier') }}
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ $product->name }} 
+                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $product->type == 'service' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' }}">
+                    {{ $product->type == 'service' ? 'Service' : 'Produit physique' }}
+                </span>
+            </h2>
+            <div class="flex space-x-3">
+                <a href="{{ route('products.edit', $product) }}" class="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700">
+                    <i class="bi bi-pencil mr-1"></i> {{ __('Modifier') }}
                 </a>
-                <a href="{{ route('products.index') }}"
-                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-50"
-                   title="{{ __('Retourner à la liste des produits') }}">
-                    <i class="bi bi-arrow-left mr-2"></i>
-                    {{ __('Retour') }}
+                <a href="{{ route('products.index') }}" class="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 text-sm rounded-md hover:bg-gray-50">
+                    <i class="bi bi-arrow-left mr-1"></i> {{ __('Retour') }}
                 </a>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <!-- Titre et informations principales -->
+            <!-- Carte d'informations principales -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6 bg-white">
-                    <div class="flex justify-between items-center mb-4">
-                        <h1 class="text-2xl font-bold text-gray-900">{{ $product->name }}</h1>
-                        <div class="flex space-x-2">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {{ $product->type == 'service' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' }}"
-                                  title="{{ $product->type == 'service' ? __('Service ne nécessitant pas de suivi de stock') : __('Produit physique géré en stock') }}">
-                                <i class="bi {{ $product->type == 'service' ? 'bi-gear' : 'bi-box' }} mr-1"></i>
-                                {{ $product->type == 'service' ? __('Service') : __('Produit physique') }}
-                            </span>
+                <div class="p-5">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Informations générales -->
+                        <div class="space-y-4">
+                            <h3 class="font-medium text-gray-900 text-lg">{{ __('Informations produit') }}</h3>
                             
-                            @if($product->type != 'service')
-                                @if($product->isOutOfStock())
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800"
-                                          title="{{ __('Ce produit est actuellement en rupture de stock.') }}">
-                                        <i class="bi bi-exclamation-triangle mr-1"></i>
-                                        {{ __('Épuisé') }}
-                                    </span>
-                                @elseif($product->isLowStock())
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800"
-                                          title="{{ __('Le stock de ce produit est inférieur au seuil d\'alerte.') }}">
-                                        <i class="bi bi-exclamation-circle mr-1"></i>
-                                        {{ __('Stock faible') }}
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"
-                                          title="{{ __('Ce produit est disponible en stock.') }}">
-                                        <i class="bi bi-check-circle mr-1"></i>
-                                        {{ __('En stock') }}
-                                    </span>
-                                @endif
+                            <div>
+                                <p class="text-sm text-gray-500">{{ __('Prix de vente') }}</p>
+                                <p class="text-lg font-bold">{{ number_format($product->default_price, 0, ',', ' ') }} FCFA</p>
+                            </div>
+                            
+                            @if($product->description)
+                            <div>
+                                <p class="text-sm text-gray-500">{{ __('Description') }}</p>
+                                <p>{{ $product->description }}</p>
+                            </div>
                             @endif
                             
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800"
-                                  title="{{ __('Statut commercial du produit') }}">
-                                <i class="bi bi-tag mr-1"></i>
-                                {{ $product->status ?? 'Actif' }}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <p class="text-sm text-gray-600 mb-1">{{ __('Description') }}</p>
-                            <p class="text-gray-900">{{ $product->description ?: __('Aucune description') }}</p>
-                            
-                            <div class="mt-4">
-                                <p class="text-sm text-gray-600 mb-1">{{ __('Prix de vente') }}</p>
-                                <p class="text-xl font-semibold text-gray-900" title="{{ __('Prix de vente par défaut de ce produit') }}">
-                                    {{ number_format($product->default_price, 0, ',', ' ') }} FCFA
-                                </p>
-                            </div>
-                            
-                            <div class="mt-4">
-                                <p class="text-sm text-gray-600 mb-1">{{ __('Référence/SKU') }}</p>
-                                <p class="text-gray-900">{{ $product->sku ?: __('Non définie') }}</p>
-                            </div>
-                            
-                            <div class="mt-4">
-                                <p class="text-sm text-gray-600 mb-1">{{ __('Catégorie') }}</p>
-                                <p class="text-gray-900">
-                                    @if($product->category)
-                                        <span class="inline-flex items-center" title="{{ __('Catégorie associée à ce produit') }}">
-                                            <i class="bi bi-folder mr-1 text-indigo-500"></i>
-                                            {{ $product->category->name }}
-                                        </span>
-                                    @else
-                                        {{ __('Non catégorisé') }}
-                                    @endif
-                                </p>
-                            </div>
-                            
-                            <div class="mt-4">
-                                <p class="text-sm text-gray-600 mb-1">{{ __('Catégorie comptable') }}</p>
-                                <p class="text-gray-900">
-                                    @if($product->accounting_category)
-                                        <span class="inline-flex items-center" title="{{ __('Code comptable associé pour l\'export') }}">
-                                            <i class="bi bi-calculator mr-1 text-indigo-500"></i>
-                                            {{ $product->accounting_category }}
-                                        </span>
-                                    @else
-                                        {{ __('Non définie') }}
-                                    @endif
-                                </p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-gray-500">{{ __('Référence/SKU') }}</p>
+                                    <p>{{ $product->sku ?: __('Non définie') }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">{{ __('Catégorie') }}</p>
+                                    <p>{{ $product->category ? $product->category->name : __('Non catégorisé') }}</p>
+                                </div>
                             </div>
                         </div>
                         
-                        @if($product->type != 'service')
-                        <div>
-                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                <h3 class="font-medium text-lg mb-2">{{ __('Informations de stock') }}</h3>
-                                
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p class="text-sm text-gray-600 mb-1">{{ __('Stock actuel') }}</p>
-                                        <div class="flex items-center">
-                                            <p class="text-xl font-semibold {{ $product->isLowStock() ? 'text-amber-600' : ($product->isOutOfStock() ? 'text-red-600' : 'text-green-600') }}"
-                                               title="{{ __('Quantité actuellement disponible en stock') }}">
-                                                {{ $product->stock_quantity }}
-                                            </p>
-                                            @if($product->stock_alert_threshold && $product->stock_quantity <= $product->stock_alert_threshold)
-                                                <span class="ml-2 flex-shrink-0 inline-block px-2 py-0.5 text-xs font-medium rounded-full {{ $product->isOutOfStock() ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800' }}"
-                                                      title="{{ __('Le stock est au niveau ou en dessous du seuil d\'alerte') }}">
-                                                    <i class="bi bi-exclamation-triangle"></i>
-                                                </span>
-                                            @endif
-                                        </div>
-
-                                        @if($product->stock_alert_threshold && $product->stock_quantity <= $product->stock_alert_threshold)
-                                            <div class="mt-1" title="{{ __('Visualisation du niveau de stock par rapport au seuil d\'alerte') }}">
-                                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                                    <div class="h-2 rounded-full {{ $product->isOutOfStock() ? 'bg-red-500' : 'bg-amber-500' }}" style="width: {{ min(100, ($product->stock_quantity / $product->stock_alert_threshold) * 100) }}%"></div>
-                                                </div>
-                                            </div>
-                                        @endif
-                                    </div>
-                                    
-                                    <div>
-                                        <p class="text-sm text-gray-600 mb-1">{{ __('Seuil d\'alerte') }}</p>
-                                        <p class="text-gray-900" title="{{ __('Niveau de stock minimum avant d\'être alerté') }}">
-                                            {{ $product->stock_alert_threshold ?: __('Non défini') }}
-                                        </p>
-                                    </div>
-                                    
-                                    <div>
-                                        <p class="text-sm text-gray-600 mb-1">{{ __('Prix d\'achat') }}</p>
-                                        <p class="text-gray-900" title="{{ __('Prix d\'achat moyen ou dernier prix d\'achat') }}">
-                                            {{ $product->cost_price ? number_format($product->cost_price, 0, ',', ' ') . ' FCFA' : __('Non défini') }}
-                                        </p>
-                                    </div>
-                                    
-                                    @if($product->cost_price && $product->cost_price > 0)
-                                    <div>
-                                        <p class="text-sm text-gray-600 mb-1">{{ __('Marge') }}</p>
-                                        <p class="flex items-center {{ $product->getProfitMargin() > 20 ? 'text-green-600' : 'text-amber-600' }} font-medium"
-                                           title="{{ __('Marge bénéficiaire brute (Prix vente - Prix d\'achat) / Prix vente') }}">
-                                            <i class="bi {{ $product->getProfitMargin() > 20 ? 'bi-arrow-up' : 'bi-arrow-down' }} mr-1"></i>
-                                            {{ number_format($product->getProfitMargin(), 2) }}%
-                                        </p>
-                                    </div>
-                                    @endif
+                        <!-- Statistiques -->
+                        <div class="space-y-4">
+                            <h3 class="font-medium text-gray-900 text-lg">{{ __('Statistiques') }}</h3>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-gray-500">{{ __('Quantité vendue') }}</p>
+                                    <p class="text-lg font-semibold text-indigo-700">{{ $stats['total_quantity'] }}</p>
                                 </div>
-                                
-                                <div class="mt-4 flex justify-end">
-                                    <a href="{{ route('inventory.adjustment') }}?product_id={{ $product->id }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700"
-                                       title="{{ __('Effectuer une entrée, sortie ou correction de stock') }}">
-                                        <i class="bi bi-pencil-square mr-1"></i>
-                                        {{ __('Ajuster le stock') }}
-                                    </a>
+                                <div>
+                                    <p class="text-sm text-gray-500">{{ __('Chiffre d\'affaires') }}</p>
+                                    <p class="text-lg font-semibold text-indigo-700">{{ number_format($stats['total_sales'], 0, ',', ' ') }} FCFA</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">{{ __('Prix moyen') }}</p>
+                                    <p>{{ number_format($stats['average_price'], 0, ',', ' ') }} FCFA</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">{{ __('Utilisé dans') }}</p>
+                                    <p>{{ $stats['usage_count'] }} factures</p>
                                 </div>
                             </div>
                             
-                            <div class="mt-4">
-                                <h3 class="font-medium text-lg mb-2">{{ __('Derniers mouvements') }}</h3>
-                                <div class="overflow-x-auto">
-                                    @if($product->inventoryMovements && $product->inventoryMovements->count() > 0)
-                                        <table class="min-w-full divide-y divide-gray-200">
-                                            <thead class="bg-gray-50">
-                                                <tr>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Date') }}</th>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Type') }}</th>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Quantité') }}</th>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Réf.') }}</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="bg-white divide-y divide-gray-200">
-                                                @foreach($product->inventoryMovements->take(5) as $movement)
-                                                    <tr>
-                                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{{ $movement->created_at->format('d/m/Y H:i') }}</td>
-                                                        <td class="px-3 py-2 whitespace-nowrap">
-                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $movement->type == 'entrée' ? 'bg-green-100 text-green-800' : ($movement->type == 'sortie' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800') }}"
-                                                                  title="{{ $movement->type == 'entrée' ? __('Entrée en stock') : ($movement->type == 'sortie' ? __('Sortie de stock (vente, etc.)') : __('Ajustement de stock')) }}">
-                                                                <i class="bi {{ $movement->type == 'entrée' ? 'bi-box-arrow-in-down' : ($movement->type == 'sortie' ? 'bi-box-arrow-up' : 'bi-arrow-left-right') }} mr-1"></i>
-                                                                {{ ucfirst($movement->type) }}
-                                                            </span>
-                                                        </td>
-                                                        <td class="px-3 py-2 whitespace-nowrap text-sm {{ $movement->type == 'entrée' ? 'text-green-600' : ($movement->type == 'sortie' ? 'text-red-600' : 'text-blue-600') }}">
-                                                            {{ $movement->type == 'entrée' ? '+' : ($movement->type == 'sortie' ? '-' : '') }}{{ abs($movement->quantity) }}
-                                                        </td>
-                                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{{ $movement->reference ?: '-' }}</td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                        <div class="mt-2 text-right">
-                                            <a href="{{ route('inventory.movements') }}?product_id={{ $product->id }}" class="text-sm text-indigo-600 hover:text-indigo-900 inline-flex items-center"
-                                               title="{{ __('Voir l\'historique complet des mouvements de stock') }}">
-                                                {{ __('Voir tous les mouvements') }} 
-                                                <i class="bi bi-arrow-right ml-1"></i>
-                                            </a>
-                                        </div>
-                                    @else
-                                        <p class="text-gray-500 text-sm">{{ __('Aucun mouvement de stock enregistré') }}</p>
-                                    @endif
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-gray-500">{{ __('Première utilisation') }}</p>
+                                    <p>{{ $stats['first_use'] ? $stats['first_use']->format('d/m/Y') : '-' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">{{ __('Dernière utilisation') }}</p>
+                                    <p>{{ $stats['last_use'] ? $stats['last_use']->format('d/m/Y') : '-' }}</p>
                                 </div>
                             </div>
                         </div>
-                        @else
-                        <div>
-                            <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                                <h3 class="font-medium text-lg mb-2 text-purple-800">{{ __('Informations sur le service') }}</h3>
-                                <p class="text-purple-800">
-                                    {{ __('Ce service n\'est pas suivi en stock. Vous pouvez le facturer sans limite de quantité.') }}
-                                </p>
-                            </div>
+                        
+                        <!-- Stock (pour produits physiques) ou message (pour services) -->
+                        <div class="space-y-4">
+                            @if($product->type != 'service')
+                                <h3 class="font-medium text-gray-900 text-lg">{{ __('Informations de stock') }}</h3>
+                                
+                                <div class="flex items-center">
+                                    <div class="mr-4">
+                                        <p class="text-sm text-gray-500">{{ __('Stock actuel') }}</p>
+                                        <p class="text-2xl font-bold {{ $product->isOutOfStock() ? 'text-red-600' : ($product->isLowStock() ? 'text-amber-600' : 'text-green-600') }}">
+                                            {{ $product->stock_quantity }}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">{{ __('Seuil d\'alerte') }}</p>
+                                        <p>{{ $product->stock_alert_threshold ?: '-' }}</p>
+                                    </div>
+                                </div>
+                                
+                                @if($product->cost_price)
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-sm text-gray-500">{{ __('Prix d\'achat') }}</p>
+                                        <p>{{ number_format($product->cost_price, 0, ',', ' ') }} FCFA</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">{{ __('Marge') }}</p>
+                                        <p class="{{ $product->getProfitMargin() > 20 ? 'text-green-600' : 'text-amber-600' }}">
+                                            {{ number_format($product->getProfitMargin(), 1) }}%
+                                        </p>
+                                    </div>
+                                </div>
+                                @endif
+                                
+                                <div class="mt-2">
+                                    <a href="{{ route('inventory.adjustment') }}?product_id={{ $product->id }}" class="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800">
+                                        <i class="bi bi-arrow-repeat mr-1"></i> {{ __('Ajuster le stock') }}
+                                    </a>
+                                </div>
+                            @else
+                                <div class="bg-purple-50 rounded-md p-4 border border-purple-200">
+                                    <h3 class="font-medium text-purple-800 text-lg mb-2">{{ __('Service') }}</h3>
+                                    <p class="text-purple-700 text-sm">
+                                        {{ __('Ce service n\'est pas suivi en stock. Vous pouvez le facturer sans limite de quantité.') }}
+                                    </p>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Onglets pour alterner entre les deux sections -->
+            <div class="mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex">
+                        <button id="tab-prices" class="tab-button py-3 px-4 border-b-2 border-indigo-500 text-indigo-600 font-medium">
+                            {{ __('Historique des prix') }} <span class="ml-2 bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full text-xs font-medium">{{ count($priceHistory) }}</span>
+                        </button>
+                        <button id="tab-invoices" class="tab-button py-3 px-4 border-b-2 border-transparent text-gray-500 hover:border-gray-300 font-medium">
+                            {{ __('Factures') }} <span class="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs font-medium">{{ $invoices->count() }}</span>
+                        </button>
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- Historique des prix - visible par défaut -->
+            <div id="prices-content" class="tab-content bg-white shadow-sm sm:rounded-lg mb-6">
+                <div class="p-5">
+                    <div class="mb-4 flex justify-between items-center">
+                        <h3 class="font-medium text-gray-900 text-lg">{{ __('Historique des prix utilisés') }}</h3>
+                        
+                        @if(count($priceHistory) > 0)
+                        <div class="flex items-center space-x-2 text-sm">
+                            <span class="text-gray-500">{{ __('Prix par défaut') }}: <span class="font-medium">{{ number_format($product->default_price, 0, ',', ' ') }} FCFA</span></span>
                         </div>
                         @endif
                     </div>
-                </div>
-            </div>
-
-            <!-- Information du produit -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6 border-b border-gray-200">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2">{{ __('Information produit') }}</h3>
-                            <div class="mt-4 space-y-4">
-                                <div>
-                                    <p class="text-sm font-medium text-gray-500">{{ __('Nom') }}</p>
-                                    <p class="mt-1">{{ $product->name }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-500">{{ __('Description') }}</p>
-                                    <p class="mt-1">{{ $product->description ?: 'Pas de description' }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-500">{{ __('Prix par défaut') }}</p>
-                                    <p class="mt-1">{{ number_format($product->default_price, 0, ',', ' ') }} FCFA</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-500">{{ __('Date de création') }}</p>
-                                    <p class="mt-1" title="{{ $product->created_at->diffForHumans() }}">{{ $product->created_at->format('d/m/Y') }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2">{{ __('Statistiques de ventes') }}</h3>
-                            <div class="mt-4 space-y-4">
-                                <div>
-                                    <p class="text-sm font-medium text-gray-500">{{ __('Utilisé dans') }}</p>
-                                    <p class="mt-1 text-2xl font-bold text-indigo-600" title="{{ __('Nombre total de factures différentes où ce produit apparaît') }}">
-                                        {{ $stats['usage_count'] }} factures
-                                    </p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-500">{{ __('Quantité totale vendue') }}</p>
-                                    <p class="mt-1 text-2xl font-bold text-indigo-600" title="{{ __('Somme des quantités vendues sur toutes les factures') }}">
-                                        {{ $stats['total_quantity'] }} unités
-                                    </p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-500">{{ __('Chiffre d\'affaires total') }}</p>
-                                    <p class="mt-1 text-2xl font-bold text-indigo-600" title="{{ __('Montant total généré par la vente de ce produit') }}">
-                                        {{ number_format($stats['total_sales'], 0, ',', ' ') }} FCFA
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2">{{ __('Historique d\'utilisation') }}</h3>
-                            <div class="mt-4 space-y-4">
-                                <div>
-                                    <p class="text-sm font-medium text-gray-500">{{ __('Prix moyen utilisé') }}</p>
-                                    <p class="mt-1" title="{{ __('Prix moyen auquel ce produit a été facturé') }}">
-                                        {{ number_format($stats['average_price'], 0, ',', ' ') }} FCFA
-                                    </p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-500">{{ __('Première utilisation') }}</p>
-                                    <p class="mt-1" title="{{ $stats['first_use'] ? $stats['first_use']->diffForHumans() : '' }}">
-                                        {{ $stats['first_use'] ? $stats['first_use']->format('d/m/Y') : 'Jamais utilisé' }}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-500">{{ __('Dernière utilisation') }}</p>
-                                    <p class="mt-1" title="{{ $stats['last_use'] ? $stats['last_use']->diffForHumans() : '' }}">
-                                        {{ $stats['last_use'] ? $stats['last_use']->format('d/m/Y') : 'Jamais utilisé' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Historique des prix -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6 border-b border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('Historique des prix') }}</h3>
                     
                     @if(count($priceHistory) > 0)
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('Prix utilisé') }}
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ __('Nombre d\'utilisations') }}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($priceHistory as $price)
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        {{ number_format($price->unit_price, 0, ',', ' ') }} FCFA
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        {{ $price->usage_count }} fois
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            @foreach($priceHistory as $price)
+                            @php
+                                $defaultPrice = $product->default_price ?: 1;
+                                $priceDiff = $price->unit_price - $product->default_price;
+                                $pricePercent = ($priceDiff / $defaultPrice) * 100;
+                                $isDefaultPrice = $price->unit_price == $product->default_price;
+                            @endphp
+                            <div class="price-card border rounded-md {{ $isDefaultPrice ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200' }}" data-price="{{ $price->unit_price }}">
+                                <div class="p-4">
+                                    <div class="flex justify-between">
+                                        <div>
+                                            <div class="text-lg font-bold text-gray-900">
+                                                {{ number_format($price->unit_price, 0, ',', ' ') }} FCFA
+                                            </div>
+                                            <div class="mt-1 flex items-center">
+                                                <span class="text-sm text-gray-500">{{ $price->usage_count }} facture(s)</span>
+                                                
+                                                @if($priceDiff != 0)
+                                                <span class="ml-2 text-sm {{ $priceDiff > 0 ? 'text-green-600' : 'text-red-600' }}">
+                                                    {{ $priceDiff > 0 ? '+' : '' }}{{ number_format($pricePercent, 1) }}%
+                                                </span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div>
+                                            @if($isDefaultPrice)
+                                                <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-md">Par défaut</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="px-4 py-2 bg-gray-50 border-t border-gray-200 flex justify-between">
+                                    <button 
+                                        onclick="showInvoicesByPrice('{{ $price->unit_price }}')" 
+                                        class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center"
+                                        title="Voir les factures utilisant ce prix">
+                                        <i class="bi bi-filter mr-1"></i> Voir factures
+                                    </button>
+                                    
+                                    @if(!$isDefaultPrice)
+                                    <a href="{{ route('products.edit', $product) }}?set_price={{ $price->unit_price }}" 
+                                        class="text-xs text-gray-600 hover:text-gray-800"
+                                        title="Définir comme prix par défaut">
+                                        Définir par défaut
+                                    </a>
+                                    @endif
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
                     @else
-                    <div class="text-center py-8 text-gray-500">
-                        <p>{{ __('Aucun historique de prix disponible') }}</p>
-                    </div>
+                        <div class="text-center py-6 text-gray-500">
+                            <p>{{ __('Aucun historique de prix disponible') }}</p>
+                        </div>
                     @endif
                 </div>
             </div>
-
-            <!-- Factures associées -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mt-4">
-                <div class="p-6 bg-white border-b border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Factures contenant ce produit</h3>
-                    
-                    <div class="mb-4">
-                        <input type="text" id="searchInvoice" placeholder="Rechercher par référence, client ou date..." class="w-full sm:w-96 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            
+            <!-- Liste des factures - caché par défaut -->
+            <div id="invoices-content" class="tab-content bg-white shadow-sm sm:rounded-lg mb-6 hidden">
+                <div class="p-5">
+                    <div class="mb-4 flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4">
+                        <div class="flex-1">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="bi bi-search text-gray-400"></i>
+                                </div>
+                                <input type="text" id="searchInvoice" placeholder="Rechercher par référence, client ou date..." class="pl-10 w-full sm:w-96 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-3">
+                            @if($priceHistory && $priceHistory->count() > 0)
+                            <div class="flex items-center">
+                                <select id="priceFilter" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    <option value="">Tous les prix</option>
+                                    @foreach($priceHistory as $price)
+                                        <option value="{{ $price->unit_price }}">
+                                            {{ number_format($price->unit_price, 0, ',', ' ') }} FCFA 
+                                            ({{ $price->usage_count }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @endif
+                            
+                            <div class="flex items-center">
+                                <select id="pageSizeFilter" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    <option value="10">10 par page</option>
+                                    <option value="25">25 par page</option>
+                                    <option value="50">50 par page</option>
+                                    <option value="all">Tout</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     @if($invoices->isEmpty())
-                        <p class="text-gray-500">Aucune facture ne contient ce produit pour le moment.</p>
+                        <div class="text-center py-10 text-gray-500">
+                            <p>{{ __('Aucune facture ne contient ce produit pour le moment.') }}</p>
+                        </div>
                     @else
                         <div id="noInvoiceResults" class="text-gray-500 py-4 hidden">
-                            <p>Aucune facture ne correspond à votre recherche.</p>
+                            <p>{{ __('Aucune facture ne correspond à votre recherche.') }}</p>
                         </div>
                         
                         <div class="overflow-x-auto">
                             <table class="min-w-full leading-normal">
                                 <thead>
                                     <tr>
-                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                            Référence
+                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="reference">
+                                            {{ __('Référence') }} <i class="bi bi-arrow-down-up ml-1"></i>
                                         </th>
-                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                            Client
+                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="client">
+                                            {{ __('Client') }} <i class="bi bi-arrow-down-up ml-1"></i>
                                         </th>
-                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                            Date
+                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="date">
+                                            {{ __('Date') }} <i class="bi bi-arrow-down-up ml-1"></i>
                                         </th>
-                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                            Statut
+                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="quantity">
+                                            {{ __('Qté') }} <i class="bi bi-arrow-down-up ml-1"></i>
                                         </th>
-                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                            Quantité
+                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="price">
+                                            {{ __('Prix unitaire') }} <i class="bi bi-arrow-down-up ml-1"></i>
                                         </th>
-                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                            Total
+                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="status">
+                                            {{ __('Statut') }} <i class="bi bi-arrow-down-up ml-1"></i>
                                         </th>
-                                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                            Actions
+                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-xs font-semibold text-gray-600 uppercase tracking-wider text-right">
+                                            {{ __('Actions') }}
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="invoicesTableBody">
                                     @foreach($invoices as $invoice)
-                                        <tr class="invoice-row" 
-                                           data-reference="{{ strtolower($invoice->reference) }}" 
-                                           data-client="{{ strtolower($invoice->client->name) }}" 
-                                           data-date="{{ $invoice->date->format('d/m/Y') }}">
-                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                <a href="{{ route('bills.show', $invoice) }}" class="text-indigo-600 hover:text-indigo-900">{{ $invoice->reference }}</a>
+                                        <tr class="invoice-row hover:bg-gray-50" 
+                                            data-reference="{{ strtolower($invoice->reference) }}" 
+                                            data-client="{{ strtolower($invoice->client->name) }}" 
+                                            data-date="{{ $invoice->date->format('d/m/Y') }}"
+                                            data-date-sort="{{ $invoice->date->format('Y-m-d') }}"
+                                            data-price="{{ $invoice->pivot->unit_price }}"
+                                            data-quantity="{{ $invoice->pivot->quantity }}"
+                                            data-total="{{ $invoice->pivot->total }}"
+                                            data-status="{{ strtolower($invoice->status) }}">
+                                            <td class="px-4 py-3 border-b border-gray-200">
+                                                <a href="{{ route('bills.show', $invoice) }}" class="text-indigo-600 hover:text-indigo-900 font-medium">{{ $invoice->reference }}</a>
                                             </td>
-                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                            <td class="px-4 py-3 border-b border-gray-200 text-sm">
                                                 {{ $invoice->client->name }}
                                             </td>
-                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                            <td class="px-4 py-3 border-b border-gray-200 text-sm">
                                                 {{ $invoice->date->format('d/m/Y') }}
                                             </td>
-                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                {{ $invoice->status }}
-                                            </td>
-                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                            <td class="px-4 py-3 border-b border-gray-200 text-sm">
                                                 {{ $invoice->pivot->quantity }}
                                             </td>
-                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                {{ number_format($invoice->pivot->total, 0, ',', ' ') }} FCFA
+                                            <td class="px-4 py-3 border-b border-gray-200 text-sm font-medium">
+                                                {{ number_format($invoice->pivot->unit_price, 0, ',', ' ') }} FCFA
                                             </td>
-                                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                            <td class="px-4 py-3 border-b border-gray-200 text-sm">
+                                                <span class="px-2 py-1 text-xs rounded-full {{ 
+                                                    $invoice->status == 'paid' ? 'bg-green-100 text-green-800' : 
+                                                    ($invoice->status == 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                                                    'bg-red-100 text-red-800') 
+                                                }}">{{ $invoice->status }}</span>
+                                            </td>
+                                            <td class="px-4 py-3 border-b border-gray-200 text-sm text-right">
                                                 <a href="{{ route('bills.show', $invoice) }}" class="text-indigo-600 hover:text-indigo-900">
                                                     {{ __('Voir') }}
                                                 </a>
@@ -435,9 +344,24 @@
                             </table>
                         </div>
                         
-                        <!-- Pagination -->
-                        <div class="mt-4">
-                            {{ $invoices->links() }}
+                        <!-- Pagination client-side simplifiée -->
+                        <div class="mt-4 flex justify-between items-center">
+                            <div>
+                                <span id="showing-entries" class="text-sm text-gray-600">
+                                    <span id="showing-start">1</span>-<span id="showing-end">10</span> sur <span id="total-entries">{{ $invoices->count() }}</span>
+                                </span>
+                            </div>
+                            <div class="pagination-controls flex space-x-1">
+                                <button id="prev-page" class="px-3 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-indigo-50 disabled:opacity-50" disabled>
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <div id="pagination-numbers" class="flex space-x-1">
+                                    <!-- Les numéros de page seront générés dynamiquement ici -->
+                                </div>
+                                <button id="next-page" class="px-3 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-indigo-50">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
                     @endif
                 </div>
@@ -450,41 +374,297 @@
     @endpush
 
     <script>
-        // Graphique des ventes
         document.addEventListener('DOMContentLoaded', function() {
-            // Code existant pour le graphique (si présent)
+            // Gestion des onglets
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
             
-            // Fonctionnalité de recherche pour les factures
-            const searchInput = document.getElementById('searchInvoice');
-            const invoiceRows = document.querySelectorAll('.invoice-row');
-            const noInvoiceResults = document.getElementById('noInvoiceResults');
-            
-            if (searchInput) {
-                searchInput.addEventListener('input', function() {
-                    const searchTerm = this.value.toLowerCase();
-                    let visibleCount = 0;
-                    
-                    invoiceRows.forEach(row => {
-                        const reference = row.dataset.reference;
-                        const client = row.dataset.client;
-                        const date = row.dataset.date;
-                        
-                        if (reference.includes(searchTerm) || client.includes(searchTerm) || date.includes(searchTerm)) {
-                            row.style.display = '';
-                            visibleCount++;
-                        } else {
-                            row.style.display = 'none';
-                        }
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Désactiver tous les boutons et contenus
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('border-indigo-500', 'text-indigo-600');
+                        btn.classList.add('border-transparent', 'text-gray-500');
                     });
                     
-                    // Afficher un message si aucun résultat
-                    if (visibleCount === 0 && invoiceRows.length > 0) {
-                        noInvoiceResults.classList.remove('hidden');
-                    } else {
-                        noInvoiceResults.classList.add('hidden');
+                    tabContents.forEach(content => content.classList.add('hidden'));
+                    
+                    // Activer l'onglet cliqué
+                    button.classList.remove('border-transparent', 'text-gray-500');
+                    button.classList.add('border-indigo-500', 'text-indigo-600');
+                    
+                    // Afficher le contenu correspondant
+                    const contentId = button.id.replace('tab-', '') + '-content';
+                    document.getElementById(contentId).classList.remove('hidden');
+                });
+            });
+            
+            // Fonctionnalité pour afficher les factures par prix
+            window.showInvoicesByPrice = function(price) {
+                // Passer à l'onglet factures
+                document.getElementById('tab-invoices').click();
+                
+                // Définir le filtre de prix
+                const priceFilter = document.getElementById('priceFilter');
+                if (priceFilter) {
+                    priceFilter.value = price;
+                    filterInvoices();
+                }
+            };
+            
+            // Filtrage des factures
+            const searchInput = document.getElementById('searchInvoice');
+            const priceFilter = document.getElementById('priceFilter');
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', filterInvoices);
+            }
+            
+            if (priceFilter) {
+                priceFilter.addEventListener('change', filterInvoices);
+            }
+            
+            function filterInvoices() {
+                const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+                const selectedPrice = priceFilter ? priceFilter.value : '';
+                
+                // Filtrer les factures
+                const rows = Array.from(document.querySelectorAll('.invoice-row'));
+                
+                filteredRows = rows.filter(row => {
+                    const reference = row.dataset.reference;
+                    const client = row.dataset.client;
+                    const date = row.dataset.date;
+                    const price = row.dataset.price;
+                    
+                    const matchesSearch = !searchTerm || 
+                        reference.includes(searchTerm) || 
+                        client.includes(searchTerm) || 
+                        date.includes(searchTerm);
+                        
+                    const matchesPrice = !selectedPrice || price === selectedPrice;
+                    
+                    return matchesSearch && matchesPrice;
+                });
+                
+                // Mise à jour du message d'aucun résultat
+                const noResults = document.getElementById('noInvoiceResults');
+                if (filteredRows.length === 0 && rows.length > 0) {
+                    noResults.classList.remove('hidden');
+                } else {
+                    noResults.classList.add('hidden');
+                }
+                
+                // Appliquer le tri actuel
+                applySorting();
+                
+                // Réinitialiser la pagination
+                currentPage = 1;
+                updatePagination();
+            }
+            
+            // Système de pagination côté client
+            let currentPage = 1;
+            let pageSize = 10;
+            let filteredRows = [];
+            let sortField = 'date';
+            let sortDirection = 'desc';
+            
+            // Initialiser la pagination
+            function setupClientPagination() {
+                // Initialiser le tableau filtré
+                filteredRows = Array.from(document.querySelectorAll('.invoice-row'));
+                
+                // Configurer les contrôles de pagination
+                document.getElementById('prev-page').addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        updatePagination();
                     }
                 });
+                
+                document.getElementById('next-page').addEventListener('click', () => {
+                    const maxPage = Math.ceil(filteredRows.length / pageSize);
+                    if (currentPage < maxPage) {
+                        currentPage++;
+                        updatePagination();
+                    }
+                });
+                
+                // Gérer la taille de page
+                const pageSizeFilter = document.getElementById('pageSizeFilter');
+                if (pageSizeFilter) {
+                    pageSizeFilter.addEventListener('change', function() {
+                        if (this.value === 'all') {
+                            pageSize = filteredRows.length;
+                        } else {
+                            pageSize = parseInt(this.value);
+                        }
+                        currentPage = 1;
+                        updatePagination();
+                    });
+                }
+                
+                // Configurer le tri des colonnes
+                document.querySelectorAll('th[data-sort]').forEach(header => {
+                    header.addEventListener('click', () => {
+                        const field = header.dataset.sort;
+                        
+                        if (field === sortField) {
+                            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            sortField = field;
+                            sortDirection = 'asc';
+                        }
+                        
+                        // Mettre à jour l'icône de tri
+                        document.querySelectorAll('th[data-sort] i').forEach(icon => {
+                            icon.className = 'bi bi-arrow-down-up ml-1';
+                        });
+                        
+                        const icon = header.querySelector('i');
+                        if (icon) {
+                            icon.className = `bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'} ml-1`;
+                        }
+                        
+                        applySorting();
+                        updatePagination();
+                    });
+                });
+                
+                // Tri initial par date (desc)
+                const dateHeader = document.querySelector('th[data-sort="date"]');
+                if (dateHeader) {
+                    const icon = dateHeader.querySelector('i');
+                    if (icon) icon.className = 'bi bi-arrow-down ml-1';
+                }
+                
+                applySorting();
+                updatePagination();
             }
+            
+            // Fonction de tri
+            function applySorting() {
+                filteredRows.sort((a, b) => {
+                    let valueA = a.dataset[sortField];
+                    let valueB = b.dataset[sortField];
+                    
+                    // Tri spécial pour les dates
+                    if (sortField === 'date' && a.dataset['dateSort'] && b.dataset['dateSort']) {
+                        valueA = a.dataset['dateSort'];
+                        valueB = b.dataset['dateSort'];
+                    }
+                    
+                    // Convertir en nombres si nécessaire
+                    if (['price', 'quantity', 'total'].includes(sortField)) {
+                        valueA = parseFloat(valueA) || 0;
+                        valueB = parseFloat(valueB) || 0;
+                    }
+                    
+                    // Comparaison
+                    if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
+                    if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+            
+            // Mettre à jour l'affichage de la pagination
+            function updatePagination() {
+                const paginationNumbers = document.getElementById('pagination-numbers');
+                const prevButton = document.getElementById('prev-page');
+                const nextButton = document.getElementById('next-page');
+                const showingStart = document.getElementById('showing-start');
+                const showingEnd = document.getElementById('showing-end');
+                const totalEntries = document.getElementById('total-entries');
+                
+                // Masquer toutes les lignes
+                document.querySelectorAll('.invoice-row').forEach(row => {
+                    row.style.display = 'none';
+                });
+                
+                // Calculer les indices
+                const startIndex = (currentPage - 1) * pageSize;
+                const endIndex = Math.min(startIndex + pageSize, filteredRows.length);
+                
+                // Afficher les lignes de la page actuelle
+                for (let i = startIndex; i < endIndex; i++) {
+                    filteredRows[i].style.display = '';
+                }
+                
+                // Mettre à jour l'info de pagination
+                if (filteredRows.length > 0) {
+                    showingStart.textContent = startIndex + 1;
+                    showingEnd.textContent = endIndex;
+                    totalEntries.textContent = filteredRows.length;
+                } else {
+                    showingStart.textContent = '0';
+                    showingEnd.textContent = '0';
+                    totalEntries.textContent = '0';
+                }
+                
+                // État des boutons
+                prevButton.disabled = currentPage === 1;
+                nextButton.disabled = endIndex >= filteredRows.length;
+                
+                // Générer les boutons de page
+                const maxPage = Math.ceil(filteredRows.length / pageSize);
+                paginationNumbers.innerHTML = '';
+                
+                if (maxPage <= 5) {
+                    // Afficher tous les numéros de page
+                    for (let i = 1; i <= maxPage; i++) {
+                        addPageButton(i);
+                    }
+                } else {
+                    // Version simplifiée avec ellipsis
+                    if (currentPage <= 3) {
+                        for (let i = 1; i <= 3; i++) addPageButton(i);
+                        addEllipsis();
+                        addPageButton(maxPage);
+                    } else if (currentPage >= maxPage - 2) {
+                        addPageButton(1);
+                        addEllipsis();
+                        for (let i = maxPage - 2; i <= maxPage; i++) addPageButton(i);
+                    } else {
+                        addPageButton(1);
+                        addEllipsis();
+                        addPageButton(currentPage - 1);
+                        addPageButton(currentPage);
+                        addPageButton(currentPage + 1);
+                        addEllipsis();
+                        addPageButton(maxPage);
+                    }
+                }
+                
+                function addPageButton(page) {
+                    const button = document.createElement('button');
+                    button.classList.add('px-3', 'py-1', 'rounded', 'border', 'text-sm');
+                    
+                    if (page === currentPage) {
+                        button.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+                    } else {
+                        button.classList.add('border-gray-300', 'text-gray-700', 'hover:bg-indigo-50');
+                    }
+                    
+                    button.textContent = page;
+                    button.addEventListener('click', () => {
+                        currentPage = page;
+                        updatePagination();
+                    });
+                    
+                    paginationNumbers.appendChild(button);
+                }
+                
+                function addEllipsis() {
+                    const span = document.createElement('span');
+                    span.classList.add('px-2', 'py-1', 'text-sm', 'text-gray-500');
+                    span.textContent = '...';
+                    paginationNumbers.appendChild(span);
+                }
+            }
+            
+            // Initialiser la pagination
+            setupClientPagination();
         });
     </script>
 </x-app-layout>
