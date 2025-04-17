@@ -27,6 +27,9 @@
                     <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">
                          <i class="bi bi-archive mr-1"></i> {{ __('Inventaire') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('shops.index')" :active="request()->routeIs('shops.*')">
+                         <i class="bi bi-shop mr-1"></i> {{ __('Boutiques') }}
+                    </x-nav-link>
                     <x-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
                          <i class="bi bi-gear mr-1"></i> {{ __('Paramètres') }}
                     </x-nav-link>
@@ -226,6 +229,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">
                 {{ __('Inventaire') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('shops.index')" :active="request()->routeIs('shops.*')">
+                {{ __('Boutiques') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
                 {{ __('Paramètres') }}

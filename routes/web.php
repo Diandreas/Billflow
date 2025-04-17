@@ -13,6 +13,7 @@ use App\Http\Controllers\PhoneController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ShopController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DashboardController::class, 'index'])
@@ -67,6 +68,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('bills/{bill}/status', [BillController::class, 'updateStatus'])->name('bills.update-status');
     Route::get('bills/{bill}/print', [BillController::class, 'print'])->name('bills.print');
     Route::post('bills/{bill}/signature', [BillController::class, 'addSignature'])->name('bills.signature');
+
+    // Routes pour les boutiques
+    Route::resource('shops', ShopController::class);
+    Route::get('shops/{shop}/manage-users', [ShopController::class, 'manageUsers'])->name('shops.manage-users');
+    Route::post('shops/{shop}/assign-users', [ShopController::class, 'assignUsers'])->name('shops.assign-users');
+    Route::delete('shops/{shop}/users/{user}', [ShopController::class, 'removeUser'])->name('shops.remove-user');
 
     // Routes pour les paramètres
     Route::get('language/{locale}', [LanguageController::class, 'switch'])->name('language.switch');
