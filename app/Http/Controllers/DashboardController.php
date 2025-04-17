@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Bill;
 use App\Models\Product;
 use App\Models\Client;
+use App\Models\Shop;
+use App\Models\User;
 use App\Models\InventoryMovement;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -21,6 +24,7 @@ class DashboardController extends Controller
         try {
             $timeRange = $request->input('timeRange', 'month');
             $metric = $request->input('metric', 'count');
+            $shopId = $request->input('shop_id');
 
             // Gestion des dates personnalisées
             if ($timeRange === 'custom') {
@@ -43,14 +47,20 @@ class DashboardController extends Controller
             }
 
             // Requête pour récupérer les statistiques
-            $results = DB::table('bills')
+            $query = DB::table('bills')
                 ->select(
                     DB::raw('DATE(created_at) as date'),
                     DB::raw('COUNT(*) as count'),
                     DB::raw('COALESCE(SUM(total), 0) as amount')
                 )
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->groupBy(DB::raw('DATE(created_at)'))
+                ->whereBetween('created_at', [$startDate, $endDate]);
+                
+            // Filtrer par boutique si demandé
+            if ($shopId) {
+                $query->where('shop_id', $shopId);
+            }
+            
+            $results = $query->groupBy(DB::raw('DATE(created_at)'))
                 ->orderBy('date')
                 ->get();
 
@@ -83,14 +93,23 @@ class DashboardController extends Controller
     /**
      * Récupérer les données détaillées du mois en cours et précédent
      */
-    public function getDashboardData()
+    public function getDashboardData(Request $request)
     {
         try {
             $currentMonth = now()->format('m');
             $currentYear = now()->format('Y');
+            $shopId = $request->input('shop_id');
+            
+            // Requête de base
+            $query = DB::table('bills');
+            
+            // Filtrer par boutique si demandé
+            if ($shopId) {
+                $query->where('shop_id', $shopId);
+            }
 
             // Statistiques du mois en cours
-            $currentMonthStats = DB::table('bills')
+            $currentMonthStats = (clone $query)
                 ->select(
                     DB::raw('COUNT(*) as count'),
                     DB::raw('COALESCE(SUM(total), 0) as total'),
@@ -102,7 +121,7 @@ class DashboardController extends Controller
 
             // Statistiques du mois précédent
             $lastMonth = now()->subMonth();
-            $lastMonthStats = DB::table('bills')
+            $lastMonthStats = (clone $query)
                 ->select(
                     DB::raw('COUNT(*) as count'),
                     DB::raw('COALESCE(SUM(total), 0) as total'),
@@ -142,19 +161,47 @@ class DashboardController extends Controller
     /**
      * Page principale du tableau de bord
      */
-    public function index()
+    public function index(Request $request)
     {
+        $user = Auth::user();
+        $shopId = $request->input('shop_id');
+        $shops = null;
+        
+        // Si c'est un admin ou manager, on peut sélectionner une boutique
+        if ($user->isAdmin() || $user->isManager()) {
+            if ($user->isAdmin()) {
+                $shops = Shop::where('is_active', true)->get();
+            } else {
+                $shops = $user->managedShops;
+            }
+        } elseif ($user->isVendeur()) {
+            // Si c'est un vendeur, on utilise automatiquement sa première boutique
+            $userShops = $user->shops;
+            if ($userShops->count() > 0) {
+                $shopId = $userShops->first()->id;
+            }
+        }
+        
+        // Préparation des requêtes avec filtrage par boutique au besoin
+        $billsQuery = Bill::query();
+        
+        if ($shopId) {
+            $billsQuery->where('shop_id', $shopId);
+        }
+        
         // Calcul du pourcentage de changement mensuel pour les factures
         $thisMonth = now()->month;
         $lastMonth = now()->subMonth()->month;
         $thisYear = now()->year;
         $lastYear = now()->subMonth()->year;
         
-        $currentMonthBills = Bill::whereYear('created_at', $thisYear)
+        $currentMonthBills = (clone $billsQuery)
+            ->whereYear('created_at', $thisYear)
             ->whereMonth('created_at', $thisMonth)
             ->count();
             
-        $lastMonthBills = Bill::whereYear('created_at', $lastYear)
+        $lastMonthBills = (clone $billsQuery)
+            ->whereYear('created_at', $lastYear)
             ->whereMonth('created_at', $lastMonth)
             ->count();
         
@@ -165,45 +212,59 @@ class DashboardController extends Controller
 
         // Statistiques globales
         $globalStats = [
-            'totalBills' => Bill::count(),
+            'totalBills' => $billsQuery->count(),
             'monthlyBills' => $currentMonthBills,
             'monthlyBillsPercentChange' => $monthlyBillsPercentChange,
-            'totalRevenue' => number_format(Bill::sum('total'), 0, ',', ' ') . ' FCFA',
-            'averageTicket' => number_format(Bill::avg('total') ?? 0, 0, ',', ' ') . ' FCFA'
+            'totalRevenue' => number_format($billsQuery->sum('total'), 0, ',', ' ') . ' FCFA',
+            'averageTicket' => number_format($billsQuery->avg('total') ?? 0, 0, ',', ' ') . ' FCFA'
         ];
 
         // Dernières factures
-        $latestBills = Bill::with('client')
+        $latestBills = (clone $billsQuery)
+            ->with('client')
             ->latest()
             ->take(5)
             ->get();
 
-        // Top clients
-        $topClients = DB::table('bills')
+        // Requête de base pour les tops clients
+        $topClientsQuery = DB::table('bills')
             ->join('clients', 'bills.client_id', '=', 'clients.id')
             ->select(
                 'clients.id',
                 'clients.name',
                 DB::raw('COUNT(*) as count'),
                 DB::raw('SUM(total) as total')
-            )
+            );
+            
+        if ($shopId) {
+            $topClientsQuery->where('bills.shop_id', $shopId);
+        }
+        
+        // Top clients
+        $topClients = $topClientsQuery
             ->groupBy('clients.id', 'clients.name')
             ->orderByDesc('total')
             ->take(5)
             ->get()
-            ->map(function ($client) {
+            ->map(function ($client) use ($shopId) {
                 $client->total = number_format($client->total, 0, ',', ' ') . ' FCFA';
                 
                 // Calculer la tendance réelle des achats du client
-                $clientBillsCurrentMonth = Bill::where('client_id', $client->id)
+                $currentMonthQuery = Bill::where('client_id', $client->id)
                     ->whereMonth('created_at', now()->month)
-                    ->whereYear('created_at', now()->year)
-                    ->sum('total');
-                
-                $clientBillsLastMonth = Bill::where('client_id', $client->id)
+                    ->whereYear('created_at', now()->year);
+                    
+                $lastMonthQuery = Bill::where('client_id', $client->id)
                     ->whereMonth('created_at', now()->subMonth()->month)
-                    ->whereYear('created_at', now()->subMonth()->year)
-                    ->sum('total');
+                    ->whereYear('created_at', now()->subMonth()->year);
+                
+                if ($shopId) {
+                    $currentMonthQuery->where('shop_id', $shopId);
+                    $lastMonthQuery->where('shop_id', $shopId);
+                }
+                
+                $clientBillsCurrentMonth = $currentMonthQuery->sum('total');
+                $clientBillsLastMonth = $lastMonthQuery->sum('total');
                 
                 $client->trend = 0;
                 if ($clientBillsLastMonth > 0) {
@@ -212,18 +273,49 @@ class DashboardController extends Controller
                 
                 return $client;
             });
+            
+        // Si c'est une boutique spécifique, obtenez ses informations
+        $selectedShop = null;
+        if ($shopId) {
+            $selectedShop = Shop::with(['managers', 'vendors'])->find($shopId);
+        }
 
-        return view('dashboard', compact('globalStats', 'latestBills', 'topClients'));
+        // Statistiques spécifiques aux vendeurs pour la boutique sélectionnée
+        $sellerStats = null;
+        if ($shopId) {
+            $sellerStats = User::with(['sales' => function($query) use ($shopId) {
+                    $query->where('shop_id', $shopId)
+                          ->whereMonth('created_at', now()->month)
+                          ->whereYear('created_at', now()->year);
+                }])
+                ->whereHas('shops', function($query) use ($shopId) {
+                    $query->where('shops.id', $shopId);
+                })
+                ->where('role', 'vendeur')
+                ->get()
+                ->map(function($seller) {
+                    return [
+                        'id' => $seller->id,
+                        'name' => $seller->name,
+                        'sales_count' => $seller->sales->count(),
+                        'sales_total' => number_format($seller->sales->sum('total'), 0, ',', ' ') . ' FCFA',
+                        'commission' => number_format($seller->sales->sum('total') * ($seller->commission_rate / 100), 0, ',', ' ') . ' FCFA'
+                    ];
+                });
+        }
+
+        return view('dashboard', compact('globalStats', 'latestBills', 'topClients', 'shops', 'selectedShop', 'sellerStats'));
     }
 
     /**
      * Récupérer les données pour le graphique de comparaison des revenus
      */
-    public function getRevenueComparison()
+    public function getRevenueComparison(Request $request)
     {
         try {
             $currentMonth = now();
             $previousMonth = now()->subMonth();
+            $shopId = $request->input('shop_id');
             
             // Divisez le mois en 4 semaines
             $weeks = [
@@ -264,25 +356,40 @@ class DashboardController extends Controller
                 ]
             ];
             
-            $currentData = [];
-            $previousData = [];
-            $labels = [];
+            // Récupérer les données pour les graphiques
+            $currentWeeklyData = [];
+            $previousWeeklyData = [];
             
-            foreach ($weeks as $index => $week) {
-                $revenue = Bill::whereBetween('created_at', [$week['start'], $week['end']])->sum('total');
-                $currentData[] = $revenue;
-                $labels[] = 'Semaine ' . ($index + 1);
+            foreach ($weeks as $index => $weekDates) {
+                $query = DB::table('bills')
+                    ->select(DB::raw('COALESCE(SUM(total), 0) as revenue'))
+                    ->whereBetween('created_at', [$weekDates['start'], $weekDates['end']]);
+                    
+                if ($shopId) {
+                    $query->where('shop_id', $shopId);
+                }
+                
+                $currentWeeklyData[] = $query->first()->revenue;
             }
             
-            foreach ($prevWeeks as $week) {
-                $revenue = Bill::whereBetween('created_at', [$week['start'], $week['end']])->sum('total');
-                $previousData[] = $revenue;
+            foreach ($prevWeeks as $index => $weekDates) {
+                $query = DB::table('bills')
+                    ->select(DB::raw('COALESCE(SUM(total), 0) as revenue'))
+                    ->whereBetween('created_at', [$weekDates['start'], $weekDates['end']]);
+                    
+                if ($shopId) {
+                    $query->where('shop_id', $shopId);
+                }
+                
+                $previousWeeklyData[] = $query->first()->revenue;
             }
+            
+            $labels = ['Semaine 1', 'Semaine 2', 'Semaine 3', 'Semaine 4'];
             
             return response()->json([
                 'labels' => $labels,
-                'currentData' => $currentData,
-                'previousData' => $previousData
+                'currentMonth' => $currentWeeklyData,
+                'lastMonth' => $previousWeeklyData
             ]);
             
         } catch (\Exception $e) {
@@ -291,34 +398,56 @@ class DashboardController extends Controller
             ], 500);
         }
     }
-    
+
     /**
      * Récupérer les données pour le graphique de statut des factures
      */
-    public function getInvoiceStatus()
+    public function getInvoiceStatus(Request $request)
     {
         try {
-            $statusCounts = Bill::select('status', DB::raw('count(*) as count'))
-                ->groupBy('status')
-                ->get()
-                ->mapWithKeys(function ($item) {
-                    return [$item->status => $item->count];
-                })
-                ->toArray();
+            $shopId = $request->input('shop_id');
             
-            // Assurer la présence des statuts communs même s'ils sont à zéro
-            $statuses = ['Payé', 'En attente', 'Annulé'];
-            $data = [];
+            $query = DB::table('bills')
+                ->select('status', DB::raw('COUNT(*) as count'))
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year);
+                
+            if ($shopId) {
+                $query->where('shop_id', $shopId);
+            }
+            
+            $statusCounts = $query->groupBy('status')->get();
+            
             $labels = [];
+            $counts = [];
+            $colors = [
+                'pending' => '#FFC107',
+                'paid' => '#28A745', 
+                'partially_paid' => '#17A2B8',
+                'cancelled' => '#DC3545',
+                'overdue' => '#FF5722'
+            ];
+            $backgroundColors = [];
             
-            foreach ($statuses as $status) {
-                $labels[] = $status;
-                $data[] = $statusCounts[$status] ?? 0;
+            foreach ($statusCounts as $status) {
+                $statusLabel = match ($status->status) {
+                    'pending' => 'En attente',
+                    'paid' => 'Payée',
+                    'partially_paid' => 'Partiellement payée',
+                    'cancelled' => 'Annulée',
+                    'overdue' => 'En retard',
+                    default => $status->status
+                };
+                
+                $labels[] = $statusLabel;
+                $counts[] = $status->count;
+                $backgroundColors[] = $colors[$status->status] ?? '#6C757D';
             }
             
             return response()->json([
                 'labels' => $labels,
-                'data' => $data
+                'counts' => $counts,
+                'colors' => $backgroundColors
             ]);
             
         } catch (\Exception $e) {
@@ -327,37 +456,41 @@ class DashboardController extends Controller
             ], 500);
         }
     }
-    
+
     /**
-     * Récupérer les statistiques d'inventaire pour le dashboard
+     * Récupérer les statistiques d'inventaire
      */
-    public function getInventoryStats()
+    public function getInventoryStats(Request $request)
     {
         try {
-            // Produits avec stock bas (sous le seuil d'alerte)
-            $lowStockProducts = Product::whereRaw('stock_quantity <= stock_alert_threshold')
-                ->where('type', 'physique')
-                ->where('stock_alert_threshold', '>', 0)
-                ->count();
+            $shopId = $request->input('shop_id');
             
-            // Mouvements d'inventaire récents
-            $recentMovements = InventoryMovement::with(['product'])
+            // Produits à faible stock
+            $lowStockQuery = DB::table('products')
+                ->where('quantity', '<=', DB::raw('reorder_level'))
+                ->where('quantity', '>', 0);
+                
+            // Produits en rupture de stock
+            $outOfStockQuery = DB::table('products')
+                ->where('quantity', '=', 0);
+            
+            // Récupérer les mouvements d'inventaire récents
+            $inventoryMovementsQuery = InventoryMovement::with(['product', 'user'])
                 ->latest()
-                ->take(5)
-                ->get();
+                ->take(5);
+                
+            // Filtrer par boutique si nécessaire
+            if ($shopId) {
+                $inventoryMovementsQuery->where('shop_id', $shopId);
+            }
             
-            // Valeur totale du stock
-            $stockValue = Product::where('type', 'physique')
-                ->whereNotNull('cost_price')
-                ->select(DB::raw('SUM(stock_quantity * cost_price) as total_value'))
-                ->first()
-                ->total_value ?? 0;
+            $result = [
+                'lowStockCount' => $lowStockQuery->count(),
+                'outOfStockCount' => $outOfStockQuery->count(),
+                'recentMovements' => $inventoryMovementsQuery->get()
+            ];
             
-            return response()->json([
-                'lowStockProducts' => $lowStockProducts,
-                'recentMovements' => $recentMovements,
-                'stockValue' => number_format($stockValue, 0, ',', ' ') . ' FCFA'
-            ]);
+            return response()->json($result);
             
         } catch (\Exception $e) {
             return response()->json([

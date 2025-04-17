@@ -4,12 +4,29 @@
             <div>
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                     {{ __('Tableau de bord') }}
+                    @if(isset($selectedShop))
+                        <span class="text-indigo-600"> - {{ $selectedShop->name }}</span>
+                    @endif
                 </h2>
                 <p class="mt-1 text-sm text-gray-500">
                     {{ __('Aperçu général et performances de votre activité') }}
                 </p>
             </div>
             <div class="flex space-x-3">
+                @if(isset($shops) && count($shops) > 0)
+                <div>
+                    <form action="{{ route('dashboard') }}" method="GET" class="inline-flex">
+                        <select name="shop_id" id="shop_selector" class="rounded-lg border-gray-300 text-sm pr-8" onchange="this.form.submit()">
+                            <option value="">{{ __('Tableau de bord global') }}</option>
+                            @foreach($shops as $shop)
+                                <option value="{{ $shop->id }}" {{ request()->input('shop_id') == $shop->id ? 'selected' : '' }}>
+                                    {{ $shop->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </form>
+                </div>
+                @endif
                 <a href="{{ route('stats.export') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-1.5 px-3 rounded-lg shadow-sm inline-flex items-center transition-colors duration-150 text-sm"
                    title="{{ __('Télécharger les statistiques globales au format CSV') }}">
                     <i class="bi bi-cloud-download mr-1"></i>
@@ -50,6 +67,53 @@
                     </div>
                 </div>
             </div>
+            
+            @if(isset($selectedShop))
+            <!-- Informations sur la boutique sélectionnée -->
+            <div class="mb-4 bg-white rounded-lg shadow overflow-hidden">
+                <div class="p-4 flex items-start">
+                    <div class="mr-4">
+                        @if($selectedShop->logo_path)
+                            <img src="{{ asset('storage/' . $selectedShop->logo_path) }}" alt="{{ $selectedShop->name }}" class="w-16 h-16 object-cover rounded">
+                        @else
+                            <div class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                                <i class="bi bi-shop text-3xl text-gray-500"></i>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-800">{{ $selectedShop->name }}</h3>
+                        <p class="text-sm text-gray-600 mb-1">
+                            <i class="bi bi-geo-alt mr-1"></i> {{ $selectedShop->address }}
+                        </p>
+                        <p class="text-sm text-gray-600 mb-1">
+                            <i class="bi bi-telephone mr-1"></i> {{ $selectedShop->phone }} | 
+                            <i class="bi bi-envelope mr-1"></i> {{ $selectedShop->email }}
+                        </p>
+                        <div class="flex mt-2 text-sm">
+                            <div class="mr-4">
+                                <span class="font-medium text-gray-700">{{ __('Managers:') }}</span>
+                                <span>
+                                    @forelse($selectedShop->managers as $manager)
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                            {{ $manager->name }}
+                                        </span>
+                                    @empty
+                                        <span class="text-gray-500">{{ __('Aucun') }}</span>
+                                    @endforelse
+                                </span>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">{{ __('Statut:') }}</span>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $selectedShop->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                    {{ $selectedShop->is_active ? __('Actif') : __('Inactif') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
 
             <!-- Statistiques sommaires -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -116,6 +180,57 @@
                     </div>
                 </div>
             </div>
+
+            @if(isset($sellerStats) && count($sellerStats) > 0)
+            <!-- Performances des vendeurs -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-4">
+                <div class="p-4">
+                    <h3 class="font-semibold text-lg text-gray-800 mb-3">
+                        <i class="bi bi-people text-indigo-500 mr-1"></i>
+                        {{ __('Performance des Vendeurs') }} - {{ $selectedShop->name }}
+                    </h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {{ __('Vendeur') }}
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {{ __('Ventes') }}
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {{ __('Montant total') }}
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {{ __('Commission') }}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach($sellerStats as $seller)
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ $seller['name'] }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ $seller['sales_count'] }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ $seller['sales_total'] }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ $seller['commission'] }}</div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            @endif
 
             <!-- Graphique principal dynamique -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-4">
@@ -390,6 +505,68 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Script pour passer l'ID de boutique aux graphiques -->
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Obtenir les éléments qui déclenchent les requêtes AJAX
+                    const timeRange = document.getElementById('timeRange');
+                    const startDate = document.getElementById('startDate');
+                    const endDate = document.getElementById('endDate');
+                    const metric = document.getElementById('metric');
+                    const chartType = document.getElementById('chartType');
+                    
+                    // Paramètre shop_id pour les requêtes AJAX
+                    @if(isset($selectedShop))
+                    window.selectedShopId = {{ $selectedShop->id }};
+                    @else
+                    window.selectedShopId = null;
+                    @endif
+                    
+                    // Modifier les URL des requêtes AJAX pour inclure shop_id
+                    const originalFetchStats = window.fetchStats;
+                    const originalFetchRevenueComparison = window.fetchRevenueComparison;
+                    const originalFetchInvoiceStatus = window.fetchInvoiceStatus;
+                    const originalFetchInventoryStats = window.fetchInventoryStats;
+                    
+                    if (originalFetchStats) {
+                        window.fetchStats = function(params) {
+                            if (window.selectedShopId) {
+                                params.shop_id = window.selectedShopId;
+                            }
+                            return originalFetchStats(params);
+                        };
+                    }
+                    
+                    if (originalFetchRevenueComparison) {
+                        window.fetchRevenueComparison = function() {
+                            const url = '/dashboard/revenue-comparison' + (window.selectedShopId ? '?shop_id=' + window.selectedShopId : '');
+                            return fetch(url);
+                        };
+                    }
+                    
+                    if (originalFetchInvoiceStatus) {
+                        window.fetchInvoiceStatus = function() {
+                            const url = '/dashboard/invoice-status' + (window.selectedShopId ? '?shop_id=' + window.selectedShopId : '');
+                            return fetch(url);
+                        };
+                    }
+                    
+                    if (originalFetchInventoryStats) {
+                        window.fetchInventoryStats = function() {
+                            const url = '/dashboard/inventory-stats' + (window.selectedShopId ? '?shop_id=' + window.selectedShopId : '');
+                            return fetch(url);
+                        };
+                    }
+                    
+                    // Redéclencher le chargement des données
+                    if (timeRange && metric && chartType) {
+                        setTimeout(function() {
+                            updateChart();
+                        }, 100);
+                    }
+                });
+            </script>
         </div>
     </div>
 

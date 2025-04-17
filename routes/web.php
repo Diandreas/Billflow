@@ -14,6 +14,7 @@ use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\VendorEquipmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DashboardController::class, 'index'])
@@ -74,6 +75,19 @@ Route::middleware('auth')->group(function () {
     Route::get('shops/{shop}/manage-users', [ShopController::class, 'manageUsers'])->name('shops.manage-users');
     Route::post('shops/{shop}/assign-users', [ShopController::class, 'assignUsers'])->name('shops.assign-users');
     Route::delete('shops/{shop}/users/{user}', [ShopController::class, 'removeUser'])->name('shops.remove-user');
+    
+    // Routes pour la gestion des équipements des vendeurs
+    Route::middleware(['auth'])->prefix('vendor-equipment')->name('vendor-equipment.')->group(function () {
+        Route::get('/', [App\Http\Controllers\VendorEquipmentController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\VendorEquipmentController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\VendorEquipmentController::class, 'store'])->name('store');
+        Route::get('/{equipment}', [App\Http\Controllers\VendorEquipmentController::class, 'show'])->name('show');
+        Route::get('/{equipment}/edit', [App\Http\Controllers\VendorEquipmentController::class, 'edit'])->name('edit');
+        Route::put('/{equipment}', [App\Http\Controllers\VendorEquipmentController::class, 'update'])->name('update');
+        Route::get('/{equipment}/mark-returned', [App\Http\Controllers\VendorEquipmentController::class, 'markReturned'])->name('mark-returned');
+        Route::post('/{equipment}/mark-returned', [App\Http\Controllers\VendorEquipmentController::class, 'markReturnedStore'])->name('mark-returned-store');
+        Route::delete('/{equipment}', [App\Http\Controllers\VendorEquipmentController::class, 'destroy'])->name('destroy');
+    });
 
     // Routes pour les paramètres
     Route::get('language/{locale}', [LanguageController::class, 'switch'])->name('language.switch');

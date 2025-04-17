@@ -110,6 +110,22 @@ class User extends Authenticatable
         return $this->hasMany(Delivery::class, 'delivery_agent_id');
     }
 
+    /**
+     * Relation avec l'équipement assigné à l'utilisateur
+     */
+    public function equipment()
+    {
+        return $this->hasMany(VendorEquipment::class);
+    }
+
+    /**
+     * Relation avec l'équipement actif (non retourné) assigné à l'utilisateur
+     */
+    public function activeEquipment()
+    {
+        return $this->equipment()->active();
+    }
+
     public function campaigns()
     {
         return $this->hasMany(Campaign::class);
