@@ -23,12 +23,20 @@ return new class extends Migration
             $table->string('name');
             $table->string('type');
             $table->string('serial_number')->nullable();
+            $table->string('brand')->nullable();
+            $table->string('model')->nullable();
+            $table->string('assigned_at')->nullable();
+
+
+            $table->string('returned_at')->nullable();
+
+
             $table->integer('quantity')->default(1);
             $table->date('assigned_date');
             $table->foreignId('assigned_by')->constrained('users')->onDelete('cascade');
             $table->string('condition');
             $table->text('notes')->nullable();
-            $table->enum('status', ['assigned', 'returned'])->default('assigned');
+            $table->enum('status', ['assigned', 'returned' ,'neuf'])->default('assigned');
             $table->date('returned_date')->nullable();
             $table->string('return_condition')->nullable();
             $table->text('return_notes')->nullable();
@@ -42,6 +50,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Ne rien faire pour éviter de supprimer accidentellement la table
+        Schema::dropIfExists('vendor_equipment');
+
     }
 }; 

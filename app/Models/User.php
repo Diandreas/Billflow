@@ -144,7 +144,7 @@ class User extends Authenticatable
     /**
      * Vérifie si l'utilisateur est administrateur
      */
-    public function isAdmin()
+    public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }
@@ -152,7 +152,7 @@ class User extends Authenticatable
     /**
      * Vérifie si l'utilisateur est manager
      */
-    public function isManager()
+    public function isManager(): bool
     {
         return $this->role === 'manager';
     }
@@ -160,7 +160,7 @@ class User extends Authenticatable
     /**
      * Vérifie si l'utilisateur est vendeur
      */
-    public function isVendeur()
+    public function isVendeur(): bool
     {
         return $this->role === 'vendeur';
     }

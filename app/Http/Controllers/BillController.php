@@ -15,6 +15,8 @@ use App\Models\Commission;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Facades\Gate;
+use App\Models\BillProduct;
 
 class BillController extends Controller
 {
@@ -24,7 +26,7 @@ class BillController extends Controller
             ->with(['client', 'seller', 'shop']);
 
         // Filtrer par boutique si l'utilisateur n'est pas admin
-        if (!Auth::user()->isAdmin()) {
+        if (!Gate::allows('admin')) {
             $shops = Auth::user()->shops->pluck('id')->toArray();
             $query->whereIn('shop_id', $shops);
         }
@@ -54,7 +56,7 @@ class BillController extends Controller
 
         $bills = $query->orderBy('date', 'desc')->paginate(15);
 
-        $shops = Auth::user()->isAdmin() 
+        $shops = Gate::allows('admin') 
             ? Shop::all() 
             : Auth::user()->shops;
             
@@ -66,14 +68,16 @@ class BillController extends Controller
 
     public function create()
     {
-        // Vérifier les autorisations
-        $this->authorize('create', Bill::class);
+        // Vérifier les autorisations en utilisant Gate
+        if (!Gate::allows('create-bill')) {
+            abort(403, 'Action non autorisée.');
+        }
 
         $clients = Client::all();
         $products = Product::where('stock_quantity', '>', 0)->get();
         
         // Obtenir les boutiques de l'utilisateur actuel
-        $shops = Auth::user()->isAdmin() 
+        $shops = Gate::allows('admin') 
             ? Shop::all() 
             : Auth::user()->shops;
         
@@ -91,8 +95,10 @@ class BillController extends Controller
 
     public function store(Request $request)
     {
-        // Vérifier les autorisations
-        $this->authorize('create', Bill::class);
+        // Vérifier les autorisations en utilisant Gate
+        if (!Gate::allows('create-bill')) {
+            abort(403, 'Action non autorisée.');
+        }
 
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
@@ -110,7 +116,7 @@ class BillController extends Controller
         ]);
 
         // Vérifier que l'utilisateur a accès à la boutique
-        if (!Auth::user()->canAccessShop($request->shop_id)) {
+        if (!Gate::allows('access-shop', Shop::find($request->shop_id))) {
             return back()->with('error', 'Vous n\'avez pas accès à cette boutique');
         }
 
@@ -155,7 +161,8 @@ class BillController extends Controller
             }
             
             // Ajouter le produit à la facture
-            $bill->billProducts()->create([
+            BillProduct::create([
+                'bill_id' => $bill->id,
                 'product_id' => $product->id,
                 'unit_price' => $productData['price'],
                 'quantity' => $productData['quantity'],
@@ -202,8 +209,10 @@ class BillController extends Controller
 
     public function show(Bill $bill)
     {
-        // Vérifier les autorisations
-        $this->authorize('view', $bill);
+        // Vérifier les autorisations en utilisant Gate
+        if (!Gate::allows('edit-bill', $bill)) {
+            abort(403, 'Action non autorisée.');
+        }
 
         $bill->load(['client', 'seller', 'shop', 'billProducts.product']);
 
@@ -212,6 +221,11 @@ class BillController extends Controller
 
     public function edit(Bill $bill)
     {
+        // Vérifier les autorisations en utilisant Gate
+        if (!Gate::allows('edit-bill', $bill)) {
+            abort(403, 'Action non autorisée.');
+        }
+
         $clients = Client::orderBy('name')->get();
         $products = Product::orderBy('name')->get();
         $bill->load(['client', 'products']);
@@ -381,6 +395,11 @@ class BillController extends Controller
 
     public function downloadPdf(Bill $bill)
     {
+        // Vérifier les autorisations en utilisant Gate
+        if (!Gate::allows('edit-bill', $bill)) {
+            abort(403, 'Action non autorisée.');
+        }
+
         $bill->load(['client', 'products', 'user']);
         $settings = Setting::first();
         

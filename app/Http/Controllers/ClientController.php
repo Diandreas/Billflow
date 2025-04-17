@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\Phone;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ClientController extends Controller
 {
@@ -77,7 +78,8 @@ class ClientController extends Controller
             'birth' => $validated['birth'],
             'email' => $validated['email'] ?? null,
             'address' => $validated['address'] ?? null,
-            'notes' => $validated['notes'] ?? null
+            'notes' => $validated['notes'] ?? null,
+            'user_id' => Auth::id(),
         ]);
 
         // Gestion des numéros de téléphone
@@ -243,7 +245,8 @@ class ClientController extends Controller
         ]);
 
         $client = Client::create([
-            'name' => $validated['name']
+            'name' => $validated['name'],
+            'user_id' => Auth::id(),
         ]);
 
         if (!empty($validated['phone'])) {
@@ -253,7 +256,11 @@ class ClientController extends Controller
 
         return response()->json([
             'success' => true,
-            'client' => $client->load('phones'),
+            'client' => [
+                'id' => $client->id,
+                'name' => $client->name,
+                'phones' => $client->phones->pluck('number'),
+            ],
             'message' => 'Client créé avec succès'
         ]);
     }

@@ -237,6 +237,47 @@
             </div>
             @endif
 
+            <!-- Graphiques d'analyse -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <!-- Performance des ventes -->
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg text-gray-800 mb-3">
+                            <i class="bi bi-graph-up text-indigo-500 mr-1"></i>
+                            {{ __('Performance des ventes') }}
+                        </h3>
+                        <p class="text-sm text-gray-500 mb-2">{{ __('Comparaison des 30 derniers jours') }}</p>
+                        <div class="h-64">
+                            <canvas id="salesPerformanceChart" class="w-full"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Informations financières -->
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg text-gray-800 mb-3">
+                            <i class="bi bi-cash text-green-500 mr-1"></i>
+                            {{ __('Financier') }}
+                        </h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">{{ __('Statut des factures') }}</h4>
+                                <div class="h-40">
+                                    <canvas id="billStatusChart" class="w-full"></canvas>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">{{ __('Paiements') }}</h4>
+                                <div class="h-40">
+                                    <canvas id="paymentMethodsChart" class="w-full"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Graphique principal dynamique -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-4">
                 <div class="p-4">
@@ -580,6 +621,7 @@
     @endpush
 
     @push('scripts')
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 let myChart = null;

@@ -16,7 +16,8 @@ class Bill extends Model
         'tax_amount',
         'user_id',
         'client_id',
-        'status'
+        'status',
+        'shop_id'
     ];
 
     protected $casts = [
@@ -36,9 +37,19 @@ class Bill extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function seller()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function client()
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class);
     }
 
     public function products()
@@ -47,6 +58,15 @@ class Bill extends Model
             ->withPivot('unit_price', 'quantity', 'total')
             ->withTimestamps();
     }
+
+    /**
+     * Relation avec les produits de la facture via le modèle BillProduct
+     */
+    public function billProducts()
+    {
+        return $this->hasMany(BillProduct::class);
+    }
+
     // Méthode pour générer une référence unique
     public static function generateReference()
     {

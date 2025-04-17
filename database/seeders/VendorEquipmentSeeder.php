@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\Shop;
+
 use App\Models\VendorEquipment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Arr;
@@ -42,7 +44,9 @@ class VendorEquipmentSeeder extends Seeder
         ];
         
         // États possibles
-        $states = ['Neuf', 'Bon état', 'État moyen', 'À réparer'];
+        $states = ['returned', 'returned', 'assigned', 'assigned'];
+        $shops_id = [1, 2, 3, 4];
+
         
         // Attribuer des équipements aux vendeurs
         foreach ($vendors as $vendor) {
@@ -68,18 +72,25 @@ class VendorEquipmentSeeder extends Seeder
                 
                 // Déterminer si l'équipement est retourné (10% de chance)
                 $isReturned = (rand(1, 10) === 1);
+                $shops = Shop::all();
                 
                 // Créer l'équipement
                 VendorEquipment::create([
                     'user_id' => $vendor->id,
                     'type' => $type,
+                    'name'=> $type,
                     'brand' => $brand,
                     'model' => $brand . ' ' . substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 2) . rand(100, 999),
                     'serial_number' => $serialNumber,
                     'status' => Arr::random($states),
+                    'condition' => Arr::random($states),
+
+                    'assigned_date' => now()->subDays(rand(1, 180)),
                     'assigned_at' => now()->subDays(rand(1, 180)),
+                    'assigned_by' => $vendor->id,
                     'returned_at' => $isReturned ? now()->subDays(rand(1, 30)) : null,
                     'notes' => $isReturned ? 'Équipement retourné après utilisation' : 'Équipement actif',
+                    'shop_id' =>Arr::random($shops_id),
                 ]);
             }
         }

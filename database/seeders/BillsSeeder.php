@@ -6,6 +6,10 @@ use Illuminate\Database\Seeder;
 use App\Models\Bill;
 use App\Models\Product;
 use App\Models\Client;
+use App\Models\User;
+use App\Models\Shop;
+use App\Models\Commission;
+use App\Models\InventoryMovement;
 use Carbon\Carbon;
 use Faker\Factory as Faker;
 
@@ -15,15 +19,45 @@ class BillsSeeder extends Seeder
     {
         $faker = Faker::create('fr_FR');
         $clients = Client::all();
+        
+        if ($clients->isEmpty()) {
+            $this->command->error('Aucun client trouvé. Veuillez exécuter ClientsSeeder d\'abord.');
+            return;
+        }
+        
         $products = Product::all();
+        if ($products->isEmpty()) {
+            $this->command->error('Aucun produit trouvé. Veuillez exécuter ProductsSeeder d\'abord.');
+            return;
+        }
+        
+        $shops = Shop::all();
+        if ($shops->isEmpty()) {
+            $this->command->error('Aucune boutique trouvée. Veuillez exécuter UserAndShopSeeder d\'abord.');
+            return;
+        }
+        
+        $sellers = User::where('role', 'vendeur')->get();
+        if ($sellers->isEmpty()) {
+            $this->command->error('Aucun vendeur trouvé. Veuillez exécuter UserAndShopSeeder d\'abord.');
+            return;
+        }
+        
         $startDate = Carbon::create(2023, 1, 1);
         $endDate = Carbon::now();
 
         // Statuts possibles des factures
-        $statuses = ['Payé', 'En attente', 'Annulé', 'En retard'];
+        $statuses = ['paid', 'pending', 'cancelled', 'overdue'];
         
         // Méthodes de paiement
         $paymentMethods = ['Virement bancaire', 'Espèces', 'Mobile Money', 'Carte bancaire', 'Chèque'];
+
+        $this->command->info('Création de factures pour la période du ' . $startDate->format('d/m/Y') . ' au ' . $endDate->format('d/m/Y'));
+        
+        // Compteur de factures créées
+        $billCount = 0;
+        $commissionCount = 0;
+        $inventoryMovementCount = 0;
 
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
             // Génère un nombre aléatoire de factures pour ce jour
@@ -38,105 +72,107 @@ class BillsSeeder extends Seeder
             // En semaine : 1 à 8 factures, weekend : 0 à 3 factures
             $numberOfBills = $isWeekend ? $faker->numberBetween(0, 3) : $faker->numberBetween(1, 8);
 
-            // Sélectionne aléatoirement les clients pour ce jour
-            $dailyClients = $clients->random(min($numberOfBills, count($clients)));
-
-            foreach ($dailyClients as $client) {
+            // Sélectionne aléatoirement les boutiques pour ce jour
+            $dailyShops = $shops->random(min($numberOfBills, count($shops)));
+            
+            foreach ($dailyShops as $shop) {
+                // Sélectionne aléatoirement un client
+                $client = $clients->random();
+                
+                // Sélectionne les vendeurs de cette boutique ou n'importe quel vendeur si aucun
+                $shopSellers = $shop->users()->where('role', 'vendeur')->get();
+                if ($shopSellers->isEmpty()) {
+                    $shopSellers = $sellers;
+                }
+                $seller = $shopSellers->random();
+                
                 // Ajoute une heure aléatoire à la date (entre 8h et 18h)
                 $billDateTime = $date->copy()->addHours($faker->numberBetween(8, 18))->addMinutes($faker->numberBetween(0, 59));
                 
-                // Détermine le statut de la facture (plus de chances d'être payée pour les factures anciennes)
+                // Détermine le statut de la facture
                 $daysSinceCreation = $billDateTime->diffInDays(Carbon::now());
-                $isPaid = $daysSinceCreation > 30 ? $faker->boolean(90) : $faker->boolean(60);
+                $paymentProbability = min(90, 60 + $daysSinceCreation / 2); // Plus la facture est ancienne, plus elle a de chances d'être payée
+                $isPaid = $faker->boolean($paymentProbability);
                 
-                // Choix du statut en fonction de diverses conditions
+                // Choix du statut et date de paiement
                 if ($isPaid) {
-                    $status = 'Payé';
+                    $status = 'paid';
                     $paidDate = $billDateTime->copy()->addDays($faker->numberBetween(0, 15));
                     $paymentMethod = $faker->randomElement($paymentMethods);
                 } else {
-                    // Si non payée, déterminer si elle est en attente, annulée ou en retard
-                    if ($daysSinceCreation > 30) {
-                        $status = $faker->randomElement(['En retard', 'Annulé']);
+                    if ($daysSinceCreation > 30 && $faker->boolean(70)) {
+                        $status = $faker->randomElement(['overdue', 'cancelled']);
                     } else {
-                        $status = 'En attente';
+                        $status = 'pending';
                     }
                     $paidDate = null;
                     $paymentMethod = null;
                 }
                 
-                // Génère un numéro de facture plus réaliste
-                $billNumber = $date->format('Ymd') . '-' . sprintf('%04d', $client->id);
+                // Génère une référence de facture
+                $reference = 'FACT-' . $date->format('Ymd') . '-' . str_pad(++$billCount, 4, '0', STR_PAD_LEFT);
                 
-                // Commentaire éventuel sur la facture
-                $comment = null;
-                if ($faker->boolean(20)) {
-                    $commentOptions = [
-                        'Livraison urgente requise',
-                        'Client fidèle - appliquer remise',
-                        'Premier achat',
-                        'Demande spéciale pour la configuration',
-                        'Service après-vente inclus pendant 1 an',
-                        'Client référé par partenaire',
-                        'Formation à prévoir après installation'
-                    ];
-                    $comment = $faker->randomElement($commentOptions);
-                }
-                
-                // Déterminer le nombre de produits pour cette facture (1 à 4)
-                $productsForBill = $products->random($faker->numberBetween(1, 4));
+                // Sélectionne 1 à 5 produits pour cette facture
+                $productsForBill = $products->random($faker->numberBetween(1, 5));
                 
                 // Calculer le total de la facture
-                $totalAmount = 0;
-                $totalTax = 0;
+                $subtotal = 0;
                 $billItems = [];
                 
                 foreach ($productsForBill as $product) {
-                    $quantity = $faker->numberBetween(1, 3);
-                    // Prix unitaire avec légère variation possible (réductions ou augmentations)
-                    $unitPrice = $product->default_price * $faker->randomFloat(2, 0.9, 1.1);
+                    $quantity = $faker->numberBetween(1, 5);
+                    
+                    // Utiliser default_price au lieu de price (qui n'existe pas)
+                    $basePrice = $product->default_price;
+                    
+                    // Plus grande variation de prix: ±20% de variation possible selon le vendeur
+                    $variationFactor = $faker->randomFloat(2, 0.8, 1.2);
+                    
+                    // Appliquer une petite augmentation pour certains vendeurs avec commission élevée
+                    if ($seller->commission_rate > 4) {
+                        $variationFactor *= 1.05; // 5% de plus pour les vendeurs à commission élevée
+                    }
+                    
+                    $unitPrice = $basePrice * $variationFactor;
+                    
+                    // Assurer un prix minimum et arrondir à un nombre entier
+                    $unitPrice = max(round($unitPrice), 1000);
+                    
                     $itemTotal = $unitPrice * $quantity;
                     
-                    // TVA standard de 19.25%
-                    $itemTax = $itemTotal * 0.1925;
-                    
-                    $totalAmount += $itemTotal;
-                    $totalTax += $itemTax;
+                    $subtotal += $itemTotal;
                     
                     $billItems[] = [
                         'product_id' => $product->id,
                         'unit_price' => $unitPrice,
                         'quantity' => $quantity,
                         'total' => $itemTotal,
-                        'created_at' => $billDateTime,
-                        'updated_at' => $billDateTime,
                     ];
                 }
                 
-                // Arrondir pour éviter les problèmes de précision
-                $totalAmount = round($totalAmount, 2);
-                $totalTax = round($totalTax, 2);
+                // Calcul des taxes
+                $taxRate = 19.25; // Taux standard
+                $taxAmount = $subtotal * ($taxRate / 100);
+                $totalWithTax = $subtotal + $taxAmount;
                 
                 // Date d'échéance (15 jours après émission)
                 $dueDate = $billDateTime->copy()->addDays(15);
 
                 // Créer la facture
                 $bill = Bill::create([
-                    'reference' => 'FACT-' . $billNumber,
-                    'description' => 'Facture pour services rendus à ' . $client->name,
-                    'total' => $totalAmount,
+                    'reference' => $reference,
+                    'description' => 'Facture pour ' . $client->name,
+                    'total' => $totalWithTax,
                     'date' => $billDateTime,
                     'due_date' => $dueDate,
-                    'tax_rate' => 19.25,
-                    'tax_amount' => $totalTax,
-                    'user_id' => 1,
+                    'tax_rate' => $taxRate,
+                    'tax_amount' => $taxAmount,
+                    'user_id' => $seller->id,
                     'client_id' => $client->id,
+                    'shop_id' => $shop->id,
+                    'status' => $status,
                     'created_at' => $billDateTime,
                     'updated_at' => $billDateTime,
-                    'status' => $status,
-                    'payment_date' => $paidDate,
-                    'payment_method' => $paymentMethod,
-                    'comments' => $comment,
                 ]);
 
                 // Associer les produits à la facture
@@ -145,82 +181,68 @@ class BillsSeeder extends Seeder
                         'unit_price' => $item['unit_price'],
                         'quantity' => $item['quantity'],
                         'total' => $item['total'],
-                        'created_at' => $item['created_at'],
-                        'updated_at' => $item['updated_at'],
+                        'created_at' => $billDateTime,
+                        'updated_at' => $billDateTime,
                     ]);
+                    
+                    // Créer les mouvements d'inventaire correspondants
+                    $product = Product::find($item['product_id']);
+                    
+                    // Calculer les niveaux de stock avant/après
+                    $stockBefore = $product->stock_quantity + $item['quantity'];
+                    $stockAfter = $product->stock_quantity;
+                    
+                    InventoryMovement::create([
+                        'product_id' => $product->id,
+                        'type' => 'vente',
+                        'quantity' => -$item['quantity'], // Négatif car c'est une sortie
+                        'reference' => $reference,
+                        'bill_id' => $bill->id,
+                        'user_id' => $seller->id,
+                        'unit_price' => $item['unit_price'],
+                        'total_price' => $item['total'],
+                        'stock_before' => $stockBefore,
+                        'stock_after' => $stockAfter,
+                        'created_at' => $billDateTime,
+                        'updated_at' => $billDateTime,
+                    ]);
+                    
+                    $inventoryMovementCount++;
+                }
+                
+                // Créer la commission du vendeur si la facture est payée
+                if ($status === 'paid' && $seller->commission_rate > 0) {
+                    $commissionRate = $seller->commission_rate;
+                    $commissionAmount = $totalWithTax * ($commissionRate / 100);
+                    
+                    Commission::create([
+                        'user_id' => $seller->id,
+                        'bill_id' => $bill->id,
+                        'shop_id' => $shop->id,
+                        'amount' => $commissionAmount,
+                        'rate' => $commissionRate,
+                        'base_amount' => $totalWithTax,
+                        'type' => 'vente',
+                        'is_paid' => $faker->boolean(60), // 60% de chances que la commission soit payée
+                        'created_at' => $paidDate,
+                        'updated_at' => $paidDate,
+                    ]);
+                    
+                    $commissionCount++;
+                }
+                
+                $billCount++;
+                
+                // Affiche un message tous les 50 factures
+                if ($billCount % 50 === 0) {
+                    $this->command->info("$billCount factures créées...");
                 }
             }
         }
         
-        // Créer quelques factures récurrentes mensuelles pour des services d'abonnement
-        $subscriptionClients = $clients->random(5);
-        $subscriptionProducts = Product::where('name', 'like', '%maintenance%')
-            ->orWhere('name', 'like', '%mensuel%')
-            ->orWhere('name', 'like', '%abonnement%')
-            ->get();
-            
-        if ($subscriptionProducts->count() == 0) {
-            $subscriptionProducts = $products->random(3);
-        }
-        
-        foreach ($subscriptionClients as $client) {
-            $product = $subscriptionProducts->random();
-            $startMonth = Carbon::create(2023, $faker->numberBetween(1, 6), 1);
-            
-            // Créer des factures mensuelles
-            for ($month = $startMonth->copy(); $month->lte($endDate); $month->addMonth()) {
-                $billDateTime = $month->copy()->setDay($faker->numberBetween(1, 5));
-                
-                // Les factures d'abonnement sont généralement payées
-                $isPaid = $faker->boolean(90);
-                
-                if ($isPaid) {
-                    $status = 'Payé';
-                    $paidDate = $billDateTime->copy()->addDays($faker->numberBetween(0, 10));
-                    $paymentMethod = $faker->randomElement($paymentMethods);
-                } else {
-                    $status = $faker->randomElement(['En attente', 'En retard']);
-                    $paidDate = null;
-                    $paymentMethod = null;
-                }
-                
-                $billNumber = 'ABO-' . $month->format('Ym') . '-' . sprintf('%04d', $client->id);
-                $unitPrice = $product->default_price;
-                $totalAmount = $unitPrice;
-                $totalTax = $totalAmount * 0.1925;
-
-                // Date d'échéance (fin du mois)
-                $dueDate = $month->copy()->endOfMonth();
-
-                // Créer la facture d'abonnement
-                $bill = Bill::create([
-                    'reference' => 'FACT-' . $billNumber,
-                    'description' => 'Abonnement mensuel - ' . $product->name . ' - ' . $month->format('F Y'),
-                    'total' => $totalAmount,
-                    'date' => $billDateTime,
-                    'due_date' => $dueDate,
-                    'tax_rate' => 19.25,
-                    'tax_amount' => $totalTax,
-                    'user_id' => 1,
-                    'client_id' => $client->id,
-                    'created_at' => $billDateTime,
-                    'updated_at' => $billDateTime,
-                    'status' => $status,
-                    'payment_date' => $paidDate,
-                    'payment_method' => $paymentMethod,
-                    'comments' => 'Facturation récurrente mensuelle',
-                    'is_recurring' => true,
-                ]);
-
-                // Associer le produit d'abonnement à la facture
-                $bill->products()->attach($product->id, [
-                    'unit_price' => $unitPrice,
-                    'quantity' => 1,
-                    'total' => $totalAmount,
-                    'created_at' => $billDateTime,
-                    'updated_at' => $billDateTime,
-                ]);
-            }
-        }
+        $this->command->info("Création terminée avec succès !");
+        $this->command->info("$billCount factures créées");
+        $this->command->info("$commissionCount commissions créées");
+        $this->command->info("$inventoryMovementCount mouvements d'inventaire créés");
     }
 }

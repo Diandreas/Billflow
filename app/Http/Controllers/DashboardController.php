@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class DashboardController extends Controller
 {
@@ -166,19 +167,27 @@ class DashboardController extends Controller
         $user = Auth::user();
         $shopId = $request->input('shop_id');
         $shops = null;
+        $selectedShop = null;
         
         // Si c'est un admin ou manager, on peut sélectionner une boutique
-        if ($user->isAdmin() || $user->isManager()) {
-            if ($user->isAdmin()) {
+        if (Gate::allows('manager', $user)) {
+            if (Gate::allows('admin', $user)) {
                 $shops = Shop::where('is_active', true)->get();
             } else {
                 $shops = $user->managedShops;
             }
-        } elseif ($user->isVendeur()) {
+            
+            // Si un ID de boutique est fourni, on récupère cette boutique
+            if ($shopId) {
+                $selectedShop = Shop::with('managers')->find($shopId);
+            }
+        } elseif (Gate::allows('vendeur', $user)) {
             // Si c'est un vendeur, on utilise automatiquement sa première boutique
             $userShops = $user->shops;
             if ($userShops->count() > 0) {
                 $shopId = $userShops->first()->id;
+                $selectedShop = $userShops->first();
+                $shops = $userShops;
             }
         }
         
@@ -248,63 +257,235 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($client) use ($shopId) {
                 $client->total = number_format($client->total, 0, ',', ' ') . ' FCFA';
-                
-                // Calculer la tendance réelle des achats du client
-                $currentMonthQuery = Bill::where('client_id', $client->id)
-                    ->whereMonth('created_at', now()->month)
-                    ->whereYear('created_at', now()->year);
-                    
-                $lastMonthQuery = Bill::where('client_id', $client->id)
-                    ->whereMonth('created_at', now()->subMonth()->month)
-                    ->whereYear('created_at', now()->subMonth()->year);
-                
-                if ($shopId) {
-                    $currentMonthQuery->where('shop_id', $shopId);
-                    $lastMonthQuery->where('shop_id', $shopId);
-                }
-                
-                $clientBillsCurrentMonth = $currentMonthQuery->sum('total');
-                $clientBillsLastMonth = $lastMonthQuery->sum('total');
-                
-                $client->trend = 0;
-                if ($clientBillsLastMonth > 0) {
-                    $client->trend = round((($clientBillsCurrentMonth - $clientBillsLastMonth) / $clientBillsLastMonth) * 100, 1);
-                }
-                
+                // Ajouter l'URL pour voir les détails du client
+                $client->url = route('clients.show', $client->id);
                 return $client;
             });
             
-        // Si c'est une boutique spécifique, obtenez ses informations
-        $selectedShop = null;
+        // Statistiques des vendeurs de la boutique sélectionnée
+        $sellerStats = [];
         if ($shopId) {
-            $selectedShop = Shop::with(['managers', 'vendors'])->find($shopId);
-        }
-
-        // Statistiques spécifiques aux vendeurs pour la boutique sélectionnée
-        $sellerStats = null;
-        if ($shopId) {
-            $sellerStats = User::with(['sales' => function($query) use ($shopId) {
-                    $query->where('shop_id', $shopId)
-                          ->whereMonth('created_at', now()->month)
-                          ->whereYear('created_at', now()->year);
-                }])
-                ->whereHas('shops', function($query) use ($shopId) {
-                    $query->where('shops.id', $shopId);
+            $sellerStats = User::whereHas('shops', function ($q) use ($shopId) {
+                    $q->where('shops.id', $shopId);
                 })
                 ->where('role', 'vendeur')
+                ->withCount(['sales' => function ($q) use ($shopId) {
+                    $q->where('shop_id', $shopId);
+                }])
+                ->with(['sales' => function ($q) use ($shopId) {
+                    $q->where('shop_id', $shopId);
+                }])
                 ->get()
-                ->map(function($seller) {
+                ->map(function ($seller) {
+                    $salesTotal = $seller->sales->sum('total');
+                    
                     return [
                         'id' => $seller->id,
                         'name' => $seller->name,
-                        'sales_count' => $seller->sales->count(),
-                        'sales_total' => number_format($seller->sales->sum('total'), 0, ',', ' ') . ' FCFA',
-                        'commission' => number_format($seller->sales->sum('total') * ($seller->commission_rate / 100), 0, ',', ' ') . ' FCFA'
+                        'sales_count' => $seller->sales_count,
+                        'sales_total' => number_format($salesTotal, 0, ',', ' ') . ' FCFA',
+                        'commission' => number_format($salesTotal * ($seller->commission_rate / 100), 0, ',', ' ') . ' FCFA',
+                        'commission_rate' => $seller->commission_rate . '%',
                     ];
                 });
         }
 
-        return view('dashboard', compact('globalStats', 'latestBills', 'topClients', 'shops', 'selectedShop', 'sellerStats'));
+        // Données des produits les plus vendus (pour le donut chart)
+        $topProductsQuery = DB::table('bill_products')
+            ->join('products', 'bill_products.product_id', '=', 'products.id')
+            ->join('bills', 'bill_products.bill_id', '=', 'bills.id')
+            ->select(
+                'products.id',
+                'products.name',
+                DB::raw('SUM(bill_products.quantity) as quantity'),
+                DB::raw('SUM(bill_products.total) as total')
+            );
+            
+        if ($shopId) {
+            $topProductsQuery->where('bills.shop_id', $shopId);
+        }
+        
+        $topProducts = $topProductsQuery
+            ->groupBy('products.id', 'products.name')
+            ->orderByDesc('quantity')
+            ->take(5)
+            ->get()
+            ->map(function ($product) {
+                $product->total = number_format($product->total, 0, ',', ' ') . ' FCFA';
+                // Ajouter l'URL pour voir les détails du produit
+                $product->url = route('products.show', $product->id);
+                return $product;
+            });
+
+        // Données pour le graphique de performance des ventes
+        $salesChartData = $this->getSalesPerformanceData($shopId);
+        
+        // Données pour le graphique du statut des factures
+        $billStatusData = $this->getBillStatusData($shopId);
+        
+        // Données pour le graphique des méthodes de paiement
+        $paymentMethodsData = $this->getPaymentMethodsData($shopId);
+
+        return view('dashboard', compact(
+            'shops', 
+            'selectedShop', 
+            'globalStats',
+            'latestBills',
+            'topClients',
+            'topProducts',
+            'sellerStats',
+            'salesChartData',
+            'billStatusData',
+            'paymentMethodsData'
+        ));
+    }
+
+    /**
+     * Récupérer les données pour le graphique de performance des ventes
+     */
+    protected function getSalesPerformanceData($shopId = null)
+    {
+        // Dates pour le mois actuel et le mois précédent
+        $now = Carbon::now();
+        $currentMonthStart = $now->copy()->startOfMonth();
+        $lastMonthStart = $now->copy()->subMonth()->startOfMonth();
+        $lastMonthEnd = $now->copy()->subMonth()->endOfMonth();
+        
+        // Labels pour les semaines
+        $labels = [];
+        $currentWeekLabels = [];
+        $daysInMonth = $now->daysInMonth;
+        
+        for ($i = 1; $i <= 4; $i++) {
+            $weekStart = ($i - 1) * 7 + 1;
+            $weekEnd = min($i * 7, $daysInMonth);
+            $labels[] = "Sem $i ($weekStart-$weekEnd)";
+            $currentWeekLabels[] = $weekStart;
+        }
+        
+        // Données des ventes pour le mois actuel
+        $currentMonthData = $this->getWeeklySalesData($currentMonthStart, $now, $shopId);
+        
+        // Données des ventes pour le mois précédent
+        $previousMonthData = $this->getWeeklySalesData($lastMonthStart, $lastMonthEnd, $shopId);
+        
+        return [
+            'labels' => $labels,
+            'current' => $currentMonthData,
+            'previous' => $previousMonthData
+        ];
+    }
+    
+    /**
+     * Récupérer les données de ventes hebdomadaires pour une période donnée
+     */
+    private function getWeeklySalesData($startDate, $endDate, $shopId = null)
+    {
+        $daysInMonth = $startDate->daysInMonth;
+        $weeklySales = [0, 0, 0, 0]; // 4 semaines
+        
+        $query = Bill::whereBetween('date', [$startDate, $endDate]);
+        
+        if ($shopId) {
+            $query->where('shop_id', $shopId);
+        }
+        
+        $bills = $query->get();
+        
+        foreach ($bills as $bill) {
+            $day = $bill->date->day;
+            $weekIndex = min(floor(($day - 1) / 7), 3); // Déterminer la semaine (0-3)
+            $weeklySales[$weekIndex] += $bill->total;
+        }
+        
+        return $weeklySales;
+    }
+
+    /**
+     * Récupérer les données pour le graphique du statut des factures
+     */
+    protected function getBillStatusData($shopId = null)
+    {
+        $query = Bill::select('status', DB::raw('count(*) as total'))
+            ->whereIn('status', ['pending', 'paid', 'cancelled'])
+            ->groupBy('status');
+            
+        if ($shopId) {
+            $query->where('shop_id', $shopId);
+        }
+        
+        $results = $query->get();
+        
+        $statusLabels = [];
+        $statusValues = [];
+        
+        // Mapper les statuts pour la traduction
+        $statusMap = [
+            'pending' => 'En attente',
+            'paid' => 'Payée',
+            'cancelled' => 'Annulée'
+        ];
+        
+        foreach ($results as $result) {
+            $statusLabels[] = $statusMap[$result->status] ?? $result->status;
+            $statusValues[] = $result->total;
+        }
+        
+        // Ajouter des valeurs par défaut si aucune donnée n'est trouvée
+        if (empty($statusLabels)) {
+            $statusLabels = ['Payée', 'En attente', 'Annulée'];
+            $statusValues = [0, 0, 0];
+        }
+        
+        return [
+            'labels' => $statusLabels,
+            'values' => $statusValues
+        ];
+    }
+    
+    /**
+     * Récupérer les données pour le graphique des méthodes de paiement
+     */
+    protected function getPaymentMethodsData($shopId = null)
+    {
+        $query = Bill::select('payment_method', DB::raw('count(*) as total'))
+            ->whereNotNull('payment_method')
+            ->where('status', 'paid')
+            ->groupBy('payment_method');
+            
+        if ($shopId) {
+            $query->where('shop_id', $shopId);
+        }
+        
+        $results = $query->get();
+        
+        $methodLabels = [];
+        $methodValues = [];
+        
+        // Mapper les méthodes pour la traduction
+        $methodMap = [
+            'cash' => 'Espèces',
+            'card' => 'Carte',
+            'mobile_money' => 'Mobile Money',
+            'transfer' => 'Virement',
+            'check' => 'Chèque'
+        ];
+        
+        foreach ($results as $result) {
+            $methodLabels[] = $methodMap[$result->payment_method] ?? $result->payment_method;
+            $methodValues[] = $result->total;
+        }
+        
+        // Ajouter des valeurs par défaut si aucune donnée n'est trouvée
+        if (empty($methodLabels)) {
+            $methodLabels = ['Espèces', 'Carte', 'Mobile Money', 'Virement'];
+            $methodValues = [0, 0, 0, 0];
+        }
+        
+        return [
+            'labels' => $methodLabels,
+            'values' => $methodValues
+        ];
     }
 
     /**

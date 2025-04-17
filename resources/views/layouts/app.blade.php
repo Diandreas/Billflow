@@ -9,13 +9,14 @@
 
     <!-- Fonts -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-
+{{--    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>--}}
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+
     <!-- Styles -->
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.0.1/introjs.min.css">
@@ -23,14 +24,13 @@
     <!-- Scripts -->
     <script src="{{ asset('js/app.js') }}" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.0.1/intro.min.js"></script>
-    <script src="{{ asset('js/interactive-guide.js') }}" defer></script>
 
     <!-- Charting Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
-<body class="font-sans antialiased" data-page-name="@yield('page_name', 'default')">
+<body class="font-sans antialiased">
 <div class="min-h-screen bg-gray-100">
     @include('layouts.navigation')
 
@@ -45,7 +45,8 @@
 
     <!-- Page Content -->
     <main>
-        {{ $slot }}
+        {{ $slot??"" }}
+         @yield('content')
     </main>
 </div>
 
@@ -98,5 +99,11 @@
 </style>
 
 @stack('scripts')
+<script src="{{ asset('js/interactive-guide.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        new InteractiveGuide();
+    });
+</script>
 </body>
 </html>
