@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
@@ -13,6 +15,16 @@ class ProductController extends Controller
         $query = Product::withCount('bills')
             ->withSum('bills as total_sales', DB::raw('bill_products.unit_price * bill_products.quantity'))
             ->select('products.*'); // S'assurer que toutes les colonnes sont chargées pour les méthodes isLowStock et isOutOfStock
+
+        // Filtrer les produits par boutique pour les non-administrateurs
+        if (!Gate::allows('admin')) {
+            $shopIds = Auth::user()->shops->pluck('id')->toArray();
+            
+            // Trouver les produits qui ont des mouvements d'inventaire dans ces boutiques
+            $query->whereHas('inventoryMovements', function($q) use ($shopIds) {
+                $q->whereIn('shop_id', $shopIds);
+            });
+        }
 
         // Recherche
         if ($request->filled('search')) {
@@ -26,6 +38,14 @@ class ProductController extends Controller
         // Filtre par type
         if ($request->filled('type')) {
             $query->where('type', $request->type);
+        }
+
+        // Filtre par boutique spécifique
+        if ($request->filled('shop_id')) {
+            $shopId = $request->shop_id;
+            $query->whereHas('inventoryMovements', function($q) use ($shopId) {
+                $q->where('shop_id', $shopId);
+            });
         }
 
         // Filtre par état de stock (seulement pour les produits physiques)
@@ -48,44 +68,25 @@ class ProductController extends Controller
         }
 
         // Tri
-        if ($request->filled('sort')) {
-            $sortField = $request->sort;
-            $sortDirection = $request->direction ?? 'asc';
-
-            if ($sortField === 'total_sales') {
-                $query->orderBy('total_sales', $sortDirection);
-            } elseif ($sortField === 'usage_count') {
-                $query->orderBy('bills_count', $sortDirection);
-            } else {
-                $query->orderBy($sortField, $sortDirection);
-            }
+        $sortField = $request->input('sort', 'name');
+        $sortDirection = $request->input('direction', 'asc');
+        
+        if ($sortField === 'stock') {
+            $query->orderBy('stock_quantity', $sortDirection);
+        } elseif ($sortField === 'price') {
+            $query->orderBy('default_price', $sortDirection);
         } else {
-            $query->latest();
+            $query->orderBy($sortField, $sortDirection);
         }
 
-        $products = $query->paginate(10)->withQueryString();
-
-        // Statistiques globales
-        $stats = [
-            'total_products' => Product::count(),
-            'active_products' => Product::has('bills')->count(),
-            'physical_products' => Product::where('type', 'physical')->count(),
-            'total_revenue' => DB::table('bill_products')
-                ->join('products', 'bill_products.product_id', '=', 'products.id')
-                ->sum(DB::raw('unit_price * quantity')),
-            'average_price' => DB::table('bill_products')
-                ->join('products', 'bill_products.product_id', '=', 'products.id')
-                ->avg('unit_price')
-        ];
-
-        // Top produits par ventes
-        $topProducts = Product::withCount('bills')
-            ->withSum('bills as total_sales', DB::raw('bill_products.unit_price * bill_products.quantity'))
-            ->orderByDesc('total_sales')
-            ->limit(5)
-            ->get();
-
-        return view('products.index', compact('products', 'stats', 'topProducts'));
+        $products = $query->paginate(15)->withQueryString();
+        
+        // Récupérer les boutiques pour le filtre
+        $shops = Gate::allows('admin') 
+            ? \App\Models\Shop::all() 
+            : Auth::user()->shops;
+        
+        return view('products.index', compact('products', 'shops'));
     }
 
     public function create()

@@ -27,18 +27,20 @@
                     <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">
                          <i class="bi bi-archive mr-1"></i> {{ __('Inventaire') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('shops.index')" :active="request()->routeIs('shops.*')">
-                         <i class="bi bi-shop mr-1"></i> {{ __('Boutiques') }}
-                    </x-nav-link>
+                    
+                    <!-- Boutiques - visible seulement pour les administrateurs -->
+                    @if (auth()->user()->isAdmin())
+                        <x-nav-link :href="route('shops.index')" :active="request()->routeIs('shops.*')">
+                            <i class="bi bi-shop mr-1"></i> {{ __('Boutiques') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                            <i class="bi bi-people-fill mr-1"></i> {{ __('Utilisateurs') }}
+                        </x-nav-link>
+                    @endif
+                    
                     <x-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
                          <i class="bi bi-gear mr-1"></i> {{ __('Paramètres') }}
                     </x-nav-link>
-                    <!-- Menu d'administration (uniquement visible pour les administrateurs) -->
-                    @if (auth()->user()->isAdmin())
-                        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.index')">
-                            <i class="fas fa-users me-2"></i> {{ __('Utilisateurs') }}
-                        </x-nav-link>
-                    @endif
                 </div>
             </div>
 
@@ -236,9 +238,17 @@
             <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">
                 {{ __('Inventaire') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('shops.index')" :active="request()->routeIs('shops.*')">
-                {{ __('Boutiques') }}
-            </x-responsive-nav-link>
+            
+            <!-- Boutiques - visible seulement pour les administrateurs -->
+            @if (auth()->user()->isAdmin())
+                <x-responsive-nav-link :href="route('shops.index')" :active="request()->routeIs('shops.*')">
+                    {{ __('Boutiques') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                    {{ __('Utilisateurs') }}
+                </x-responsive-nav-link>
+            @endif
+            
             <x-responsive-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
                 {{ __('Paramètres') }}
             </x-responsive-nav-link>

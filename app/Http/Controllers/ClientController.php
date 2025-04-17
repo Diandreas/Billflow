@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Phone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class ClientController extends Controller
 {
@@ -14,44 +15,44 @@ class ClientController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Client::query();
+        $query = Client::withCount('bills');
 
-        // Recherche
+        // Filtrer les clients par boutique pour les non-administrateurs
+        if (!Gate::allows('admin')) {
+            $shopIds = Auth::user()->shops->pluck('id')->toArray();
+            
+            // Trouver les clients qui ont des factures dans ces boutiques
+            $query->whereHas('bills', function($q) use ($shopIds) {
+                $q->whereIn('shop_id', $shopIds);
+            });
+        }
+        
+        // Recherche par nom ou email
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = $request->input('search');
             $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+                $q->where('name', 'like', '%'.$search.'%')
+                  ->orWhere('email', 'like', '%'.$search.'%')
+                  ->orWhere('phone', 'like', '%'.$search.'%');
             });
         }
         
-        // Filtre par abonnement
-        if ($request->filled('subscription_id')) {
-            $subscriptionId = $request->subscription_id;
-            $query->whereHas('bills', function($q) use ($subscriptionId) {
-                $q->whereHas('user', function($u) use ($subscriptionId) {
-                    $u->whereHas('subscriptions', function($s) use ($subscriptionId) {
-                        $s->where('id', $subscriptionId);
-                    });
-                });
+        // Filtrer par boutique spécifique si demandé
+        if ($request->filled('shop_id')) {
+            $shopId = $request->input('shop_id');
+            $query->whereHas('bills', function($q) use ($shopId) {
+                $q->where('shop_id', $shopId);
             });
         }
         
-        // Ordre par défaut
-        $query->orderBy('name');
+        $clients = $query->latest()->paginate(10);
         
-        $clients = $query->withCount('bills')
-                         ->withSum('bills as total_spent', 'total')
-                         ->paginate(10);
-                        
-        // Si on vient d'un abonnement spécifique, ajouter l'info pour l'affichage
-        $subscription = null;
-        if ($request->filled('subscription_id')) {
-            $subscription = \App\Models\Subscription::with('plan')->find($request->subscription_id);
-        }
-
-        return view('clients.index', compact('clients', 'subscription'));
+        // Récupérer les boutiques pour le filtre
+        $shops = Gate::allows('admin')
+            ? \App\Models\Shop::all() 
+            : Auth::user()->shops;
+        
+        return view('clients.index', compact('clients', 'shops'));
     }
 
     public function create()
