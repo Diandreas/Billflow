@@ -10,18 +10,15 @@ return new class extends Migration
     {
         Schema::create('vendor_equipment', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade')->comment('Vendeur qui a reçu l\'équipement');
-            $table->foreignId('shop_id')->constrained()->onDelete('cascade')->comment('Boutique où l\'équipement est utilisé');
-            $table->string('name')->comment('Nom de l\'équipement');
-            $table->text('description')->nullable();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('type');
+            $table->string('brand')->nullable();
+            $table->string('model')->nullable();
             $table->string('serial_number')->nullable();
-            $table->integer('quantity')->default(1);
-            $table->date('assigned_date');
-            $table->date('return_date')->nullable();
-            $table->enum('condition', ['neuf', 'bon', 'moyen', 'mauvais'])->default('bon');
-            $table->string('assigned_by')->nullable()->comment('Nom de la personne qui a assigné l\'équipement');
+            $table->string('status')->default('Bon état');
+            $table->date('assigned_at');
+            $table->date('returned_at')->nullable();
             $table->text('notes')->nullable();
-            $table->boolean('is_returned')->default(false);
             $table->timestamps();
         });
     }

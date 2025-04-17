@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Éviter l'exécution si la table existe déjà
+        if (Schema::hasTable('vendor_equipment')) {
+            return;
+        }
+        
         Schema::create('vendor_equipment', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -37,6 +42,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('vendor_equipment');
+        // Ne rien faire pour éviter de supprimer accidentellement la table
     }
 }; 

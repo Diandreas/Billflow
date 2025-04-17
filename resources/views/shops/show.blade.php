@@ -8,6 +8,9 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Détails de la boutique</h5>
                     <div>
+                        <a href="{{ route('shops.dashboard', $shop) }}" class="btn btn-primary btn-sm me-2">
+                            <i class="fas fa-chart-line"></i> Tableau de bord
+                        </a>
                         <a href="{{ route('shops.index') }}" class="btn btn-secondary btn-sm me-2">
                             <i class="fas fa-arrow-left"></i> Retour
                         </a>

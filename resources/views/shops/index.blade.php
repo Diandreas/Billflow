@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('page_name', 'shops-index')
+
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
@@ -70,13 +72,16 @@
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <a href="{{ route('shops.show', $shop) }}" class="btn btn-info btn-sm">
+                                                <a href="{{ route('shops.dashboard', $shop) }}" class="btn btn-primary btn-sm" title="Tableau de bord">
+                                                    <i class="fas fa-chart-line"></i>
+                                                </a>
+                                                <a href="{{ route('shops.show', $shop) }}" class="btn btn-info btn-sm" title="Détails">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                <a href="{{ route('shops.edit', $shop) }}" class="btn btn-warning btn-sm">
+                                                <a href="{{ route('shops.edit', $shop) }}" class="btn btn-warning btn-sm" title="Modifier">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteShopModal{{ $shop->id }}">
+                                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteShopModal{{ $shop->id }}" title="Supprimer">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>

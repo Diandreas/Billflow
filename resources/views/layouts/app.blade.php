@@ -16,15 +16,21 @@
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.0.1/introjs.min.css">
+
     <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="{{ asset('js/app.js') }}" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.0.1/intro.min.js"></script>
+    <script src="{{ asset('js/interactive-guide.js') }}" defer></script>
 
     <!-- Charting Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     @stack('styles')
 </head>
-<body class="font-sans antialiased">
+<body class="font-sans antialiased" data-page-name="@yield('page_name', 'default')">
 <div class="min-h-screen bg-gray-100">
     @include('layouts.navigation')
 

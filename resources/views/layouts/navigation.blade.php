@@ -33,6 +33,12 @@
                     <x-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
                          <i class="bi bi-gear mr-1"></i> {{ __('Paramètres') }}
                     </x-nav-link>
+                    <!-- Menu d'administration (uniquement visible pour les administrateurs) -->
+                    @if (auth()->user()->isAdmin())
+                        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.index')">
+                            <i class="fas fa-users me-2"></i> {{ __('Utilisateurs') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 

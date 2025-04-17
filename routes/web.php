@@ -15,6 +15,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\VendorEquipmentController;
+use App\Http\Controllers\ShopDashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DashboardController::class, 'index'])
@@ -71,11 +72,22 @@ Route::middleware('auth')->group(function () {
     Route::post('bills/{bill}/signature', [BillController::class, 'addSignature'])->name('bills.signature');
 
     // Routes pour les boutiques
-    Route::resource('shops', ShopController::class);
-    Route::get('shops/{shop}/manage-users', [ShopController::class, 'manageUsers'])->name('shops.manage-users');
-    Route::post('shops/{shop}/assign-users', [ShopController::class, 'assignUsers'])->name('shops.assign-users');
-    Route::delete('shops/{shop}/users/{user}', [ShopController::class, 'removeUser'])->name('shops.remove-user');
-    
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/shops', [ShopController::class, 'index'])->name('shops.index');
+        Route::get('/shops/create', [ShopController::class, 'create'])->name('shops.create');
+        Route::post('/shops', [ShopController::class, 'store'])->name('shops.store');
+        Route::get('/shops/{shop}', [ShopController::class, 'show'])->name('shops.show');
+        Route::get('/shops/{shop}/edit', [ShopController::class, 'edit'])->name('shops.edit');
+        Route::put('/shops/{shop}', [ShopController::class, 'update'])->name('shops.update');
+        Route::delete('/shops/{shop}', [ShopController::class, 'destroy'])->name('shops.destroy');
+        Route::get('/shops/{shop}/manage-users', [ShopController::class, 'manageUsers'])->name('shops.manage-users');
+        Route::post('/shops/{shop}/assign-users', [ShopController::class, 'assignUsers'])->name('shops.assign-users');
+        Route::delete('/shops/{shop}/users/{user}', [ShopController::class, 'removeUser'])->name('shops.remove-user');
+        
+        // Tableau de bord spécifique par boutique
+        Route::get('/shops/{shop}/dashboard', [ShopDashboardController::class, 'show'])->name('shops.dashboard');
+    });
+
     // Routes pour la gestion des équipements des vendeurs
     Route::middleware(['auth'])->prefix('vendor-equipment')->name('vendor-equipment.')->group(function () {
         Route::get('/', [App\Http\Controllers\VendorEquipmentController::class, 'index'])->name('index');
@@ -126,6 +138,12 @@ Route::middleware('auth')->group(function () {
     // Routes pour les téléphones
     Route::resource('phones', PhoneController::class);
     
+    // Routes pour la gestion des utilisateurs
+    Route::get('/users', [App\Http\Controllers\UserManagementController::class, 'index'])->name('users.index');
+    Route::get('/users/{user}', [App\Http\Controllers\UserManagementController::class, 'show'])->name('users.show');
+    Route::get('/users/{user}/reset-email', [App\Http\Controllers\UserManagementController::class, 'showResetEmailForm'])->name('users.reset-email.form');
+    Route::post('/users/{user}/reset-email', [App\Http\Controllers\UserManagementController::class, 'resetEmail'])->name('users.reset-email');
+
     // Routes d'exportation
     Route::get('/clients/export/csv', [ClientController::class, 'export'])->name('clients.export');
     Route::get('/bills/export/csv', [BillController::class, 'export'])->name('bills.export');
