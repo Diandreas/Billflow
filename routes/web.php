@@ -65,6 +65,8 @@ Route::middleware('auth')->group(function () {
     // Routes pour les factures
     Route::resource('bills', BillController::class);
     Route::patch('bills/{bill}/status', [BillController::class, 'updateStatus'])->name('bills.update-status');
+    Route::get('bills/{bill}/print', [BillController::class, 'print'])->name('bills.print');
+    Route::post('bills/{bill}/signature', [BillController::class, 'addSignature'])->name('bills.signature');
 
     // Routes pour les paramètres
     Route::get('language/{locale}', [LanguageController::class, 'switch'])->name('language.switch');
@@ -117,5 +119,8 @@ Route::middleware('auth')->group(function () {
     */
 
 });
+
+// Route publique pour vérifier l'authenticité d'une facture par QR code
+Route::post('verify-bill-qr', [BillController::class, 'verifyQrCode'])->name('bills.verify-qr');
 
 require __DIR__.'/auth.php';

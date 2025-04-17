@@ -9,204 +9,204 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use App\Models\InventoryMovement;
 use Illuminate\Support\Facades\Log;
+use App\Models\User;
+use App\Models\Shop;
+use App\Models\Commission;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class BillController extends Controller
 {
     public function index(Request $request)
     {
-        // Récupération des clients pour le filtre
-        $clients = Client::orderBy('name')->get();
+        $query = Bill::query()
+            ->with(['client', 'seller', 'shop']);
 
-        // Requête de base pour les factures
-        $query = Bill::with(['client', 'products'])->latest();
-
-        // Application des filtres
-        if ($request->filled('client')) {
-            $query->where('client_id', $request->client);
+        // Filtrer par boutique si l'utilisateur n'est pas admin
+        if (!Auth::user()->isAdmin()) {
+            $shops = Auth::user()->shops->pluck('id')->toArray();
+            $query->whereIn('shop_id', $shops);
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        // Filtrer par boutique spécifique si demandé
+        if ($request->has('shop_id')) {
+            $query->where('shop_id', $request->input('shop_id'));
         }
 
-        if ($request->filled('period')) {
-            $query->when($request->period, function ($q, $period) {
-                return match($period) {
-                    'current_month' => $q->whereMonth('date', now()->month),
-                    'last_month' => $q->whereMonth('date', now()->subMonth()->month),
-                    'current_year' => $q->whereYear('date', now()->year),
-                    default => $q
-                };
-            });
+        // Filtrer par vendeur si demandé
+        if ($request->has('seller_id')) {
+            $query->where('seller_id', $request->input('seller_id'));
         }
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('reference', 'like', "%{$search}%")
-                    ->orWhereHas('client', function($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
-                    });
-            });
+        // Filtrer par client si demandé
+        if ($request->has('client_id')) {
+            $query->where('client_id', $request->input('client_id'));
         }
 
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('date', [$request->start_date, $request->end_date]);
+        // Filtrer par date
+        if ($request->has('date_from')) {
+            $query->whereDate('date', '>=', $request->input('date_from'));
+        }
+        if ($request->has('date_to')) {
+            $query->whereDate('date', '<=', $request->input('date_to'));
         }
 
-        if ($request->filled('min_amount')) {
-            $query->where('total', '>=', $request->min_amount);
-        }
+        $bills = $query->orderBy('date', 'desc')->paginate(15);
 
-        if ($request->filled('max_amount')) {
-            $query->where('total', '<=', $request->max_amount);
-        }
+        $shops = Auth::user()->isAdmin() 
+            ? Shop::all() 
+            : Auth::user()->shops;
+            
+        $sellers = User::where('role', 'vendeur')->get();
+        $clients = Client::all();
 
-        // Récupération des factures paginées
-        $bills = $query->paginate(10);
-        
-        // Statistiques pour la période filtrée
-        $stats = [
-            'count' => $query->count(),
-            'total' => $query->sum('total'),
-            'average' => $query->avg('total'),
-        ];
-
-        return view('bills.index', compact('bills', 'clients', 'stats'));
+        return view('bills.index', compact('bills', 'shops', 'sellers', 'clients'));
     }
 
     public function create()
     {
-        $clients = Client::orderBy('name')->get();
-        $products = Product::orderBy('name')->get();
-        return view('bills.create', compact('clients', 'products'));
+        // Vérifier les autorisations
+        $this->authorize('create', Bill::class);
+
+        $clients = Client::all();
+        $products = Product::where('stock_quantity', '>', 0)->get();
+        
+        // Obtenir les boutiques de l'utilisateur actuel
+        $shops = Auth::user()->isAdmin() 
+            ? Shop::all() 
+            : Auth::user()->shops;
+        
+        // Obtenir les vendeurs par boutique
+        $shopVendors = [];
+        foreach ($shops as $shop) {
+            $shopVendors[$shop->id] = $shop->users()
+                ->where('role', 'vendeur')
+                ->get()
+                ->toArray();
+        }
+
+        return view('bills.create', compact('clients', 'products', 'shops', 'shopVendors'));
     }
 
     public function store(Request $request)
     {
-        try {
-            // Validation des données avec des messages d'erreur personnalisés
-            $validated = $request->validate([
-                'client_id' => 'required|exists:clients,id',
-                'date' => 'required|date',
-                'tax_rate' => 'required|numeric',
-                'notes' => 'nullable|string',
-                'reference' => 'nullable|string|max:255',
-                'products' => 'required|array|min:1',
-                'quantities' => 'required|array|min:1',
-                'prices' => 'required|array|min:1',
-                'unit_prices' => 'array', // Assure la compatibilité avec les deux noms de champs possibles
-                'status' => 'nullable|string|in:pending,paid,overdue',
-                'due_date' => 'nullable|date|after_or_equal:date',
-                'discount_percent' => 'nullable|numeric|min:0|max:100',
-                'discount_amount' => 'nullable|numeric|min:0',
-            ], [
-                'client_id.required' => 'Veuillez sélectionner un client',
-                'client_id.exists' => 'Le client sélectionné n\'existe pas',
-                'products.required' => 'Veuillez ajouter au moins un produit',
-                'products.min' => 'Veuillez ajouter au moins un produit',
-            ]);
+        // Vérifier les autorisations
+        $this->authorize('create', Bill::class);
 
-            // Gérer à la fois unit_prices et prices
-            $pricesField = $request->has('unit_prices') ? 'unit_prices' : 'prices';
+        $validated = $request->validate([
+            'client_id' => 'required|exists:clients,id',
+            'shop_id' => 'required|exists:shops,id',
+            'seller_id' => 'required|exists:users,id',
+            'products' => 'required|array',
+            'products.*.id' => 'required|exists:products,id',
+            'products.*.quantity' => 'required|integer|min:1',
+            'products.*.price' => 'required|numeric|min:0',
+            'date' => 'required|date',
+            'due_date' => 'nullable|date|after_or_equal:date',
+            'tax_rate' => 'required|numeric|min:0|max:100',
+            'payment_method' => 'nullable|string',
+            'comments' => 'nullable|string',
+        ]);
 
-            // Générer une référence unique
-            $reference = $request->input('reference') ?: Bill::generateReference();
+        // Vérifier que l'utilisateur a accès à la boutique
+        if (!Auth::user()->canAccessShop($request->shop_id)) {
+            return back()->with('error', 'Vous n\'avez pas accès à cette boutique');
+        }
 
-            // Créer la facture
-            $bill = Bill::create([
-                'reference' => $reference,
-                'client_id' => $validated['client_id'],
-                'date' => $validated['date'],
-                'due_date' => $request->input('due_date'),
-                'tax_rate' => $validated['tax_rate'],
-                'description' => $validated['notes'] ?? null,
-                'status' => $request->input('status', 'pending'),
-                'user_id' => $request->user() ? $request->user()->id : 1,
-                'total' => 0, // Valeur par défaut pour éviter l'erreur MySQL
-                'tax_amount' => 0, // Valeur par défaut pour éviter l'erreur MySQL
-            ]);
+        // Calculer le total et la TVA
+        $total = 0;
+        foreach ($validated['products'] as $product) {
+            $total += $product['price'] * $product['quantity'];
+        }
 
-            // Ajouter les produits
-            $products = $request->input('products', []);
-            $quantities = $request->input('quantities', []);
-            $prices = $request->input($pricesField, []);
+        $taxAmount = $total * ($validated['tax_rate'] / 100);
+        $totalWithTax = $total + $taxAmount;
 
-            // Vérification des données de produits
-            if (count($products) != count($quantities) || count($products) != count($prices)) {
-                throw new \Exception('Les données de produits sont incomplètes ou non valides.');
+        // Générer un numéro de référence unique
+        $reference = 'FACT-' . date('YmdHis') . '-' . Auth::id();
+
+        // Créer la facture
+        $bill = Bill::create([
+            'reference' => $reference,
+            'description' => 'Facture pour ' . Client::find($validated['client_id'])->name,
+            'total' => $totalWithTax,
+            'date' => $validated['date'],
+            'due_date' => $validated['due_date'],
+            'tax_rate' => $validated['tax_rate'],
+            'tax_amount' => $taxAmount,
+            'status' => 'En attente',
+            'payment_method' => $validated['payment_method'],
+            'comments' => $validated['comments'],
+            'user_id' => Auth::id(),
+            'client_id' => $validated['client_id'],
+            'shop_id' => $validated['shop_id'],
+            'seller_id' => $validated['seller_id'],
+            'reprint_count' => 0,
+        ]);
+
+        // Ajouter les produits à la facture
+        foreach ($validated['products'] as $productData) {
+            $product = Product::find($productData['id']);
+            
+            // Vérifier le stock
+            if ($product->stock_quantity < $productData['quantity']) {
+                return back()->with('error', "Stock insuffisant pour {$product->name}");
             }
-
-            // Initialisation du total
-            $subtotal = 0;
-
-            for ($i = 0; $i < count($products); $i++) {
-                if (empty($products[$i])) {
-                    continue; // Ignorer les lignes vides
-                }
-                
-                $productId = $products[$i];
-                $quantity = floatval($quantities[$i]);
-                $price = floatval($prices[$i]);
-                
-                if ($quantity <= 0 || $price < 0) {
-                    continue; // Ignorer les quantités négatives ou nulles
-                }
-                
-                $lineTotal = $quantity * $price;
-                $subtotal += $lineTotal;
-                
-                $bill->products()->attach($productId, [
-                    'quantity' => $quantity,
-                    'unit_price' => $price,
-                    'total' => $lineTotal
-                ]);
-                
-                // Mise à jour du stock si nécessaire
-                $product = Product::find($productId);
-                if ($product && $product->type === 'physical' && $product->stock_quantity > 0) {
-                    InventoryMovement::createExit(
-                        $productId,
-                        $quantity,
-                        $price,
-                        'Facture: ' . $bill->reference,
-                        $bill->id,
-                        'Vente via facture'
-                    );
-                }
-            }
-
-            // Appliquer la remise si présente
-            $discount = 0;
-            if ($request->filled('discount_percent')) {
-                $discount = $subtotal * ($request->discount_percent / 100);
-            } elseif ($request->filled('discount_amount')) {
-                $discount = $request->discount_amount;
-            }
-
-            // Calculer les totaux
-            $bill->calculateTotals();
-
-            return redirect()
-                ->route('bills.show', $bill)
-                ->with('success', 'Facture créée avec succès');
-                
-        } catch (\Exception $e) {
-            // Enregistrement de l'erreur pour le débogage
-            Log::error('Erreur lors de la création de facture: ' . $e->getMessage(), [
-                'data' => $request->all(),
-                'trace' => $e->getTraceAsString()
+            
+            // Ajouter le produit à la facture
+            $bill->billProducts()->create([
+                'product_id' => $product->id,
+                'unit_price' => $productData['price'],
+                'quantity' => $productData['quantity'],
+                'total' => $productData['price'] * $productData['quantity'],
             ]);
             
-            return back()
-                ->withInput()
-                ->with('error', 'Erreur lors de la création de la facture: ' . $e->getMessage());
+            // Mettre à jour le stock
+            $product->stock_quantity -= $productData['quantity'];
+            $product->save();
+            
+            // Créer un mouvement d'inventaire
+            $product->inventoryMovements()->create([
+                'type' => 'vente',
+                'quantity' => -$productData['quantity'],
+                'reference' => $reference,
+                'bill_id' => $bill->id,
+                'user_id' => Auth::id(),
+                'unit_price' => $productData['price'],
+                'total_price' => $productData['price'] * $productData['quantity'],
+                'stock_before' => $product->stock_quantity + $productData['quantity'],
+                'stock_after' => $product->stock_quantity,
+            ]);
         }
+
+        // Calculer et créer la commission du vendeur
+        $seller = User::find($validated['seller_id']);
+        if ($seller && $seller->commission_rate > 0) {
+            $commissionAmount = $totalWithTax * ($seller->commission_rate / 100);
+            
+            Commission::create([
+                'user_id' => $seller->id,
+                'bill_id' => $bill->id,
+                'amount' => $commissionAmount,
+                'rate' => $seller->commission_rate,
+                'base_amount' => $totalWithTax,
+                'type' => 'vente',
+                'is_paid' => false,
+            ]);
+        }
+
+        return redirect()->route('bills.show', $bill)
+            ->with('success', 'Facture créée avec succès');
     }
 
     public function show(Bill $bill)
     {
-        $bill->load(['client', 'products', 'user']);
+        // Vérifier les autorisations
+        $this->authorize('view', $bill);
+
+        $bill->load(['client', 'seller', 'shop', 'billProducts.product']);
+
         return view('bills.show', compact('bill'));
     }
 
@@ -456,5 +456,135 @@ class BillController extends Controller
         };
         
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Imprimer une facture avec QR code.
+     */
+    public function print(Bill $bill)
+    {
+        // Vérifier les autorisations
+        $this->authorize('view', $bill);
+        
+        // Incrémenter le compteur de réimpressions
+        $bill->reprint_count += 1;
+        $bill->last_print_date = now();
+        $bill->save();
+        
+        // Charger les relations nécessaires
+        $bill->load(['client', 'client.phones', 'seller', 'shop', 'billProducts.product']);
+        
+        // Générer le QR code
+        $qrCodeData = [
+            'reference' => $bill->reference,
+            'date' => $bill->date->format('Y-m-d H:i:s'),
+            'total' => $bill->total,
+            'client' => $bill->client->name,
+            'shop' => $bill->shop->name,
+            'seller' => $bill->seller->name,
+            'print_date' => now()->format('Y-m-d H:i:s'),
+            'print_count' => $bill->reprint_count
+        ];
+        
+        // Convertir en JSON pour le QR code
+        $qrCodeJson = json_encode($qrCodeData);
+        
+        // Générer le QR code en base64
+        $qrCode = base64_encode(QrCode::format('png')
+            ->size(200)
+            ->errorCorrection('H')
+            ->generate($qrCodeJson));
+        
+        // Créer le PDF
+        $pdf = PDF::loadView('bills.print', [
+            'bill' => $bill,
+            'qrCode' => $qrCode,
+            'company' => setting('company_name'),
+            'address' => setting('address'),
+            'phone' => setting('phone'),
+            'logo' => Storage::url(setting('logo_path')),
+        ]);
+        
+        return $pdf->stream('facture-' . $bill->reference . '.pdf');
+    }
+
+    /**
+     * Ajouter une signature à la facture.
+     */
+    public function addSignature(Request $request, Bill $bill)
+    {
+        // Vérifier les autorisations
+        $this->authorize('update', $bill);
+        
+        $validated = $request->validate([
+            'signature' => 'required|string',
+        ]);
+        
+        // Décoder l'image base64
+        $image = $request->get('signature');
+        $image = str_replace('data:image/png;base64,', '', $image);
+        $image = str_replace(' ', '+', $image);
+        
+        // Générer un nom de fichier unique
+        $filename = 'signatures/' . uniqid() . '.png';
+        
+        // Sauvegarder l'image
+        Storage::disk('public')->put($filename, base64_decode($image));
+        
+        // Mettre à jour la facture
+        $bill->signature_path = $filename;
+        $bill->save();
+        
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Vérifier l'authenticité d'une facture par QR code.
+     */
+    public function verifyQrCode(Request $request)
+    {
+        $validated = $request->validate([
+            'data' => 'required|json',
+        ]);
+        
+        $data = json_decode($request->data, true);
+        
+        if (!isset($data['reference'])) {
+            return response()->json([
+                'valid' => false,
+                'message' => 'QR code invalide ou données manquantes'
+            ]);
+        }
+        
+        $bill = Bill::where('reference', $data['reference'])->first();
+        
+        if (!$bill) {
+            return response()->json([
+                'valid' => false,
+                'message' => 'Facture non trouvée'
+            ]);
+        }
+        
+        // Vérifier si les données du QR code correspondent aux données de la facture
+        $isValid = 
+            $data['date'] == $bill->date->format('Y-m-d H:i:s') &&
+            $data['total'] == $bill->total &&
+            $data['client'] == $bill->client->name &&
+            $data['shop'] == $bill->shop->name &&
+            $data['seller'] == $bill->seller->name;
+        
+        return response()->json([
+            'valid' => $isValid,
+            'message' => $isValid ? 'Facture authentique' : 'Donnée de facture non concordantes',
+            'bill' => $isValid ? [
+                'reference' => $bill->reference,
+                'date' => $bill->date->format('d/m/Y H:i'),
+                'total' => number_format($bill->total, 2) . ' XAF',
+                'client' => $bill->client->name,
+                'shop' => $bill->shop->name,
+                'seller' => $bill->seller->name,
+                'status' => $bill->status,
+            ] : null
+        ]);
     }
 }
