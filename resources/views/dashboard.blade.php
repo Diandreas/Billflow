@@ -3,7 +3,7 @@
 @section('page_name', 'dashboard')
 
 @section('content')
-<x-app-layout>
+
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <div>
@@ -990,5 +990,5 @@
             });
         </script>
     @endpush
-</x-app-layout>
+@endsection
 
