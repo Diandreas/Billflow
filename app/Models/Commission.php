@@ -12,24 +12,25 @@ class Commission extends Model
     protected $fillable = [
         'user_id',
         'bill_id',
-        'barter_id',
         'shop_id',
+        'type',
         'amount',
         'rate',
         'base_amount',
-        'type',
         'description',
-        'is_paid',
-        'paid_at',
-        'paid_by',
+        'period_start',
+        'period_end',
+        'status',
+        'paid_at'
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'rate' => 'decimal:2',
         'base_amount' => 'decimal:2',
-        'is_paid' => 'boolean',
-        'paid_at' => 'date',
+        'period_start' => 'date',
+        'period_end' => 'date',
+        'paid_at' => 'datetime'
     ];
 
     /**
@@ -49,14 +50,6 @@ class Commission extends Model
     }
 
     /**
-     * Relation avec le troc lié à cette commission
-     */
-    public function barter()
-    {
-        return $this->belongsTo(Barter::class);
-    }
-
-    /**
      * Relation avec la boutique où la vente a été effectuée
      */
     public function shop()
@@ -65,19 +58,50 @@ class Commission extends Model
     }
 
     /**
-     * Relation avec l'utilisateur qui a effectué le paiement
+     * Calculer le montant de la commission pour une vente
      */
-    public function paidBy()
+    public static function calculateForBill(Bill $bill)
     {
-        return $this->belongsTo(User::class, 'paid_by');
+        // Si pas de vendeur défini, pas de commission
+        if (!$bill->seller_id) {
+            return null;
+        }
+
+        $seller = User::find($bill->seller_id);
+        if (!$seller || !$seller->commission_rate) {
+            return null;
+        }
+
+        // Calculer la commission de base (sur le montant total)
+        $commission = new Commission();
+        $commission->user_id = $seller->id;
+        $commission->bill_id = $bill->id;
+        $commission->shop_id = $bill->shop_id;
+        $commission->type = 'vente';
+        $commission->base_amount = $bill->total;
+        $commission->rate = $seller->commission_rate;
+        $commission->amount = $bill->total * ($seller->commission_rate / 100);
+        $commission->description = "Commission sur la facture {$bill->reference}";
+        $commission->status = 'pending';
+        $commission->save();
+
+        return $commission;
     }
 
     /**
-     * Scope pour les commissions non payées
+     * Scope pour les commissions en attente
      */
-    public function scopeUnpaid($query)
+    public function scopePending($query)
     {
-        return $query->where('is_paid', false);
+        return $query->where('status', 'pending');
+    }
+
+    /**
+     * Scope pour les commissions approuvées
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
     }
 
     /**
@@ -85,62 +109,30 @@ class Commission extends Model
      */
     public function scopePaid($query)
     {
-        return $query->where('is_paid', true);
+        return $query->where('status', 'paid');
     }
 
     /**
-     * Scope pour les commissions d'un type spécifique
+     * Scope pour les commissions d'une période spécifique
      */
-    public function scopeOfType($query, $type)
+    public function scopeForPeriod($query, $start, $end)
     {
-        return $query->where('type', $type);
+        return $query->whereBetween('created_at', [$start, $end]);
     }
 
     /**
-     * Calculer le montant de la commission pour une vente
+     * Scope pour les commissions d'un utilisateur spécifique
      */
-    public static function calculateForSale(Bill $bill, $rateOverride = null)
+    public function scopeForUser($query, $userId)
     {
-        $seller = User::find($bill->seller_id);
-        
-        if (!$seller) {
-            return null;
-        }
-        
-        // Utiliser le taux personnalisé s'il est fourni, sinon utiliser celui du vendeur
-        $rate = $rateOverride ?? $seller->commission_rate;
-        
-        // Aucune commission si le taux est nul
-        if ($rate <= 0) {
-            return null;
-        }
-        
-        $amount = $bill->total * ($rate / 100);
-        
-        return self::create([
-            'user_id' => $seller->id,
-            'bill_id' => $bill->id,
-            'shop_id' => $bill->shop_id,
-            'amount' => $amount,
-            'rate' => $rate,
-            'base_amount' => $bill->total,
-            'type' => 'vente',
-            'description' => 'Commission sur la vente ' . $bill->reference,
-            'is_paid' => false,
-        ]);
+        return $query->where('user_id', $userId);
     }
 
     /**
-     * Marquer la commission comme payée
+     * Scope pour les commissions d'une boutique spécifique
      */
-    public function markAsPaid($paidBy = null)
+    public function scopeForShop($query, $shopId)
     {
-        $this->update([
-            'is_paid' => true,
-            'paid_at' => now(),
-            'paid_by' => $paidBy,
-        ]);
-        
-        return $this;
+        return $query->where('shop_id', $shopId);
     }
 } 

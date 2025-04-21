@@ -86,7 +86,16 @@ class ProductController extends Controller
             ? \App\Models\Shop::all() 
             : Auth::user()->shops;
         
-        return view('products.index', compact('products', 'shops'));
+        // Préparer les statistiques pour la vue
+        $stats = [
+            'total_products' => Product::count(),
+            'active_products' => Product::where('status', 'actif')->count(),
+            'physical_products' => Product::where('type', 'physical')->count(),
+            'total_revenue' => Product::withSum('bills as total_sales', DB::raw('bill_products.unit_price * bill_products.quantity'))->sum('total_sales'),
+            'average_price' => Product::avg('default_price') ?: 0,
+        ];
+        
+        return view('products.index', compact('products', 'shops', 'stats'));
     }
 
     public function create()

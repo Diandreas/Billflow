@@ -10,38 +10,45 @@ class Delivery extends Model
     use HasFactory;
 
     protected $fillable = [
-        'tracking_number',
+        'reference',
         'bill_id',
-        'barter_id',
-        'client_id',
-        'delivery_type',
-        'status',
-        'shipping_address',
+        'user_id',
+        'delivery_agent_id',
         'recipient_name',
         'recipient_phone',
-        'recipient_email',
+        'delivery_address',
         'delivery_fee',
-        'estimated_delivery_date',
-        'actual_delivery_date',
-        'delivery_agent_id',
+        'scheduled_at',
+        'delivered_at',
+        'status',
         'notes',
-        'requires_signature',
-        'signature_path',
+        'payment_status',
+        'total_amount',
+        'amount_paid'
     ];
 
     protected $casts = [
         'delivery_fee' => 'decimal:2',
-        'estimated_delivery_date' => 'datetime',
-        'actual_delivery_date' => 'datetime',
-        'requires_signature' => 'boolean',
+        'total_amount' => 'decimal:2',
+        'amount_paid' => 'decimal:2',
+        'scheduled_at' => 'datetime',
+        'delivered_at' => 'datetime'
     ];
 
     /**
      * Génère un numéro de suivi unique
      */
-    public static function generateTrackingNumber()
+    public static function generateReference()
     {
-        return 'LIV-' . date('YmdHis') . '-' . rand(1000, 9999);
+        $prefix = 'LIV-';
+        $year = date('Y');
+        $lastDelivery = self::whereYear('created_at', $year)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $number = $lastDelivery ? intval(substr($lastDelivery->reference, -5)) + 1 : 1;
+
+        return $prefix . $year . '-' . str_pad($number, 5, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -53,19 +60,11 @@ class Delivery extends Model
     }
 
     /**
-     * Relation avec le troc lié
-     */
-    public function barter()
-    {
-        return $this->belongsTo(Barter::class);
-    }
-
-    /**
      * Relation avec le client destinataire
      */
-    public function client()
+    public function user()
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(User::class);
     }
 
     /**
@@ -131,7 +130,7 @@ class Delivery extends Model
      */
     public function markAsDelivered($userId = null)
     {
-        $this->actual_delivery_date = now();
+        $this->delivered_at = now();
         $this->save();
         
         return $this->updateStatus('livré', 'Colis livré au destinataire', null, $userId);
@@ -201,11 +200,11 @@ class Delivery extends Model
      */
     public function getRemainingTimeAttribute()
     {
-        if (!$this->estimated_delivery_date) {
+        if (!$this->scheduled_at) {
             return null;
         }
         
-        return now()->diffForHumans($this->estimated_delivery_date, ['parts' => 2]);
+        return now()->diffForHumans($this->scheduled_at, ['parts' => 2]);
     }
 
     /**
@@ -213,10 +212,40 @@ class Delivery extends Model
      */
     public function getIsLateAttribute()
     {
-        if (!$this->estimated_delivery_date || in_array($this->status, ['livré', 'annulé'])) {
+        if (!$this->scheduled_at || in_array($this->status, ['livré', 'annulé'])) {
             return false;
         }
         
-        return now()->isAfter($this->estimated_delivery_date);
+        return now()->isAfter($this->scheduled_at);
+    }
+
+    public function getBalanceAttribute()
+    {
+        return $this->total_amount - $this->amount_paid;
+    }
+
+    public function isFullyPaid()
+    {
+        return $this->balance <= 0;
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    public function scopeInTransit($query)
+    {
+        return $query->where('status', 'in_transit');
+    }
+
+    public function scopeUnpaid($query)
+    {
+        return $query->where('payment_status', 'unpaid');
+    }
+
+    public function scopePaid($query)
+    {
+        return $query->where('payment_status', 'paid');
     }
 } 

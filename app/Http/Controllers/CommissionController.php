@@ -9,6 +9,8 @@ use App\Models\Bill;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class CommissionController extends Controller
 {
@@ -17,195 +19,98 @@ class CommissionController extends Controller
      */
     public function index(Request $request)
     {
-        // Vérifier l'autorisation
-        if (!auth()->user()->isAdmin() && !auth()->user()->isManager()) {
-            return redirect()->route('dashboard')
-                ->with('error', 'Vous n\'avez pas les permissions nécessaires.');
+        // Vérifier les autorisations
+        if (!Gate::allows('view-commissions')) {
+            abort(403, 'Action non autorisée.');
         }
 
-        // Paramètres de filtre
-        $vendorId = $request->input('vendor_id');
-        $shopId = $request->input('shop_id');
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
-        $status = $request->input('status');
+        $query = Commission::with(['user', 'bill', 'shop']);
 
-        // Construire la requête
-        $commissionsQuery = Commission::with(['user', 'bill'])
-            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
-
-        // Filtre par vendeur
-        if ($vendorId) {
-            $commissionsQuery->where('user_id', $vendorId);
+        // Filtrer par statut
+        if ($request->has('status')) {
+            $query->where('status', $request->input('status'));
         }
 
-        // Filtre par boutique (via les factures)
-        if ($shopId) {
-            $commissionsQuery->whereHas('bill', function($query) use ($shopId) {
-                $query->where('shop_id', $shopId);
-            });
+        // Filtrer par vendeur
+        if ($request->has('user_id')) {
+            $query->where('user_id', $request->input('user_id'));
         }
 
-        // Filtre par statut
-        if ($status) {
-            $commissionsQuery->where('status', $status);
+        // Filtrer par boutique
+        if ($request->has('shop_id')) {
+            $query->where('shop_id', $request->input('shop_id'));
         }
 
-        // Les managers ne peuvent voir que les commissions des vendeurs de leurs boutiques
-        if (auth()->user()->isManager() && !auth()->user()->isAdmin()) {
-            $managedShopIds = auth()->user()->managedShops()->pluck('shops.id')->toArray();
-            $commissionsQuery->whereHas('bill', function($query) use ($managedShopIds) {
-                $query->whereIn('shop_id', $managedShopIds);
-            });
+        // Filtrer par période
+        if ($request->has('period_start')) {
+            $query->where('created_at', '>=', $request->input('period_start'));
+        }
+        if ($request->has('period_end')) {
+            $query->where('created_at', '<=', $request->input('period_end'));
         }
 
-        // Récupérer les données paginées
-        $commissions = $commissionsQuery->orderBy('created_at', 'desc')
-            ->paginate(15)
-            ->withQueryString();
+        // Obtenir les commissions
+        $commissions = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        // Données pour les filtres
-        $vendors = User::where('role', 'vendeur')->orderBy('name')->get();
-        
-        // Les shops dépendent du rôle de l'utilisateur
-        if (auth()->user()->isAdmin()) {
-            $shops = Shop::orderBy('name')->get();
-        } else {
-            $shops = auth()->user()->managedShops;
-        }
+        // Obtenir les vendeurs et boutiques pour les filtres
+        $sellers = User::where('role', 'vendeur')->orderBy('name')->get();
+        $shops = Gate::allows('admin') 
+            ? Shop::orderBy('name')->get() 
+            : Auth::user()->shops;
 
-        // Statistiques récapitulatives
+        // Statistiques
         $stats = [
-            'total_commissions' => $commissionsQuery->sum('amount'),
-            'paid_commissions' => $commissionsQuery->where('status', 'paid')->sum('amount'),
-            'pending_commissions' => $commissionsQuery->where('status', 'pending')->sum('amount'),
-            'total_count' => $commissionsQuery->count(),
+            'total_commissions' => Commission::sum('amount'),
+            'pending_commissions' => Commission::where('status', 'pending')->sum('amount'),
+            'paid_commissions' => Commission::where('status', 'paid')->sum('amount'),
         ];
 
-        return view('commissions.index', compact(
-            'commissions',
-            'vendors',
-            'shops',
-            'stats',
-            'vendorId',
-            'shopId',
-            'startDate',
-            'endDate',
-            'status'
-        ));
+        return view('commissions.index', compact('commissions', 'sellers', 'shops', 'stats'));
     }
 
     /**
      * Affiche le rapport de commissions d'un vendeur
      */
-    public function vendorReport(User $vendor)
+    public function vendorReport(User $user)
     {
-        // Vérifier l'autorisation
-        if (!auth()->user()->isAdmin() && !auth()->user()->isManager()) {
-            if (auth()->id() !== $vendor->id) {
-                return redirect()->route('dashboard')
-                    ->with('error', 'Vous n\'avez pas les permissions nécessaires.');
-            }
+        // Vérifier les autorisations
+        if (!Gate::allows('view-vendor-report', $user)) {
+            abort(403, 'Action non autorisée.');
         }
 
-        // Pour les managers, vérifier qu'ils ont accès à ce vendeur
-        if (auth()->user()->isManager() && !auth()->user()->isAdmin() && auth()->id() !== $vendor->id) {
-            $managedShopIds = auth()->user()->managedShops()->pluck('shops.id')->toArray();
-            $vendorShopIds = $vendor->shops()->pluck('shops.id')->toArray();
-            
-            if (empty(array_intersect($managedShopIds, $vendorShopIds))) {
-                return redirect()->route('dashboard')
-                    ->with('error', 'Ce vendeur n\'appartient pas à l\'une de vos boutiques.');
-            }
-        }
+        $user->load('shops');
 
-        // Dates par défaut (mois en cours)
-        $startDate = Carbon::now()->startOfMonth();
-        $endDate = Carbon::now()->endOfMonth();
+        // Obtenir les commissions du vendeur
+        $commissions = Commission::where('user_id', $user->id)
+            ->with(['bill', 'shop'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
 
-        // Commissions du mois
-        $commissions = Commission::with(['bill'])
-            ->where('user_id', $vendor->id)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->latest()
-            ->get();
-
-        // Regrouper par source (type de commission)
-        $bySource = $commissions->groupBy('source')
-            ->map(function ($items) {
-                return [
-                    'count' => $items->count(),
-                    'total' => $items->sum('amount'),
-                ];
-            });
-
-        // Regrouper par boutique
-        $byShop = $commissions->groupBy(function ($commission) {
-                return $commission->bill ? $commission->bill->shop_id : 'N/A';
-            })
-            ->map(function ($items, $shopId) {
-                $shopName = 'N/A';
-                if ($shopId !== 'N/A') {
-                    $shop = Shop::find($shopId);
-                    $shopName = $shop ? $shop->name : 'N/A';
-                }
-                
-                return [
-                    'name' => $shopName,
-                    'count' => $items->count(),
-                    'total' => $items->sum('amount'),
-                ];
-            });
-
-        // Regrouper par statut
-        $byStatus = $commissions->groupBy('status')
-            ->map(function ($items) {
-                return [
-                    'count' => $items->count(),
-                    'total' => $items->sum('amount'),
-                ];
-            });
-
-        // Historique sur les 12 derniers mois
-        $monthlyHistory = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $month = Carbon::now()->subMonths($i);
-            $start = $month->copy()->startOfMonth();
-            $end = $month->copy()->endOfMonth();
-            
-            $monthTotal = Commission::where('user_id', $vendor->id)
-                ->whereBetween('created_at', [$start, $end])
-                ->sum('amount');
-                
-            $monthlyHistory[] = [
-                'month' => $month->format('M Y'),
-                'total' => $monthTotal,
-            ];
-        }
-
-        // Données récapitulatives
-        $summary = [
-            'total_commissions' => $commissions->sum('amount'),
-            'paid_commissions' => $commissions->where('status', 'paid')->sum('amount'),
-            'pending_commissions' => $commissions->where('status', 'pending')->sum('amount'),
-            'total_count' => $commissions->count(),
+        // Statistiques
+        $stats = [
+            'total_commissions' => Commission::where('user_id', $user->id)->sum('amount'),
+            'pending_commissions' => Commission::where('user_id', $user->id)->where('status', 'pending')->sum('amount'),
+            'paid_commissions' => Commission::where('user_id', $user->id)->where('status', 'paid')->sum('amount'),
+            'total_sales' => Bill::where('seller_id', $user->id)->sum('total'),
+            'total_bills' => Bill::where('seller_id', $user->id)->count(),
         ];
 
-        // Boutiques du vendeur
-        $shops = $vendor->shops;
+        // Obtenir les commissions par mois
+        $monthlySales = Bill::where('seller_id', $user->id)
+            ->selectRaw('YEAR(date) as year, MONTH(date) as month, SUM(total) as total, COUNT(*) as count')
+            ->groupBy('year', 'month')
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'desc')
+            ->get();
 
-        return view('commissions.vendor-report', compact(
-            'vendor',
-            'commissions',
-            'bySource',
-            'byShop',
-            'byStatus',
-            'monthlyHistory',
-            'summary',
-            'shops',
-            'startDate',
-            'endDate'
-        ));
+        $monthlyCommissions = Commission::where('user_id', $user->id)
+            ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, SUM(amount) as total, COUNT(*) as count')
+            ->groupBy('year', 'month')
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'desc')
+            ->get();
+
+        return view('commissions.vendor-report', compact('user', 'commissions', 'stats', 'monthlySales', 'monthlyCommissions'));
     }
 
     /**
@@ -306,51 +211,41 @@ class CommissionController extends Controller
     }
 
     /**
-     * Marque plusieurs commissions comme payées
+     * Affiche les détails d'une commission
      */
-    public function markAsPaid(Request $request)
+    public function show(Commission $commission)
     {
-        // Vérifier l'autorisation
-        if (!auth()->user()->isAdmin() && !auth()->user()->isManager()) {
-            return redirect()->route('commissions.index')
-                ->with('error', 'Vous n\'avez pas les permissions nécessaires.');
+        // Vérifier les autorisations
+        if (!Gate::allows('view-commission', $commission)) {
+            abort(403, 'Action non autorisée.');
+        }
+
+        $commission->load(['user', 'bill.client', 'shop']);
+
+        return view('commissions.show', compact('commission'));
+    }
+
+    /**
+     * Marque une commission comme payée
+     */
+    public function markAsPaid(Request $request, Commission $commission)
+    {
+        // Vérifier les autorisations
+        if (!Gate::allows('pay-commission', $commission)) {
+            abort(403, 'Action non autorisée.');
         }
 
         $validated = $request->validate([
-            'commission_ids' => 'required|array',
-            'commission_ids.*' => 'exists:commissions,id',
-            'payment_date' => 'required|date',
-            'payment_method' => 'required|string',
-            'payment_reference' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
 
-        // Récupérer les commissions
-        $commissions = Commission::whereIn('id', $validated['commission_ids'])->get();
-        
-        // Vérifier que les managers n'accèdent qu'aux commissions de leurs boutiques
-        if (auth()->user()->isManager() && !auth()->user()->isAdmin()) {
-            $managedShopIds = auth()->user()->managedShops()->pluck('shops.id')->toArray();
-            
-            foreach ($commissions as $commission) {
-                if ($commission->bill && !in_array($commission->bill->shop_id, $managedShopIds)) {
-                    return redirect()->route('commissions.index')
-                        ->with('error', 'Vous n\'avez pas accès à certaines commissions sélectionnées.');
-                }
-            }
-        }
+        $commission->update([
+            'status' => 'paid',
+            'paid_at' => now(),
+            'description' => $commission->description . "\n" . ($validated['notes'] ?? '')
+        ]);
 
-        // Mettre à jour les commissions
-        foreach ($commissions as $commission) {
-            $commission->status = 'paid';
-            $commission->payment_date = $validated['payment_date'];
-            $commission->payment_method = $validated['payment_method'];
-            $commission->payment_reference = $validated['payment_reference'];
-            $commission->payment_notes = $validated['notes'];
-            $commission->save();
-        }
-
-        return redirect()->route('commissions.index')
-            ->with('success', count($commissions) . ' commissions ont été marquées comme payées.');
+        return redirect()->route('commissions.show', $commission)
+            ->with('success', 'Commission marquée comme payée');
     }
 } 

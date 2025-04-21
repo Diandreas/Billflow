@@ -12,23 +12,22 @@ class Barter extends Model
     protected $fillable = [
         'reference',
         'client_id',
-        'shop_id',
         'user_id',
         'seller_id',
-        'given_items_value',
-        'received_items_value',
-        'balance_amount',
-        'status',
-        'date',
-        'notes',
-        'signature_path',
+        'shop_id',
+        'type',
+        'value_given',
+        'value_received',
+        'additional_payment',
+        'payment_method',
+        'description',
+        'status'
     ];
 
     protected $casts = [
-        'given_items_value' => 'decimal:2',
-        'received_items_value' => 'decimal:2',
-        'balance_amount' => 'decimal:2',
-        'date' => 'date',
+        'value_given' => 'decimal:2',
+        'value_received' => 'decimal:2',
+        'additional_payment' => 'decimal:2',
     ];
 
     /**
@@ -36,7 +35,15 @@ class Barter extends Model
      */
     public static function generateReference()
     {
-        return 'TROC-' . date('YmdHis') . '-' . rand(100, 999);
+        $prefix = 'TROC-';
+        $year = date('Y');
+        $lastBarter = self::whereYear('created_at', $year)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $number = $lastBarter ? intval(substr($lastBarter->reference, -5)) + 1 : 1;
+
+        return $prefix . $year . '-' . str_pad($number, 5, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -72,11 +79,27 @@ class Barter extends Model
     }
 
     /**
+     * Relation avec les images liées à ce troc
+     */
+    public function images()
+    {
+        return $this->hasMany(BarterImage::class);
+    }
+
+    /**
+     * Relation avec les articles liées à ce troc
+     */
+    public function items()
+    {
+        return $this->hasMany(BarterItem::class);
+    }
+
+    /**
      * Relation avec les articles donnés par le client
      */
     public function givenItems()
     {
-        return $this->hasMany(BarterGivenItem::class);
+        return $this->items()->where('type', 'given');
     }
 
     /**
@@ -84,7 +107,23 @@ class Barter extends Model
      */
     public function receivedItems()
     {
-        return $this->hasMany(BarterReceivedItem::class);
+        return $this->items()->where('type', 'received');
+    }
+
+    /**
+     * Relation avec les images données par le client
+     */
+    public function givenImages()
+    {
+        return $this->images()->where('type', 'given');
+    }
+
+    /**
+     * Relation avec les images reçues par le client
+     */
+    public function receivedImages()
+    {
+        return $this->images()->where('type', 'received');
     }
 
     /**
@@ -108,7 +147,7 @@ class Barter extends Model
      */
     public function scopePending($query)
     {
-        return $query->where('status', 'en_attente');
+        return $query->where('status', 'pending');
     }
 
     /**
@@ -116,7 +155,7 @@ class Barter extends Model
      */
     public function scopeCompleted($query)
     {
-        return $query->where('status', 'complété');
+        return $query->where('status', 'completed');
     }
 
     /**
@@ -124,7 +163,7 @@ class Barter extends Model
      */
     public function scopeCancelled($query)
     {
-        return $query->where('status', 'annulé');
+        return $query->where('status', 'cancelled');
     }
 
     /**
@@ -138,9 +177,12 @@ class Barter extends Model
     /**
      * Scope pour les trocs d'un vendeur spécifique
      */
-    public function scopeForSeller($query, $sellerId)
+    public function scopeForUser($query, $userId)
     {
-        return $query->where('seller_id', $sellerId);
+        return $query->where(function($q) use ($userId) {
+            $q->where('user_id', $userId)
+              ->orWhere('seller_id', $userId);
+        });
     }
 
     /**
@@ -149,7 +191,7 @@ class Barter extends Model
     public function calculateGivenItemsValue()
     {
         $total = $this->givenItems()->sum(\DB::raw('estimated_value * quantity'));
-        $this->update(['given_items_value' => $total]);
+        $this->update(['value_given' => $total]);
         return $total;
     }
 
@@ -159,7 +201,7 @@ class Barter extends Model
     public function calculateReceivedItemsValue()
     {
         $total = $this->receivedItems()->sum('total_price');
-        $this->update(['received_items_value' => $total]);
+        $this->update(['value_received' => $total]);
         return $total;
     }
 
@@ -169,8 +211,8 @@ class Barter extends Model
      */
     public function calculateBalanceAmount()
     {
-        $balance = $this->received_items_value - $this->given_items_value;
-        $this->update(['balance_amount' => $balance]);
+        $balance = $this->value_received - $this->value_given;
+        $this->update(['additional_payment' => $balance]);
         return $balance;
     }
 
@@ -179,7 +221,7 @@ class Barter extends Model
      */
     public function clientNeedsToPay()
     {
-        return $this->balance_amount > 0;
+        return $this->additional_payment > 0;
     }
 
     /**
@@ -187,7 +229,7 @@ class Barter extends Model
      */
     public function clientNeedsToReceive()
     {
-        return $this->balance_amount < 0;
+        return $this->additional_payment < 0;
     }
 
     /**
@@ -195,7 +237,7 @@ class Barter extends Model
      */
     public function markAsCompleted()
     {
-        $this->update(['status' => 'complété']);
+        $this->update(['status' => 'completed']);
         return $this;
     }
 
@@ -204,7 +246,7 @@ class Barter extends Model
      */
     public function markAsCancelled()
     {
-        $this->update(['status' => 'annulé']);
+        $this->update(['status' => 'cancelled']);
         return $this;
     }
 
@@ -220,7 +262,7 @@ class Barter extends Model
         }
         
         // Calculer le montant de la commission basé sur la valeur des articles reçus ou l'équilibrage
-        $baseAmount = $this->clientNeedsToPay() ? $this->balance_amount : $this->received_items_value;
+        $baseAmount = $this->clientNeedsToPay() ? $this->additional_payment : $this->value_received;
         
         if ($baseAmount <= 0) {
             return null;
@@ -239,5 +281,21 @@ class Barter extends Model
             'description' => 'Commission sur le troc ' . $this->reference,
             'is_paid' => false,
         ]);
+    }
+
+    /**
+     * Getter pour le montant d'équilibrage
+     */
+    public function getBalanceAttribute()
+    {
+        return $this->value_received - $this->value_given;
+    }
+
+    /**
+     * Getter pour vérifier si le troc est du même type
+     */
+    public function getIsSameTypeAttribute()
+    {
+        return $this->type === 'same_type';
     }
 } 

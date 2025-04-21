@@ -70,6 +70,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('bills/{bill}/status', [BillController::class, 'updateStatus'])->name('bills.update-status');
     Route::get('bills/{bill}/print', [BillController::class, 'print'])->name('bills.print');
     Route::post('bills/{bill}/signature', [BillController::class, 'addSignature'])->name('bills.signature');
+    Route::get('bills/by-price/{price}', [BillController::class, 'byPrice'])->name('bills.by-price');
+    Route::post('bills/{bill}/approve', [BillController::class, 'approve'])->name('bills.approve');
+    Route::get('bills/verify/{code}', [BillController::class, 'verify'])->name('bills.verify');
 
     // Routes pour les boutiques
     Route::middleware(['auth'])->group(function () {
@@ -156,6 +159,25 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
     */
+
+    // Routes pour les commissions
+    Route::get('commissions', [App\Http\Controllers\CommissionController::class, 'index'])->name('commissions.index');
+    Route::get('commissions/{commission}', [App\Http\Controllers\CommissionController::class, 'show'])->name('commissions.show');
+    Route::post('commissions/{commission}/pay', [App\Http\Controllers\CommissionController::class, 'markAsPaid'])->name('commissions.pay');
+    Route::get('commissions/vendor/{user}', [App\Http\Controllers\CommissionController::class, 'vendorReport'])->name('commissions.vendor-report');
+    
+    // Routes pour les trocs
+    Route::resource('barters', App\Http\Controllers\BarterController::class);
+    Route::post('barters/{barter}/complete', [App\Http\Controllers\BarterController::class, 'complete'])->name('barters.complete');
+    Route::post('barters/{barter}/cancel', [App\Http\Controllers\BarterController::class, 'cancel'])->name('barters.cancel');
+    Route::post('barters/{barter}/images', [App\Http\Controllers\BarterController::class, 'addImages'])->name('barters.add-images');
+    Route::delete('barters/images/{image}', [App\Http\Controllers\BarterController::class, 'deleteImage'])->name('barters.delete-image');
+    
+    // Routes pour les livraisons
+    Route::resource('deliveries', App\Http\Controllers\DeliveryController::class);
+    Route::post('deliveries/{delivery}/update-status', [App\Http\Controllers\DeliveryController::class, 'updateStatus'])->name('deliveries.update-status');
+    Route::post('deliveries/{delivery}/mark-delivered', [App\Http\Controllers\DeliveryController::class, 'markDelivered'])->name('deliveries.mark-delivered');
+    Route::post('deliveries/{delivery}/record-payment', [App\Http\Controllers\DeliveryController::class, 'recordPayment'])->name('deliveries.record-payment');
 
 });
 

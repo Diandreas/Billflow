@@ -1,331 +1,202 @@
-@extends('layouts.app')
-
-@section('page_name', 'commissions-index')
-
-@section('content')
-<div class="container-fluid px-4">
-    <h1 class="mt-4">Gestion des commissions</h1>
-    
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Tableau de bord</a></li>
-        <li class="breadcrumb-item active">Commissions</li>
-    </ol>
-    
-    @if (session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
-    
-    @if (session('error'))
-        <div class="alert alert-danger">
-            {{ session('error') }}
-        </div>
-    @endif
-    
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <i class="fas fa-money-bill-wave me-1"></i>
-            Récapitulatif des commissions
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-xl-3 col-md-6">
-                    <div class="card bg-primary text-white mb-4">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="small">Total des commissions</div>
-                                    <div class="fs-4">{{ number_format($stats['total_commissions'], 2, ',', ' ') }} €</div>
-                                </div>
-                                <i class="fas fa-money-bill-wave fa-2x text-white-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="card bg-success text-white mb-4">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="small">Commissions payées</div>
-                                    <div class="fs-4">{{ number_format($stats['paid_commissions'], 2, ',', ' ') }} €</div>
-                                </div>
-                                <i class="fas fa-check-circle fa-2x text-white-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="card bg-warning text-white mb-4">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="small">Commissions en attente</div>
-                                    <div class="fs-4">{{ number_format($stats['pending_commissions'], 2, ',', ' ') }} €</div>
-                                </div>
-                                <i class="fas fa-clock fa-2x text-white-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="card bg-info text-white mb-4">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="small">Nombre de commissions</div>
-                                    <div class="fs-4">{{ $stats['total_count'] }}</div>
-                                </div>
-                                <i class="fas fa-list fa-2x text-white-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="card mb-4">
-        <div class="card-header">
-            <i class="fas fa-filter me-1"></i>
-            Filtres
-        </div>
-        <div class="card-body">
-            <form action="{{ route('commissions.index') }}" method="GET" class="row g-3">
-                <div class="col-md-3">
-                    <label for="vendor_id" class="form-label">Vendeur</label>
-                    <select name="vendor_id" id="vendor_id" class="form-select">
-                        <option value="">Tous les vendeurs</option>
-                        @foreach ($vendors as $vendor)
-                            <option value="{{ $vendor->id }}" {{ $vendorId == $vendor->id ? 'selected' : '' }}>
-                                {{ $vendor->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="shop_id" class="form-label">Boutique</label>
-                    <select name="shop_id" id="shop_id" class="form-select">
-                        <option value="">Toutes les boutiques</option>
-                        @foreach ($shops as $shop)
-                            <option value="{{ $shop->id }}" {{ $shopId == $shop->id ? 'selected' : '' }}>
-                                {{ $shop->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="status" class="form-label">Statut</label>
-                    <select name="status" id="status" class="form-select">
-                        <option value="">Tous les statuts</option>
-                        <option value="pending" {{ $status == 'pending' ? 'selected' : '' }}>En attente</option>
-                        <option value="paid" {{ $status == 'paid' ? 'selected' : '' }}>Payé</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="start_date" class="form-label">Date de début</label>
-                    <input type="date" name="start_date" id="start_date" class="form-control" value="{{ $startDate }}">
-                </div>
-                <div class="col-md-3">
-                    <label for="end_date" class="form-label">Date de fin</label>
-                    <input type="date" name="end_date" id="end_date" class="form-control" value="{{ $endDate }}">
-                </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">
-                        <i class="fas fa-search"></i> Filtrer
-                    </button>
-                    <a href="{{ route('commissions.index') }}" class="btn btn-secondary me-2">
-                        <i class="fas fa-undo"></i> Réinitialiser
-                    </a>
-                    <a href="{{ route('commissions.export', request()->query()) }}" class="btn btn-success">
-                        <i class="fas fa-file-csv"></i> Exporter
-                    </a>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex justify-between items-center">
             <div>
-                <i class="fas fa-table me-1"></i>
-                Liste des commissions
+                <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
+                    {{ __('Commissions des vendeurs') }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ __('Gérez les commissions des vendeurs') }}
+                </p>
             </div>
-            <button type="button" class="btn btn-success btn-sm" id="markSelectedAsPaid" disabled>
-                <i class="fas fa-check-circle"></i> Marquer comme payées
-            </button>
         </div>
-        <div class="card-body">
-            <form id="bulk-actions-form" action="{{ route('commissions.mark-as-paid') }}" method="POST">
-                @csrf
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover" id="commissionsTable">
+    </x-slot>
+
+    <div class="py-12 bg-gray-50">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <!-- Statistiques -->
+            <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                            <i class="bi bi-cash-stack text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">{{ __('Total des commissions') }}</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ number_format($stats['total_commissions'], 0, ',', ' ') }} FCFA</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-amber-100 text-amber-600 mr-4">
+                            <i class="bi bi-clock-history text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">{{ __('En attente') }}</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ number_format($stats['pending_commissions'], 0, ',', ' ') }} FCFA</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-indigo-100 text-indigo-600 mr-4">
+                            <i class="bi bi-check2-circle text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">{{ __('Payées') }}</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ number_format($stats['paid_commissions'], 0, ',', ' ') }} FCFA</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtres -->
+            <div class="mb-4">
+                <form action="{{ route('commissions.index') }}" method="GET" class="flex flex-wrap gap-2">
+                    <div class="flex-1 min-w-[200px]">
+                        <select name="user_id" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="">{{ __('Tous les vendeurs') }}</option>
+                            @foreach($sellers as $seller)
+                                <option value="{{ $seller->id }}" {{ request('user_id') == $seller->id ? 'selected' : '' }}>
+                                    {{ $seller->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div class="w-full sm:w-auto">
+                        <select name="shop_id" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="">{{ __('Toutes les boutiques') }}</option>
+                            @foreach($shops as $shop)
+                                <option value="{{ $shop->id }}" {{ request('shop_id') == $shop->id ? 'selected' : '' }}>
+                                    {{ $shop->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div class="w-full sm:w-auto">
+                        <select name="status" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="">{{ __('Tous les statuts') }}</option>
+                            <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>{{ __('En attente') }}</option>
+                            <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>{{ __('Approuvée') }}</option>
+                            <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>{{ __('Payée') }}</option>
+                        </select>
+                    </div>
+                    
+                    <div class="w-full sm:w-auto">
+                        <input type="date" name="period_start" value="{{ request('period_start') }}" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    
+                    <div class="w-full sm:w-auto">
+                        <input type="date" name="period_end" value="{{ request('period_end') }}" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+                        {{ __('Filtrer') }}
+                    </button>
+                    
+                    @if(request()->anyFilled(['user_id', 'shop_id', 'status', 'period_start', 'period_end']))
+                        <a href="{{ route('commissions.index') }}" class="px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
+                            {{ __('Réinitialiser') }}
+                        </a>
+                    @endif
+                </form>
+            </div>
+
+            <!-- Liste des commissions -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <table class="min-w-full bg-white">
                         <thead>
-                            <tr>
-                                <th>
-                                    <input type="checkbox" id="select-all" class="form-check-input">
-                                </th>
-                                <th>ID</th>
-                                <th>Vendeur</th>
-                                <th>Facture</th>
-                                <th>Montant</th>
-                                <th>Source</th>
-                                <th>Statut</th>
-                                <th>Date</th>
-                                <th>Boutique</th>
+                            <tr class="bg-gray-100 text-gray-700 uppercase text-sm">
+                                <th class="py-3 px-6 text-left">{{ __('Vendeur') }}</th>
+                                <th class="py-3 px-6 text-left">{{ __('Facture') }}</th>
+                                <th class="py-3 px-6 text-left">{{ __('Boutique') }}</th>
+                                <th class="py-3 px-6 text-right">{{ __('Montant') }}</th>
+                                <th class="py-3 px-6 text-center">{{ __('Type') }}</th>
+                                <th class="py-3 px-6 text-center">{{ __('Statut') }}</th>
+                                <th class="py-3 px-6 text-center">{{ __('Date') }}</th>
+                                <th class="py-3 px-6 text-center">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @forelse ($commissions as $commission)
-                                <tr>
-                                    <td>
-                                        @if ($commission->status == 'pending')
-                                            <input type="checkbox" name="commission_ids[]" value="{{ $commission->id }}" class="form-check-input commission-checkbox">
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $commission->id }}</td>
-                                    <td>
-                                        <a href="{{ route('commissions.vendor-report', $commission->user) }}">
+                        <tbody class="text-gray-600 divide-y divide-gray-200">
+                            @forelse($commissions as $commission)
+                                <tr class="hover:bg-gray-50">
+                                    <td class="py-4 px-6">
+                                        <a href="{{ route('commissions.vendor-report', $commission->user) }}" class="text-indigo-600 hover:text-indigo-900">
                                             {{ $commission->user->name }}
                                         </a>
                                     </td>
-                                    <td>
-                                        @if ($commission->bill)
-                                            <a href="{{ route('bills.show', $commission->bill) }}">
+                                    <td class="py-4 px-6">
+                                        @if($commission->bill)
+                                            <a href="{{ route('bills.show', $commission->bill) }}" class="text-indigo-600 hover:text-indigo-900">
                                                 {{ $commission->bill->reference }}
                                             </a>
                                         @else
-                                            <span class="text-muted">N/A</span>
+                                            <span class="text-gray-500 italic">{{ __('N/A') }}</span>
                                         @endif
                                     </td>
-                                    <td>{{ number_format($commission->amount, 2, ',', ' ') }} €</td>
-                                    <td>{{ $commission->source }}</td>
-                                    <td>
-                                        @if ($commission->status == 'pending')
-                                            <span class="badge bg-warning">En attente</span>
-                                        @elseif ($commission->status == 'paid')
-                                            <span class="badge bg-success">Payé</span>
-                                        @else
-                                            <span class="badge bg-secondary">{{ $commission->status }}</span>
-                                        @endif
+                                    <td class="py-4 px-6">
+                                        {{ $commission->shop->name ?? 'N/A' }}
                                     </td>
-                                    <td>{{ $commission->created_at->format('d/m/Y H:i') }}</td>
-                                    <td>
-                                        @if ($commission->bill && $commission->bill->shop)
-                                            {{ $commission->bill->shop->name }}
-                                        @else
-                                            <span class="text-muted">N/A</span>
+                                    <td class="py-4 px-6 text-right font-medium">
+                                        {{ number_format($commission->amount, 0, ',', ' ') }} FCFA
+                                    </td>
+                                    <td class="py-4 px-6 text-center">
+                                        <span class="px-2 py-1 text-xs rounded-full 
+                                            @if($commission->type === 'vente') bg-green-100 text-green-800
+                                            @elseif($commission->type === 'troc') bg-purple-100 text-purple-800
+                                            @else bg-blue-100 text-blue-800 @endif">
+                                            {{ $commission->type }}
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-6 text-center">
+                                        <span class="px-2 py-1 text-xs rounded-full 
+                                            @if($commission->status === 'pending') bg-amber-100 text-amber-800
+                                            @elseif($commission->status === 'approved') bg-blue-100 text-blue-800
+                                            @else bg-green-100 text-green-800 @endif">
+                                            @if($commission->status === 'pending') {{ __('En attente') }}
+                                            @elseif($commission->status === 'approved') {{ __('Approuvée') }}
+                                            @else {{ __('Payée') }} @endif
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-6 text-center">
+                                        {{ $commission->created_at->format('d/m/Y') }}
+                                    </td>
+                                    <td class="py-4 px-6 text-center">
+                                        <a href="{{ route('commissions.show', $commission) }}" class="text-indigo-600 hover:text-indigo-900 mx-1">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        @if($commission->status === 'pending' && Gate::allows('pay-commission', $commission))
+                                            <form action="{{ route('commissions.pay', $commission) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" onclick="return confirm('Êtes-vous sûr de vouloir marquer cette commission comme payée?')" class="text-green-600 hover:text-green-900 mx-1">
+                                                    <i class="bi bi-cash"></i>
+                                                </button>
+                                            </form>
                                         @endif
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="text-center">Aucune commission trouvée</td>
+                                    <td colspan="8" class="py-4 px-6 text-center text-gray-500">
+                                        {{ __('Aucune commission trouvée') }}
+                                    </td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
-                </div>
-                
-                <!-- Modal pour marquer comme payées -->
-                <div class="modal fade" id="markAsPaidModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Marquer les commissions comme payées</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div id="selected-count" class="alert alert-info mb-3">
-                                    0 commissions sélectionnées
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="payment_date" class="form-label">Date de paiement</label>
-                                    <input type="date" class="form-control" id="payment_date" name="payment_date" value="{{ date('Y-m-d') }}" required>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="payment_method" class="form-label">Méthode de paiement</label>
-                                    <select class="form-select" id="payment_method" name="payment_method" required>
-                                        <option value="bank_transfer">Virement bancaire</option>
-                                        <option value="check">Chèque</option>
-                                        <option value="cash">Espèces</option>
-                                        <option value="other">Autre</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="payment_reference" class="form-label">Référence de paiement</label>
-                                    <input type="text" class="form-control" id="payment_reference" name="payment_reference" placeholder="Référence optionnelle">
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="notes" class="form-label">Notes</label>
-                                    <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Notes optionnelles"></textarea>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                                <button type="submit" class="btn btn-success">Marquer comme payées</button>
-                            </div>
-                        </div>
+
+                    <!-- Pagination -->
+                    <div class="mt-4">
+                        {{ $commissions->links() }}
                     </div>
                 </div>
-            </form>
-            
-            <div class="mt-3">
-                {{ $commissions->links() }}
             </div>
         </div>
     </div>
-</div>
-@endsection
-
-@section('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const selectAllCheckbox = document.getElementById('select-all');
-        const commissionCheckboxes = document.querySelectorAll('.commission-checkbox');
-        const markSelectedButton = document.getElementById('markSelectedAsPaid');
-        const selectedCountElement = document.getElementById('selected-count');
-        
-        // Gestionnaire pour la case à cocher "Tout sélectionner"
-        selectAllCheckbox.addEventListener('change', function() {
-            const isChecked = this.checked;
-            commissionCheckboxes.forEach(checkbox => {
-                checkbox.checked = isChecked;
-            });
-            updateButtonState();
-        });
-        
-        // Gestionnaire pour les cases à cocher individuelles
-        commissionCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', updateButtonState);
-        });
-        
-        // Gestionnaire pour le bouton "Marquer comme payées"
-        markSelectedButton.addEventListener('click', function() {
-            const selectedCount = getSelectedCount();
-            selectedCountElement.textContent = `${selectedCount} commission${selectedCount > 1 ? 's' : ''} sélectionnée${selectedCount > 1 ? 's' : ''}`;
-            
-            const modal = new bootstrap.Modal(document.getElementById('markAsPaidModal'));
-            modal.show();
-        });
-        
-        // Mettre à jour l'état du bouton
-        function updateButtonState() {
-            const selectedCount = getSelectedCount();
-            markSelectedButton.disabled = selectedCount === 0;
-        }
-        
-        // Obtenir le nombre de commissions sélectionnées
-        function getSelectedCount() {
-            return document.querySelectorAll('.commission-checkbox:checked').length;
-        }
-    });
-</script>
-@endsection 
+</x-app-layout> 

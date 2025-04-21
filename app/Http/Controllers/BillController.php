@@ -46,12 +46,25 @@ class BillController extends Controller
             $query->where('client_id', $request->input('client_id'));
         }
 
+        // Filtrer par prix spécifique
+        if ($request->has('unit_price')) {
+            $query->whereHas('billProducts', function($q) use ($request) {
+                $q->where('unit_price', $request->input('unit_price'));
+            });
+        }
+
         // Filtrer par date
         if ($request->has('date_from')) {
             $query->whereDate('date', '>=', $request->input('date_from'));
         }
         if ($request->has('date_to')) {
             $query->whereDate('date', '<=', $request->input('date_to'));
+        }
+
+        // Filtrer par factures nécessitant une approbation
+        if ($request->has('approval') && $request->input('approval') === 'needed') {
+            $query->where('needs_approval', true)
+                  ->where('approved', false);
         }
 
         $bills = $query->orderBy('date', 'desc')->paginate(15);
@@ -63,7 +76,13 @@ class BillController extends Controller
         $sellers = User::where('role', 'vendeur')->get();
         $clients = Client::all();
 
-        return view('bills.index', compact('bills', 'shops', 'sellers', 'clients'));
+        // Récupérer la liste des prix uniques pour le filtre
+        $uniquePrices = BillProduct::select('unit_price')
+            ->distinct()
+            ->orderBy('unit_price')
+            ->pluck('unit_price');
+
+        return view('bills.index', compact('bills', 'shops', 'sellers', 'clients', 'uniquePrices'));
     }
 
     public function create()
@@ -482,49 +501,26 @@ class BillController extends Controller
      */
     public function print(Bill $bill)
     {
-        // Vérifier les autorisations
-        $this->authorize('view', $bill);
-        
-        // Incrémenter le compteur de réimpressions
-        $bill->reprint_count += 1;
-        $bill->last_print_date = now();
-        $bill->save();
-        
+        // Vérifier les autorisations en utilisant Gate
+        if (!Gate::allows('print-bill', $bill)) {
+            abort(403, 'Action non autorisée.');
+        }
+
         // Charger les relations nécessaires
-        $bill->load(['client', 'client.phones', 'seller', 'shop', 'billProducts.product']);
-        
-        // Générer le QR code
-        $qrCodeData = [
-            'reference' => $bill->reference,
-            'date' => $bill->date->format('Y-m-d H:i:s'),
-            'total' => $bill->total,
-            'client' => $bill->client->name,
-            'shop' => $bill->shop->name,
-            'seller' => $bill->seller->name,
-            'print_date' => now()->format('Y-m-d H:i:s'),
-            'print_count' => $bill->reprint_count
-        ];
-        
-        // Convertir en JSON pour le QR code
-        $qrCodeJson = json_encode($qrCodeData);
-        
-        // Générer le QR code en base64
-        $qrCode = base64_encode(QrCode::format('png')
-            ->size(200)
-            ->errorCorrection('H')
-            ->generate($qrCodeJson));
-        
-        // Créer le PDF
-        $pdf = PDF::loadView('bills.print', [
-            'bill' => $bill,
-            'qrCode' => $qrCode,
-            'company' => setting('company_name'),
-            'address' => setting('address'),
-            'phone' => setting('phone'),
-            'logo' => Storage::url(setting('logo_path')),
-        ]);
-        
-        return $pdf->stream('facture-' . $bill->reference . '.pdf');
+        $bill->load(['client', 'products', 'shop', 'seller', 'user']);
+
+        // Mettre à jour le compteur d'impression
+        $bill->increment('print_count');
+        $bill->update(['last_printed_at' => now()]);
+
+        // Générer le code QR pour la vérification
+        $verificationUrl = route('bills.verify', ['code' => base64_encode($bill->reference)]);
+        $qrCode = QrCode::size(150)->generate($verificationUrl);
+
+        // Récupérer les paramètres de l'entreprise
+        $company = Setting::where('key', 'company')->first() ? json_decode(Setting::where('key', 'company')->first()->value, true) : null;
+
+        return view('bills.print', compact('bill', 'qrCode', 'company'));
     }
 
     /**
@@ -605,5 +601,63 @@ class BillController extends Controller
                 'status' => $bill->status,
             ] : null
         ]);
+    }
+
+    // Ajouter la nouvelle méthode pour afficher les factures par prix
+    public function byPrice($price)
+    {
+        $query = Bill::query()
+            ->with(['client', 'seller', 'shop'])
+            ->whereHas('billProducts', function($q) use ($price) {
+                $q->where('unit_price', $price);
+            });
+
+        // Filtrer par boutique si l'utilisateur n'est pas admin
+        if (!Gate::allows('admin')) {
+            $shops = Auth::user()->shops->pluck('id')->toArray();
+            $query->whereIn('shop_id', $shops);
+        }
+
+        $bills = $query->orderBy('date', 'desc')->paginate(15);
+
+        $shops = Gate::allows('admin') 
+            ? Shop::all() 
+            : Auth::user()->shops;
+            
+        $sellers = User::where('role', 'vendeur')->get();
+        $clients = Client::all();
+
+        // Récupérer la liste des prix uniques pour le filtre
+        $uniquePrices = BillProduct::select('unit_price')
+            ->distinct()
+            ->orderBy('unit_price')
+            ->pluck('unit_price');
+
+        $filterPrice = $price;
+
+        return view('bills.index', compact('bills', 'shops', 'sellers', 'clients', 'uniquePrices', 'filterPrice'));
+    }
+
+    // Ajouter la méthode pour approuver une facture
+    public function approve(Request $request, Bill $bill)
+    {
+        // Vérifier que l'utilisateur a les droits pour approuver (admin ou gestionnaire)
+        if (!Gate::allows('approve-bill')) {
+            abort(403, 'Action non autorisée.');
+        }
+
+        $validated = $request->validate([
+            'approval_notes' => 'nullable|string'
+        ]);
+
+        $bill->update([
+            'approved' => true,
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+            'approval_notes' => $validated['approval_notes'] ?? null
+        ]);
+
+        return redirect()->route('bills.show', $bill)
+            ->with('success', 'Facture approuvée avec succès');
     }
 }

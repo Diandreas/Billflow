@@ -102,5 +102,64 @@ class AuthServiceProvider extends ServiceProvider
 
             return false;
         });
+        
+        // Gates pour les impressions de factures
+        Gate::define('print-bill', function ($user, $bill) {
+            return $user->role === 'admin' || 
+                   $user->id === $bill->user_id || 
+                   $user->id === $bill->seller_id || 
+                   $user->shops()->where('shops.id', $bill->shop_id)->exists();
+        });
+        
+        // Gates pour l'approbation des factures
+        Gate::define('approve-bill', function ($user) {
+            return in_array($user->role, ['admin', 'manager']);
+        });
+        
+        // Gates pour les commissions
+        Gate::define('view-commissions', function ($user) {
+            return in_array($user->role, ['admin', 'manager']);
+        });
+        
+        Gate::define('view-commission', function ($user, $commission) {
+            if ($user->role === 'admin') {
+                return true;
+            }
+            
+            if ($user->role === 'manager') {
+                return $user->shops()->where('shops.id', $commission->shop_id)->exists();
+            }
+            
+            return $user->id === $commission->user_id;
+        });
+        
+        Gate::define('pay-commission', function ($user, $commission) {
+            return in_array($user->role, ['admin', 'manager']) && 
+                  ($user->role === 'admin' || $user->shops()->where('shops.id', $commission->shop_id)->exists());
+        });
+        
+        Gate::define('view-vendor-report', function ($user, $vendor) {
+            if ($user->role === 'admin') {
+                return true;
+            }
+            
+            if ($user->role === 'manager') {
+                $managedShopIds = $user->shops()->wherePivot('is_manager', true)->pluck('shops.id')->toArray();
+                $vendorShopIds = $vendor->shops()->pluck('shops.id')->toArray();
+                return !empty(array_intersect($managedShopIds, $vendorShopIds));
+            }
+            
+            return $user->id === $vendor->id;
+        });
+        
+        // Gates pour les trocs
+        Gate::define('manage-barters', function ($user) {
+            return in_array($user->role, ['admin', 'manager', 'vendeur']);
+        });
+        
+        // Gates pour les livraisons
+        Gate::define('manage-deliveries', function ($user) {
+            return in_array($user->role, ['admin', 'manager', 'vendeur']);
+        });
     }
 } 
