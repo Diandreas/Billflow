@@ -9,10 +9,10 @@
                     </h2>
                 </div>
                 <div class="flex space-x-3">
-                    <button onclick="toggleModal('createClient')" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium bg-white text-indigo-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200">
+                    <a href="{{ route('clients.create') }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium bg-white text-indigo-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200">
                         <i class="bi bi-plus-lg mr-2"></i>
                         {{ __('Ajouter un client') }}
-                    </button>
+                    </a>
                     <button onclick="toggleImportModal()" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium bg-green-50 text-green-700 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200">
                         <i class="bi bi-cloud-upload mr-2"></i>
                         {{ __('Importer') }}
@@ -48,7 +48,7 @@
                     </div>
                 </div>
             @endif
-            
+
             <!-- Main Card -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
@@ -71,7 +71,7 @@
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div class="flex flex-wrap gap-2">
                                 <select id="filterGender" class="rounded-md border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">Tous les genres</option>
@@ -79,7 +79,7 @@
                                     <option value="F">Femmes</option>
                                     <option value="Other">Autres</option>
                                 </select>
-                                
+
                                 <select id="filterSort" class="rounded-md border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500">
                                     <option value="name_asc">Nom (A-Z)</option>
                                     <option value="name_desc">Nom (Z-A)</option>
@@ -87,7 +87,7 @@
                                     <option value="birth_desc">Âge (décroissant)</option>
                                     <option value="bills_desc">Factures (décroissant)</option>
                                 </select>
-                                
+
                                 <button id="toggleAdvancedSearch" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
@@ -95,7 +95,7 @@
                                     Recherche avancée
                                 </button>
                             </div>
-                            
+
                             <div id="advancedSearchPanel" class="hidden mt-2 p-3 bg-gray-50 rounded-md">
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
@@ -130,7 +130,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Stats -->
                         <div class="w-full md:w-1/3 flex flex-col md:items-end">
                             <div class="w-full md:w-auto flex md:flex-col gap-3">
@@ -331,7 +331,7 @@
                     </svg>
                 </button>
             </div>
-            
+
             <form id="newClientForm" class="mt-4 space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Nom</label>
@@ -444,7 +444,7 @@
                     <!-- Étape 1: Téléchargement du fichier -->
                     <div id="importStep1" class="import-step">
                         <h4 class="text-lg font-semibold text-gray-800 mb-4">1. Sélectionnez votre fichier</h4>
-                        
+
                         <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-8 mb-4 bg-gray-50 relative">
                             <input type="file" id="importFile" accept=".csv,.xlsx,.xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                             <div class="text-center pointer-events-none">
@@ -453,7 +453,7 @@
                                 <p class="text-sm text-gray-500">Formats acceptés: CSV, Excel (.xlsx, .xls)</p>
                             </div>
                         </div>
-                        
+
                         <div id="selectedFileContainer" class="hidden mb-4 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center">
@@ -465,7 +465,7 @@
                                 </button>
                             </div>
                         </div>
-                        
+
                         <div class="flex justify-between items-center">
                             <div>
                                 <a href="/templates/import-clients.csv" class="text-indigo-600 hover:text-indigo-800 text-sm flex items-center">
@@ -483,18 +483,18 @@
                     <!-- Étape 2: Mappage des colonnes -->
                     <div id="importStep2" class="import-step hidden">
                         <h4 class="text-lg font-semibold text-gray-800 mb-4">2. Associez les colonnes</h4>
-                        
+
                         <div class="bg-gray-50 rounded-xl p-4 mb-6">
                             <div class="flex items-center text-gray-700 mb-3">
                                 <i class="bi bi-info-circle text-indigo-500 mr-2"></i>
                                 <span>Associez les colonnes de votre fichier avec les champs correspondants</span>
                             </div>
-                            
+
                             <div id="columnMappingContainer" class="space-y-3">
                                 <!-- Les champs de mappage seront générés ici via JavaScript -->
                             </div>
                         </div>
-                        
+
                         <div class="flex justify-between">
                             <button type="button" id="backToStep1Btn" class="border border-gray-300 text-gray-700 font-medium py-2.5 px-6 rounded-xl shadow-sm hover:bg-gray-50 transition duration-200">
                                 <i class="bi bi-arrow-left mr-1"></i> Retour
@@ -508,7 +508,7 @@
                     <!-- Étape 3: Aperçu et validation -->
                     <div id="importStep3" class="import-step hidden">
                         <h4 class="text-lg font-semibold text-gray-800 mb-4">3. Aperçu et importation</h4>
-                        
+
                         <div class="overflow-x-auto bg-gray-50 rounded-xl p-4 mb-6">
                             <table class="min-w-full divide-y divide-gray-200" id="previewTable">
                                 <thead>
@@ -521,13 +521,13 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <div class="flex items-center justify-between mb-4">
                             <div class="flex items-center text-gray-600 text-sm">
                                 <i class="bi bi-people mr-1"></i>
                                 <span id="recordCount">0 clients à importer</span>
                             </div>
-                            
+
                             <div class="flex items-center">
                                 <label class="flex items-center text-sm text-gray-700">
                                     <input type="checkbox" id="skipHeaderRow" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mr-2">
@@ -535,7 +535,7 @@
                                 </label>
                             </div>
                         </div>
-                        
+
                         <div class="flex justify-between">
                             <button type="button" id="backToStep2Btn" class="border border-gray-300 text-gray-700 font-medium py-2.5 px-6 rounded-xl shadow-sm hover:bg-gray-50 transition duration-200">
                                 <i class="bi bi-arrow-left mr-1"></i> Retour
@@ -561,10 +561,10 @@
                     </svg>
                 </button>
             </div>
-            
+
             <form id="smsPromoForm" class="mt-4 space-y-4">
                 <input type="hidden" id="smsPromoClientId" name="client_id">
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Destinataire</label>
                     <div id="smsPromoRecipient" class="text-sm text-gray-800 bg-gray-50 p-2 rounded-md"></div>
@@ -621,96 +621,12 @@
     </div>
 
     <!-- Create Client Modal -->
-    <div id="createClient" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
-        <div class="relative bg-white rounded-2xl shadow-xl mx-auto p-0 w-full max-w-md transform transition-transform duration-300">
-            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-2xl p-6">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-bold text-white">
-                        <i class="bi bi-person-plus mr-2"></i>{{ __('Ajouter un client') }}
-                    </h3>
-                    <button type="button" onclick="toggleModal('createClient')" class="text-white hover:text-gray-200 focus:outline-none">
-                        <i class="bi bi-x-lg text-xl"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="p-6">
-                <form id="quickClientForm" class="space-y-4">
-                    @csrf
-                    <div>
-                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Nom complet') }} <span class="text-red-500">*</span></label>
-                        <input type="text" id="name" name="name" required 
-                               class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm">
-                    </div>
-                    
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Email') }}</label>
-                        <input type="email" id="email" name="email"
-                               class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm">
-                    </div>
-
-                    <div>
-                        <label for="sex" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Genre') }}</label>
-                        <select id="sex" name="sex" class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm">
-                            <option value="">{{ __('Non spécifié') }}</option>
-                            <option value="M">{{ __('Homme') }}</option>
-                            <option value="F">{{ __('Femme') }}</option>
-                            <option value="Other">{{ __('Autre') }}</option>
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label for="birth" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Date de naissance') }}</label>
-                        <input type="date" id="birth" name="birth"
-                               class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            {{ __('Téléphones') }}
-                            <button type="button" id="addPhoneField" class="ml-2 text-indigo-600 hover:text-indigo-800 text-xs font-medium">
-                                <i class="bi bi-plus-circle"></i> {{ __('Ajouter') }}
-                            </button>
-                        </label>
-                        <div id="phoneFields" class="space-y-2">
-                            <div class="phone-field flex items-center">
-                                <input type="text" name="phones[]" class="block w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm" placeholder="Numéro de téléphone">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label for="address" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Adresse') }}</label>
-                        <textarea id="address" name="address" rows="2"
-                                  class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm"></textarea>
-                    </div>
-                    
-                    <div>
-                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Notes') }}</label>
-                        <textarea id="notes" name="notes" rows="2"
-                                  class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm"></textarea>
-                    </div>
-                    
-                    <div class="flex justify-end space-x-3 pt-4 border-t">
-                        <button type="button" onclick="toggleModal('createClient')" 
-                                class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition duration-200">
-                            {{ __('Annuler') }}
-                        </button>
-                        <button type="submit"
-                                class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-sm transition duration-200">
-                            {{ __('Enregistrer') }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
     <script>
         // Client-side search implementation
         let allClients = @json($clients->items());
         let clientsCache = [...allClients];
-        
+
         // Utility functions
         function toggleModal(modalId) {
             const modal = document.getElementById(modalId);
@@ -718,12 +634,12 @@
                 modal.classList.toggle('hidden');
             }
         }
-        
+
         function addPhoneField() {
             const container = document.querySelector('#phonesContainer .space-y-2');
             const phoneFields = container.querySelectorAll('input[name="phones[]"]');
             const lastPhoneField = phoneFields[phoneFields.length - 1];
-            
+
             const newPhoneFieldContainer = document.createElement('div');
             newPhoneFieldContainer.className = 'flex gap-2';
             newPhoneFieldContainer.innerHTML = `
@@ -738,12 +654,12 @@
             `;
             container.appendChild(newPhoneFieldContainer);
         }
-        
+
         function removePhoneField(button) {
             const fieldContainer = button.parentElement;
             fieldContainer.remove();
         }
-        
+
         function confirmDelete(clientId, clientName) {
             document.getElementById('deleteClientId').value = clientId;
             document.getElementById('deleteClientName').textContent = clientName;
@@ -751,30 +667,30 @@
             form.action = `/clients/${clientId}`;
             toggleModal('deleteModal');
         }
-        
+
         function viewClient(clientId) {
             window.location.href = `/clients/${clientId}`;
         }
-        
+
         function editClient(clientId) {
             window.location.href = `/clients/${clientId}/edit`;
         }
-        
+
         function sendSms(phoneNumber) {
             alert(`Envoyer un SMS à ${phoneNumber}`);
             // Implement SMS sending functionality
         }
-        
+
         function sendSmsPromo(clientId) {
             const client = allClients.find(c => c.id === clientId);
             if (!client) return;
-            
+
             document.getElementById('smsPromoClientId').value = clientId;
             document.getElementById('smsPromoRecipient').textContent = `${client.name} - ${client.phones.map(p => p.number).join(', ')}`;
-            
+
             toggleModal('smsPromoModal');
         }
-        
+
         // Client-side search implementation
         const searchInput = document.getElementById('clientSearchInput');
         const clearSearchBtn = document.getElementById('clearSearchBtn');
@@ -785,7 +701,7 @@
         const applyAdvancedFiltersBtn = document.getElementById('applyAdvancedFilters');
         const clientsTable = document.getElementById('clientsTable');
         const noResultsMessage = document.getElementById('noResultsMessage');
-        
+
         // Debounce function to improve search performance
         function debounce(func, timeout = 300) {
             let timer;
@@ -794,13 +710,13 @@
                 timer = setTimeout(() => { func.apply(this, args); }, timeout);
             };
         }
-        
+
         // Apply filters and search
         const applyFilters = debounce(() => {
             const searchTerm = searchInput.value.toLowerCase().trim();
             const genderFilter = filterGenderSelect.value;
             const sortOption = filterSortSelect.value;
-            
+
             // Advanced search filters
             const birthFromDate = document.getElementById('birthFrom').value;
             const birthToDate = document.getElementById('birthTo').value;
@@ -808,21 +724,21 @@
             const maxBills = document.getElementById('maxBills').value;
             const lastBillFromDate = document.getElementById('lastBillFrom').value;
             const lastBillToDate = document.getElementById('lastBillTo').value;
-            
+
             // Filter clients
             let filteredClients = allClients.filter(client => {
                 // Basic name and phone search
                 const nameMatch = client.name.toLowerCase().includes(searchTerm);
-                const phoneMatch = client.phones.some(phone => 
+                const phoneMatch = client.phones.some(phone =>
                     phone.number.toLowerCase().includes(searchTerm)
                 );
-                
+
                 // Gender filter
                 const genderMatch = !genderFilter || client.sex === genderFilter;
-                
+
                 // Advanced filters
                 let advancedMatch = true;
-                
+
                 // Birth date range filter
                 if (birthFromDate && client.birth) {
                     advancedMatch = advancedMatch && new Date(client.birth) >= new Date(birthFromDate);
@@ -830,7 +746,7 @@
                 if (birthToDate && client.birth) {
                     advancedMatch = advancedMatch && new Date(client.birth) <= new Date(birthToDate);
                 }
-                
+
                 // Bills count filter
                 if (minBills) {
                     advancedMatch = advancedMatch && client.bills_count >= parseInt(minBills);
@@ -838,7 +754,7 @@
                 if (maxBills) {
                     advancedMatch = advancedMatch && client.bills_count <= parseInt(maxBills);
                 }
-                
+
                 // Last bill date filter
                 if (lastBillFromDate && client.last_bill_date) {
                     advancedMatch = advancedMatch && new Date(client.last_bill_date) >= new Date(lastBillFromDate);
@@ -846,10 +762,10 @@
                 if (lastBillToDate && client.last_bill_date) {
                     advancedMatch = advancedMatch && new Date(client.last_bill_date) <= new Date(lastBillToDate);
                 }
-                
+
                 return (nameMatch || phoneMatch) && genderMatch && advancedMatch;
             });
-            
+
             // Sort clients
             if (sortOption) {
                 const [field, direction] = sortOption.split('_');
@@ -865,7 +781,7 @@
                         valueA = a.bills_count;
                         valueB = b.bills_count;
                     }
-                    
+
                     if (direction === 'asc') {
                         return valueA > valueB ? 1 : -1;
                     } else {
@@ -873,25 +789,25 @@
                     }
                 });
             }
-            
+
             // Update displayed clients
             updateClientTable(filteredClients);
         });
-        
+
         // Update the client table with filtered results
         function updateClientTable(clients) {
             const tbody = clientsTable.querySelector('tbody');
             tbody.innerHTML = '';
-            
+
             if (clients.length === 0) {
                 clientsTable.classList.add('hidden');
                 noResultsMessage.classList.remove('hidden');
                 return;
             }
-            
+
             clientsTable.classList.remove('hidden');
             noResultsMessage.classList.add('hidden');
-            
+
             clients.forEach(client => {
                 const tr = document.createElement('tr');
                 tr.className = 'client-row hover:bg-gray-50 transition-colors';
@@ -911,9 +827,9 @@
                         ${getGenderBadge(client.sex)}
                     </td>
                     <td class="px-6 py-4">
-                        ${client.birth ? 
+                        ${client.birth ?
                             `<div class="text-sm text-gray-900">${formatDate(client.birth)}</div>
-                            <div class="text-xs text-gray-500">${calculateAge(client.birth)} ans</div>` : 
+                            <div class="text-xs text-gray-500">${calculateAge(client.birth)} ans</div>` :
                             `<span class="text-gray-400">Non spécifié</span>`
                         }
                     </td>
@@ -938,7 +854,7 @@
                     <td class="px-6 py-4">
                         <div class="flex items-center">
                             <div class="text-sm font-medium text-gray-900">${client.bills_count} factures</div>
-                            ${client.bills_count > 0 && client.last_bill_date ? 
+                            ${client.bills_count > 0 && client.last_bill_date ?
                                 `<span class="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">
                                     Dernière: ${formatDate(client.last_bill_date)}
                                 </span>` : ''
@@ -982,14 +898,14 @@
                 `;
                 tbody.appendChild(tr);
             });
-            
+
             // Update pagination info
             document.getElementById('displayedRangeStart').textContent = 1;
             document.getElementById('displayedRangeEnd').textContent = clients.length;
             document.getElementById('totalItems').textContent = clients.length;
             document.getElementById('totalClientCount').textContent = clients.length;
         }
-        
+
         // Helper functions
         function getGenderBadge(gender) {
             if (gender === 'M') {
@@ -1002,12 +918,12 @@
                 return '<span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">Non spécifié</span>';
             }
         }
-        
+
         function formatDate(dateString) {
             const date = new Date(dateString);
             return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
         }
-        
+
         function calculateAge(birthDateString) {
             const birthDate = new Date(birthDateString);
             const today = new Date();
@@ -1018,15 +934,15 @@
             }
             return age;
         }
-        
+
         // Event listeners
         searchInput.addEventListener('input', applyFilters);
-        
+
         clearSearchBtn.addEventListener('click', () => {
             searchInput.value = '';
             filterGenderSelect.value = '';
             filterSortSelect.value = 'name_asc';
-            
+
             // Clear advanced filters
             document.getElementById('birthFrom').value = '';
             document.getElementById('birthTo').value = '';
@@ -1034,19 +950,19 @@
             document.getElementById('maxBills').value = '';
             document.getElementById('lastBillFrom').value = '';
             document.getElementById('lastBillTo').value = '';
-            
+
             applyFilters();
         });
-        
+
         filterGenderSelect.addEventListener('change', applyFilters);
         filterSortSelect.addEventListener('change', applyFilters);
-        
+
         toggleAdvancedSearchBtn.addEventListener('click', () => {
             advancedSearchPanel.classList.toggle('hidden');
         });
-        
+
         applyAdvancedFiltersBtn.addEventListener('click', applyFilters);
-        
+
         // New client form
         document.getElementById('newClientForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -1054,7 +970,7 @@
             alert('Client créé avec succès !');
             toggleModal('newClientModal');
         });
-        
+
         // Delete client form
         document.getElementById('deleteClientForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -1062,7 +978,7 @@
             alert('Client supprimé avec succès !');
             toggleModal('deleteModal');
         });
-        
+
         // SMS Promo form
         document.getElementById('smsPromoForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -1070,27 +986,27 @@
             alert('Message envoyé avec succès !');
             toggleModal('smsPromoModal');
         });
-        
+
         // SMS character counter
         const smsPromoMessage = document.getElementById('smsPromoMessage');
         const smsCharCount = document.getElementById('smsCharCount');
         const smsSegmentCount = document.getElementById('smsSegmentCount');
-        
+
         smsPromoMessage.addEventListener('input', function() {
             const chars = this.value.length;
             smsCharCount.textContent = chars;
-            
+
             const segments = Math.ceil(chars / 160);
             smsSegmentCount.textContent = segments === 1 ? '1 segment' : `${segments} segments`;
         });
-        
+
         // SMS Template selection
         const smsPromoTemplate = document.getElementById('smsPromoTemplate');
-        
+
         smsPromoTemplate.addEventListener('change', function() {
             const template = this.value;
             let message = '';
-            
+
             switch(template) {
                 case 'promo_10':
                     message = "Offre spéciale! Bénéficiez de 10% de réduction sur tout notre catalogue jusqu'au 31/03. Présentez ce SMS en boutique ou utilisez le code PROMO10 en ligne.";
@@ -1108,11 +1024,11 @@
                     message = "";
                     break;
             }
-            
+
             smsPromoMessage.value = message;
             smsPromoMessage.dispatchEvent(new Event('input'));
         });
-        
+
         // Initialize client-side search
         document.addEventListener('DOMContentLoaded', function() {
             // Pre-fill data with initial load
@@ -1122,7 +1038,7 @@
         // Gestion du formulaire d'ajout rapide de client
         document.getElementById('quickClientForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            
+
             // Afficher un indicateur de chargement
             Swal.fire({
                 title: 'Création en cours...',
@@ -1132,10 +1048,10 @@
                     Swal.showLoading();
                 }
             });
-            
+
             // Récupération des données du formulaire
             const formData = new FormData(this);
-            
+
             // Conversion en objet JSON
             const jsonData = {};
             formData.forEach((value, key) => {
@@ -1152,7 +1068,7 @@
                     jsonData[key] = value;
                 }
             });
-            
+
             // Envoi de la requête
             fetch('{{ route('clients.store') }}', {
                 method: 'POST',
@@ -1171,14 +1087,14 @@
             })
             .then(data => {
                 console.log("Réponse du serveur:", data);
-                
+
                 if (data.success) {
                     // Fermer le modal
                     toggleModal('createClient');
-                    
+
                     // Réinitialiser le formulaire
                     this.reset();
-                    
+
                     // Afficher un message de succès
                     Swal.fire({
                         icon: 'success',
@@ -1188,7 +1104,7 @@
                         timer: 2000,
                         timerProgressBar: true
                     });
-                    
+
                     // Recharger la page après un court délai
                     setTimeout(() => {
                         window.location.reload();
@@ -1204,7 +1120,7 @@
             })
             .catch(error => {
                 console.error('Erreur:', error);
-                
+
                 // Afficher une erreur
                 Swal.fire({
                     icon: 'error',
@@ -1213,11 +1129,11 @@
                 });
             });
         });
-        
+
         // Ajout d'un champ téléphone supplémentaire
         document.getElementById('addPhoneField').addEventListener('click', function() {
             const phoneFieldsContainer = document.getElementById('phoneFields');
-            
+
             const newPhoneField = document.createElement('div');
             newPhoneField.className = 'phone-field flex items-center mt-2';
             newPhoneField.innerHTML = `
@@ -1226,15 +1142,15 @@
                     <i class="bi bi-trash"></i>
                 </button>
             `;
-            
+
             phoneFieldsContainer.appendChild(newPhoneField);
-            
+
             // Ajouter l'événement pour supprimer le champ
             newPhoneField.querySelector('.remove-phone').addEventListener('click', function() {
                 newPhoneField.remove();
             });
         });
-        
+
         // Suppression d'un champ téléphone existant
         document.querySelectorAll('.remove-phone').forEach(button => {
             button.addEventListener('click', function() {
@@ -1246,7 +1162,7 @@
         function toggleImportModal() {
             const modal = document.getElementById('importClientsModal');
             const modalContent = document.getElementById('importModalContent');
-            
+
             if (modal.classList.contains('hidden')) {
                 // Ouvrir la modal
                 modal.classList.remove('hidden');
@@ -1265,17 +1181,17 @@
                 }, 300);
             }
         }
-        
+
         function showImportStep(step) {
             // Cacher toutes les étapes
             document.querySelectorAll('.import-step').forEach(el => {
                 el.classList.add('hidden');
             });
-            
+
             // Afficher l'étape demandée
             document.getElementById(`importStep${step}`).classList.remove('hidden');
         }
-        
+
         document.addEventListener('DOMContentLoaded', function() {
             const importFile = document.getElementById('importFile');
             const selectedFileContainer = document.getElementById('selectedFileContainer');
@@ -1290,12 +1206,12 @@
             const previewTable = document.getElementById('previewTable');
             const skipHeaderRow = document.getElementById('skipHeaderRow');
             const recordCount = document.getElementById('recordCount');
-            
+
             let fileData = null;
             let headers = [];
             let parsedData = [];
             let columnMapping = {};
-            
+
             // Champs disponibles dans l'application
             const availableFields = [
                 { id: 'name', label: 'Nom' },
@@ -1305,7 +1221,7 @@
                 { id: 'company', label: 'Entreprise' },
                 { id: 'notes', label: 'Notes' }
             ];
-            
+
             // Gérer le téléchargement de fichier
             importFile.addEventListener('change', function(e) {
                 if (this.files && this.files[0]) {
@@ -1314,7 +1230,7 @@
                     selectedFileContainer.classList.remove('hidden');
                     goToStep2Btn.disabled = false;
                     goToStep2Btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    
+
                     // Lire le fichier
                     const reader = new FileReader();
                     reader.onload = function(event) {
@@ -1324,7 +1240,7 @@
                     reader.readAsText(file);
                 }
             });
-            
+
             // Supprimer le fichier
             removeFileBtn.addEventListener('click', function() {
                 importFile.value = '';
@@ -1335,42 +1251,42 @@
                 headers = [];
                 parsedData = [];
             });
-            
+
             // Navigation entre les étapes
             goToStep2Btn.addEventListener('click', function() {
                 createColumnMappingUI();
                 showImportStep(2);
             });
-            
+
             backToStep1Btn.addEventListener('click', function() {
                 showImportStep(1);
             });
-            
+
             goToStep3Btn.addEventListener('click', function() {
                 createPreviewTable();
                 showImportStep(3);
             });
-            
+
             backToStep2Btn.addEventListener('click', function() {
                 showImportStep(2);
             });
-            
+
             importBtn.addEventListener('click', function() {
                 importClients();
             });
-            
+
             // Analyser les données du fichier
             function parseFileData(filename, data) {
                 headers = [];
                 parsedData = [];
-                
+
                 if (filename.endsWith('.csv')) {
                     // Analyser CSV
                     const lines = data.split('\n');
                     if (lines.length > 0) {
                         // Extraire les en-têtes
                         headers = lines[0].split(',').map(header => header.trim().replace(/"/g, ''));
-                        
+
                         // Extraire les données
                         for (let i = 1; i < lines.length; i++) {
                             if (lines[i].trim() !== '') {
@@ -1389,70 +1305,70 @@
                     alert('Le support des fichiers Excel nécessite une bibliothèque supplémentaire. Veuillez utiliser un fichier CSV pour le moment.');
                 }
             }
-            
+
             // Créer l'interface de mappage des colonnes
             function createColumnMappingUI() {
                 columnMappingContainer.innerHTML = '';
-                
+
                 headers.forEach(header => {
                     const row = document.createElement('div');
                     row.className = 'flex items-center space-x-4';
-                    
+
                     const sourceCol = document.createElement('div');
                     sourceCol.className = 'w-1/2';
                     sourceCol.innerHTML = `
                         <div class="text-sm font-medium text-gray-700">${header}</div>
                         <div class="text-xs text-gray-500">Colonne du fichier</div>
                     `;
-                    
+
                     const arrow = document.createElement('div');
                     arrow.className = 'text-gray-400';
                     arrow.innerHTML = '<i class="bi bi-arrow-right"></i>';
-                    
+
                     const selectCol = document.createElement('div');
                     selectCol.className = 'w-1/2';
-                    
+
                     const select = document.createElement('select');
                     select.className = 'mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md';
                     select.dataset.sourceColumn = header;
-                    
+
                     // Option vide
                     const emptyOption = document.createElement('option');
                     emptyOption.value = '';
                     emptyOption.textContent = 'Ne pas importer';
                     select.appendChild(emptyOption);
-                    
+
                     // Options pour chaque champ disponible
                     availableFields.forEach(field => {
                         const option = document.createElement('option');
                         option.value = field.id;
                         option.textContent = field.label;
-                        
+
                         // Auto-mapper les colonnes avec des noms similaires
-                        if (header.toLowerCase() === field.label.toLowerCase() || 
+                        if (header.toLowerCase() === field.label.toLowerCase() ||
                             header.toLowerCase() === field.id.toLowerCase()) {
                             option.selected = true;
                             columnMapping[header] = field.id;
                         }
-                        
+
                         select.appendChild(option);
                     });
-                    
+
                     // Événement pour mettre à jour le mapping
                     select.addEventListener('change', function() {
                         columnMapping[header] = this.value;
                     });
-                    
+
                     selectCol.appendChild(select);
-                    
+
                     row.appendChild(sourceCol);
                     row.appendChild(arrow);
                     row.appendChild(selectCol);
-                    
+
                     columnMappingContainer.appendChild(row);
                 });
             }
-            
+
             // Créer la table de prévisualisation
             function createPreviewTable() {
                 // Nettoyer la table existante
@@ -1460,7 +1376,7 @@
                 const tbody = previewTable.querySelector('tbody');
                 thead.innerHTML = '';
                 tbody.innerHTML = '';
-                
+
                 // Ajouter les en-têtes
                 const mappedHeaders = headers.filter(header => columnMapping[header] && columnMapping[header] !== '');
                 mappedHeaders.forEach(header => {
@@ -1469,45 +1385,45 @@
                     th.textContent = availableFields.find(field => field.id === columnMapping[header])?.label || header;
                     thead.appendChild(th);
                 });
-                
+
                 // Ajouter les données
                 const dataToShow = skipHeaderRow.checked && parsedData.length > 0 ? parsedData.slice(1) : parsedData;
                 dataToShow.forEach(row => {
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-gray-50';
-                    
+
                     mappedHeaders.forEach(header => {
                         const td = document.createElement('td');
                         td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500';
                         td.textContent = row[header] || '';
                         tr.appendChild(td);
                     });
-                    
+
                     tbody.appendChild(tr);
                 });
-                
+
                 // Mettre à jour le compteur d'enregistrements
                 recordCount.textContent = `${dataToShow.length} clients à importer`;
             }
-            
+
             // Importer les clients
             function importClients() {
                 const dataToImport = skipHeaderRow.checked && parsedData.length > 0 ? parsedData.slice(1) : parsedData;
-                
+
                 // Préparer les données pour l'import
                 const clientsToImport = dataToImport.map(row => {
                     const client = {};
-                    
+
                     // Mapper les colonnes selon la configuration
                     headers.forEach(header => {
                         if (columnMapping[header] && columnMapping[header] !== '') {
                             client[columnMapping[header]] = row[header] || '';
                         }
                     });
-                    
+
                     return client;
                 });
-                
+
                 // Vérifier s'il y a des données à importer
                 if (clientsToImport.length === 0) {
                     Swal.fire({
@@ -1517,11 +1433,11 @@
                     });
                     return;
                 }
-                
+
                 // Désactiver le bouton d'import et afficher une animation de chargement
                 importBtn.disabled = true;
                 importBtn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin mr-1"></i> Importation...';
-                
+
                 // Envoyer les données au serveur
                 fetch('/clients/import', {
                     method: 'POST',
@@ -1567,7 +1483,7 @@
                     importBtn.innerHTML = '<i class="bi bi-check-circle mr-1"></i> Importer';
                 });
             }
-            
+
             // Événement pour mettre à jour la prévisualisation lorsque l'option "ignorer l'en-tête" change
             skipHeaderRow.addEventListener('change', function() {
                 createPreviewTable();
