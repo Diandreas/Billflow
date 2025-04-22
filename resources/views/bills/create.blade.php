@@ -26,7 +26,7 @@
                     <div class="flex">
                         <div class="flex-shrink-0">
                             <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
                             </svg>
                         </div>
                         <div class="ml-3">
@@ -148,6 +148,25 @@
                                                     class="pl-10 w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                             </div>
                                         </div>
+                                        
+                                        <div>
+                                            <label for="due_date" class="block mb-1 text-sm font-medium text-gray-700">
+                                                {{ __('Date d\'échéance') }}
+                                            </label>
+                                            <div class="relative">
+                                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <input type="date"
+                                                    id="due_date"
+                                                    name="due_date"
+                                                    value="{{ old('due_date', date('Y-m-d', strtotime('+30 days'))) }}"
+                                                    class="pl-10 w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                            </div>
+                                        </div>
+                                        
                                         <div>
                                             <label for="tax_rate" class="block mb-1 text-sm font-medium text-gray-700">
                                                 {{ __('TVA (%)') }}
@@ -164,6 +183,9 @@
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
                                         <div>
                                             <label for="bill_reference" class="block mb-1 text-sm font-medium text-gray-700">
                                                 {{ __('Référence') }}
@@ -173,6 +195,22 @@
                                                 name="reference"
                                                 value="{{ old('reference', 'FACT-' . date('Ymd') . '-' . rand(1000, 9999)) }}"
                                                 class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
+                                        <div>
+                                            <label for="payment_method" class="block mb-1 text-sm font-medium text-gray-700">
+                                                {{ __('Méthode de paiement') }}
+                                            </label>
+                                            <select id="payment_method" name="payment_method" class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                <option value="espèces">{{ __('Espèces') }}</option>
+                                                <option value="carte">{{ __('Carte bancaire') }}</option>
+                                                <option value="virement">{{ __('Virement bancaire') }}</option>
+                                                <option value="chèque">{{ __('Chèque') }}</option>
+                                                <option value="mobile_money">{{ __('Mobile Money') }}</option>
+                                                <option value="autre">{{ __('Autre') }}</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -251,22 +289,35 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <div id="product-placeholder" class="w-full">
-                                                    <select name="products[]" class="product-select w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                    <select name="products[0][id]" class="product-select w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                                         <option value="">{{ __('Sélectionner un produit') }}</option>
-                                                        @foreach($products as $product)
-                                                            <option value="{{ $product->id }}" data-price="{{ $product->default_price }}">
-                                                                {{ $product->name }}
-                                                            </option>
-                                                        @endforeach
+                                                        <optgroup label="Produits physiques">
+                                                            @foreach($products as $product)
+                                                                @if($product->type == 'physical')
+                                                                <option value="{{ $product->id }}" data-price="{{ $product->default_price }}" data-type="physical">
+                                                                    {{ $product->name }} (Stock: {{ $product->stock_quantity }})
+                                                                </option>
+                                                                @endif
+                                                            @endforeach
+                                                        </optgroup>
+                                                        <optgroup label="Services">
+                                                            @foreach($products as $product)
+                                                                @if($product->type == 'service')
+                                                                <option value="{{ $product->id }}" data-price="{{ $product->default_price }}" data-type="service">
+                                                                    {{ $product->name }} (Service)
+                                                                </option>
+                                                                @endif
+                                                            @endforeach
+                                                        </optgroup>
                                                     </select>
                                                 </div>
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <input type="number" name="quantities[]" value="1" min="1" class="product-quantity w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                            <input type="number" name="products[0][quantity]" value="1" min="1" class="product-quantity w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <input type="number" name="prices[]" value="0" min="0" step="0.01" class="product-price w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                            <input type="number" name="products[0][price]" value="0" min="0" step="0.01" class="product-price w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <span class="product-total">0 FCFA</span>
@@ -370,6 +421,44 @@
                                               placeholder="Informations de paiement, conditions, etc.">{{ old('notes', 'Merci pour votre confiance! La facture est payable sous 30 jours.') }}</textarea>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Boutique -->
+                        <div class="col-span-full sm:col-span-6 lg:col-span-3">
+                            <label for="shop_id" class="block text-sm font-medium text-gray-700">{{ __('Boutique') }} <span class="text-red-500">*</span></label>
+                            @if(Auth::user()->role === 'vendeur')
+                                <input type="text" class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="{{ $shops->first()->name }}" readonly>
+                                <input type="hidden" name="shop_id" id="shop_id" value="{{ $defaultShopId }}">
+                            @else
+                                <select id="shop_id" name="shop_id" onchange="updateVendorsList(this.value)" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
+                                    <option value="">Sélectionner une boutique</option>
+                                    @foreach ($shops as $shop)
+                                        <option value="{{ $shop->id }}" {{ old('shop_id', $defaultShopId) == $shop->id ? 'selected' : '' }}>{{ $shop->name }}</option>
+                                    @endforeach
+                                </select>
+                            @endif
+                            @error('shop_id')
+                                <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Vendeur -->
+                        <div class="col-span-full sm:col-span-6 lg:col-span-3">
+                            <label for="user_id" class="block text-sm font-medium text-gray-700">{{ __('Vendeur') }} <span class="text-red-500">*</span></label>
+                            @if(Auth::user()->role === 'vendeur')
+                                <input type="text" class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="{{ Auth::user()->name }}" readonly>
+                                <input type="hidden" name="seller_id" id="user_id" value="{{ $defaultSellerId }}">
+                            @else
+                                <select id="user_id" name="seller_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
+                                    <option value="">Sélectionner un vendeur</option>
+                                    @foreach ($sellers as $seller)
+                                        <option value="{{ $seller->id }}" {{ old('seller_id', $defaultSellerId) == $seller->id ? 'selected' : '' }}>{{ $seller->name }}</option>
+                                    @endforeach
+                                </select>
+                            @endif
+                            @error('seller_id')
+                                <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <!-- Submit Button -->
@@ -932,6 +1021,25 @@
                 // Cloner le contenu du template
                 const clone = template.content.cloneNode(true);
                 
+                // Générer un index unique pour les produits
+                const rowIndex = rowCounter++;
+                
+                // Mettre à jour les noms de champs avec l'index correct
+                const selectField = clone.querySelector('.product-select');
+                if (selectField) {
+                    selectField.name = `products[${rowIndex}][id]`;
+                }
+                
+                const quantityField = clone.querySelector('.product-quantity');
+                if (quantityField) {
+                    quantityField.name = `products[${rowIndex}][quantity]`;
+                }
+                
+                const priceField = clone.querySelector('.product-price');
+                if (priceField) {
+                    priceField.name = `products[${rowIndex}][price]`;
+                }
+                
                 // Ajouter la ligne au tableau
                 document.getElementById('productsContainer').appendChild(clone);
                 
@@ -966,11 +1074,16 @@
                     removeBtn.addEventListener('click', function() {
                         newItem.remove();
                         calculateTotals();
+                        checkEmptyProductsState();
                     });
                 }
                 
                 // Mettre à jour les totaux
                 calculateTotals();
+                
+                // Mettre à jour l'état des produits
+                hasProductsAdded = true;
+                updateProductsStatus();
                 
                 // Afficher le tableau si caché
                 const tableContainer = document.getElementById('productsTableContainer');
@@ -1545,5 +1658,49 @@
                 setTimeout(testModals, 1000);
             });
         </script>
+    @endpush
+
+    @push('scripts')
+    <script>
+        function updateVendorsList(shopId) {
+            if (!shopId) return;
+            
+            // Faire une requête AJAX pour obtenir les vendeurs de cette boutique
+            fetch(`/api/shops/${shopId}/vendors`)
+                .then(response => response.json())
+                .then(data => {
+                    // Récupérer le select des vendeurs
+                    const vendorSelect = document.getElementById('user_id');
+                    
+                    // Sauvegarder la valeur actuelle si elle existe
+                    const currentValue = vendorSelect.value;
+                    
+                    // Vider le select
+                    vendorSelect.innerHTML = '<option value="">Sélectionner un vendeur</option>';
+                    
+                    // Ajouter les vendeurs à la liste
+                    data.forEach(vendor => {
+                        const option = document.createElement('option');
+                        option.value = vendor.id;
+                        option.textContent = vendor.name;
+                        vendorSelect.appendChild(option);
+                    });
+                    
+                    // Restaurer la valeur précédente si possible
+                    if (currentValue && [...vendorSelect.options].find(opt => opt.value === currentValue)) {
+                        vendorSelect.value = currentValue;
+                    }
+                })
+                .catch(error => console.error('Erreur lors de la récupération des vendeurs:', error));
+        }
+        
+        // Exécuter au chargement de la page si une boutique est déjà sélectionnée
+        document.addEventListener('DOMContentLoaded', function() {
+            const shopSelect = document.getElementById('shop_id');
+            if (shopSelect && shopSelect.value) {
+                updateVendorsList(shopSelect.value);
+            }
+        });
+    </script>
     @endpush
 </x-app-layout>

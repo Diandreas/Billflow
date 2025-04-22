@@ -32,11 +32,11 @@
                                 <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="{{ __('N° Facture, Magasin, Client...') }}" class="w-full text-xs rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring focus:ring-teal-200 focus:ring-opacity-50">
                             </div>
                             <div>
-                                <label for="shop" class="block text-xs font-medium text-gray-700 mb-1">{{ __('Magasin') }}</label>
-                                <select name="shop" id="shop" class="w-full text-xs rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring focus:ring-teal-200 focus:ring-opacity-50">
+                                <label for="shop_id" class="block text-xs font-medium text-gray-700 mb-1">{{ __('Magasin') }}</label>
+                                <select name="shop_id" id="shop_id" class="w-full text-xs rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring focus:ring-teal-200 focus:ring-opacity-50">
                                     <option value="">{{ __('Tous les magasins') }}</option>
                                     @foreach($shops as $shop)
-                                        <option value="{{ $shop->id }}" {{ request('shop') == $shop->id ? 'selected' : '' }}>{{ $shop->name }}</option>
+                                        <option value="{{ $shop->id }}" {{ request('shop_id') == $shop->id ? 'selected' : '' }}>{{ $shop->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -90,7 +90,7 @@
                                 @forelse ($bills as $bill)
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-3 py-1.5 whitespace-nowrap text-xs font-medium">
-                                            {{ $bill->invoice_number }}
+                                            {{ $bill->reference }}
                                         </td>
                                         <td class="px-3 py-1.5 whitespace-nowrap text-xs">
                                             <div class="flex items-center">
@@ -120,26 +120,26 @@
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    {{ $bill->customer_name }}
-                                                    <div class="text-gray-500 text-xs">{{ $bill->customer_email }}</div>
+                                                    {{ $bill->client->name }}
+                                                    <div class="text-gray-500 text-xs">{{ $bill->client->email }}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td class="px-3 py-1.5 whitespace-nowrap text-xs text-gray-500">
-                                            {{ $bill->bill_date }}
+                                            {{ $bill->date ? $bill->date->format('d/m/Y') : '' }}
                                         </td>
                                         <td class="px-3 py-1.5 whitespace-nowrap text-xs text-gray-500">
-                                            {{ $bill->due_date}}
+                                            {{ $bill->due_date ? $bill->due_date->format('d/m/Y') : '' }}
                                         </td>
                                         <td class="px-3 py-1.5 whitespace-nowrap text-xs font-medium">
-                                            <span class="text-teal-600">{{ number_format($bill->total_amount, 2) }} €</span>
+                                            <span class="text-teal-600">{{ number_format($bill->total, 2) }} FCFA</span>
                                         </td>
                                         <td class="px-3 py-1.5 whitespace-nowrap">
                                             @if ($bill->status === 'paid')
                                                 <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-green-100 text-green-800">
                                                     {{ __('Payée') }}
                                                 </span>
-                                            @elseif ($bill->status === 'pending')
+                                            @elseif ($bill->status === 'pending' || $bill->status === 'En attente')
                                                 <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-yellow-100 text-yellow-800">
                                                     {{ __('En attente') }}
                                                 </span>

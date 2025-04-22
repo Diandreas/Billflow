@@ -165,9 +165,9 @@
         <div class="customer-info">
             <h3>Client</h3>
             <p><strong>Nom:</strong> {{ $bill->client->name }}</p>
-            <p><strong>Adresse:</strong> {{ $bill->client->address ?? 'Non spécifiée' }}</p>
-            <p><strong>Tél:</strong> {{ $bill->client->phones->first()->number ?? 'Non spécifié' }}</p>
-            <p><strong>Email:</strong> {{ $bill->client->email ?? 'Non spécifié' }}</p>
+            <p><strong>Adresse:</strong> {{ isset($bill->client->address) ? $bill->client->address : 'Non spécifiée' }}</p>
+            <p><strong>Tél:</strong> {{ isset($bill->client->phones) && $bill->client->phones->count() > 0 ? $bill->client->phones->first()->number : 'Non spécifié' }}</p>
+            <p><strong>Email:</strong> {{ isset($bill->client->email) ? $bill->client->email : 'Non spécifié' }}</p>
         </div>
         
         <div class="qr-container">
@@ -189,7 +189,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($bill->billProducts as $item)
+            @foreach($bill->items as $item)
             <tr>
                 <td>{{ $item->product->name }}</td>
                 <td>{{ $item->product->description ?? '' }}</td>

@@ -87,7 +87,7 @@
                             </div>
                             <div>
                                 <p class="text-sm font-medium text-gray-500">{{ __('Produits') }}</p>
-                                <p class="text-xl font-bold text-purple-700">{{ $bill->products->count() }}</p>
+                                <p class="text-xl font-bold text-purple-700">{{ $bill->items->count() }}</p>
                                 <a href="#products" class="text-xs text-purple-600 hover:text-purple-800 inline-flex items-center">
                                     {{ __('Voir le détail') }} <i class="bi bi-arrow-down ml-1"></i>
                                 </a>
@@ -258,7 +258,7 @@
                         <h3 class="text-lg font-medium text-gray-900">{{ __('Produits et services') }}</h3>
                         <span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded inline-flex items-center">
                             <i class="bi bi-box-seam mr-1"></i>
-                            {{ $bill->products->count() }} {{ __('articles') }}
+                            {{ $bill->items->count() }} {{ __('articles') }}
                         </span>
                     </div>
 
@@ -271,8 +271,8 @@
                             <select id="priceFilter" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                 <option value="">{{ __('Tous les prix') }}</option>
                                 @php
-                                    $uniquePrices = $bill->products->pluck('pivot.unit_price')->unique()->sort();
-                                    $priceGroups = $bill->products->groupBy('pivot.unit_price');
+                                    $uniquePrices = $bill->items->pluck('unit_price')->unique()->sort();
+                                    $priceGroups = $bill->items->groupBy('unit_price');
                                 @endphp
                                 @foreach($uniquePrices as $price)
                                     <option value="{{ $price }}">
@@ -293,18 +293,18 @@
                     <div class="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <h4 class="text-sm font-medium text-gray-700 mb-2">{{ __('Récapitulatif des prix utilisés dans cette facture') }}</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            @foreach($priceGroups as $price => $products)
+                            @foreach($priceGroups as $price => $items)
                                 <div class="price-card bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
                                      onclick="document.getElementById('priceFilter').value='{{ $price }}'; filterProducts();">
                                     <div class="text-lg font-bold text-indigo-700">{{ number_format($price, 0, ',', ' ') }} FCFA</div>
                                     <div class="flex justify-between items-center mt-1">
-                                        <span class="text-sm text-gray-600">{{ $products->count() }} produit(s)</span>
+                                        <span class="text-sm text-gray-600">{{ $items->count() }} produit(s)</span>
                                         <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">
-                                            {{ number_format(($products->count() / $bill->products->count()) * 100, 0) }}% du total
+                                            {{ number_format(($items->count() / $bill->items->count()) * 100, 0) }}% du total
                                         </span>
                                     </div>
                                     <div class="text-sm text-gray-600 mt-1">
-                                        Total: {{ number_format($products->sum('pivot.total'), 0, ',', ' ') }} FCFA
+                                        Total: {{ number_format($items->sum('total'), 0, ',', ' ') }} FCFA
                                     </div>
                                 </div>
                             @endforeach
@@ -348,46 +348,46 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($bill->products as $product)
+                                @foreach($bill->items as $item)
                                 <tr class="product-row hover:bg-gray-50 transition-colors duration-150" 
-                                    data-name="{{ strtolower($product->name) }}"
-                                    data-price="{{ $product->pivot->unit_price }}">
+                                    data-name="{{ strtolower($item->product->name) }}"
+                                    data-price="{{ $item->unit_price }}">
                                     <td class="px-6 py-4">
                                         <div class="text-sm font-medium text-gray-900">
-                                            <a href="{{ route('products.show', $product) }}" class="text-indigo-600 hover:text-indigo-900 inline-flex items-center">
-                                                {{ $product->name }}
+                                            <a href="{{ route('products.show', $item->product) }}" class="text-indigo-600 hover:text-indigo-900 inline-flex items-center">
+                                                {{ $item->product->name }}
                                                 <i class="bi bi-box-arrow-up-right text-xs ml-1"></i>
                                             </a>
                                         </div>
-                                        @if($product->type != 'service')
+                                        @if($item->product->type != 'service')
                                             <div class="text-xs text-gray-500">
-                                                SKU: {{ $product->sku ?: 'N/A' }}
+                                                SKU: {{ $item->product->sku ?: 'N/A' }}
                                             </div>
                                         @endif
                                     </td>
                                     <td class="px-6 py-4 text-center text-sm text-gray-500">
                                         <span class="bg-blue-50 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                                            {{ $product->pivot->quantity }}
+                                            {{ $item->quantity }}
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-right text-sm text-gray-500">
                                         <div class="price-display font-medium">
-                                            {{ number_format($product->pivot->unit_price, 0, ',', ' ') }} FCFA
+                                            {{ number_format($item->unit_price, 0, ',', ' ') }} FCFA
                                         </div>
                                         <div class="text-xs text-gray-400 mt-1">
-                                            @if($product->default_price != $product->pivot->unit_price)
+                                            @if($item->product->default_price != $item->unit_price)
                                                 <span title="Prix par défaut du produit">
-                                                    Prix catalogue: {{ number_format($product->default_price, 0, ',', ' ') }} FCFA
+                                                    Prix catalogue: {{ number_format($item->product->default_price, 0, ',', ' ') }} FCFA
                                                 </span>
-                                                @if($product->default_price > $product->pivot->unit_price)
+                                                @if($item->product->default_price > $item->unit_price)
                                                     <span class="text-green-600 block">
                                                         <i class="bi bi-arrow-down"></i>
-                                                        -{{ number_format(($product->default_price - $product->pivot->unit_price) / $product->default_price * 100, 0) }}%
+                                                        -{{ number_format(($item->product->default_price - $item->unit_price) / $item->product->default_price * 100, 0) }}%
                                                     </span>
-                                                @elseif($product->default_price < $product->pivot->unit_price)
+                                                @elseif($item->product->default_price < $item->unit_price)
                                                     <span class="text-red-600 block">
                                                         <i class="bi bi-arrow-up"></i>
-                                                        +{{ number_format(($product->pivot->unit_price - $product->default_price) / $product->default_price * 100, 0) }}%
+                                                        +{{ number_format(($item->unit_price - $item->product->default_price) / $item->product->default_price * 100, 0) }}%
                                                     </span>
                                                 @endif
                                             @else
@@ -396,7 +396,7 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 text-right text-sm text-gray-900 font-medium">
-                                        {{ number_format($product->pivot->total, 0, ',', ' ') }} FCFA
+                                        {{ number_format($item->total, 0, ',', ' ') }} FCFA
                                     </td>
                                 </tr>
                                 @endforeach

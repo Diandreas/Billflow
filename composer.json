@@ -13,7 +13,8 @@
         "barryvdh/laravel-dompdf": "^3.0",
         "doctrine/dbal": "^4.2",
         "laravel/framework": "^11.31",
-        "laravel/tinker": "^2.9"
+        "laravel/tinker": "^2.9",
+        "simplesoftwareio/simple-qrcode": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

@@ -20,7 +20,7 @@ class Commission extends Model
         'description',
         'period_start',
         'period_end',
-        'status',
+        'is_paid',
         'paid_at',
         'paid_by',
         'payment_method',
@@ -33,7 +33,8 @@ class Commission extends Model
         'base_amount' => 'decimal:2',
         'period_start' => 'date',
         'period_end' => 'date',
-        'paid_at' => 'datetime'
+        'paid_at' => 'datetime',
+        'is_paid' => 'boolean'
     ];
 
     /**
@@ -93,7 +94,7 @@ class Commission extends Model
         $commission->rate = $seller->commission_rate;
         $commission->amount = $bill->total * ($seller->commission_rate / 100);
         $commission->description = "Commission sur la facture {$bill->reference}";
-        $commission->status = 'pending';
+        $commission->is_paid = false;
         $commission->save();
 
         return $commission;
@@ -104,7 +105,7 @@ class Commission extends Model
      */
     public function scopePending($query)
     {
-        return $query->where('status', 'pending');
+        return $query->where('is_paid', false);
     }
 
     /**
@@ -112,7 +113,7 @@ class Commission extends Model
      */
     public function scopeApproved($query)
     {
-        return $query->where('status', 'approved');
+        return $query->where('is_paid', true);
     }
 
     /**
@@ -120,7 +121,7 @@ class Commission extends Model
      */
     public function scopePaid($query)
     {
-        return $query->where('status', 'paid');
+        return $query->where('is_paid', true);
     }
 
     /**

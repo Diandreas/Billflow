@@ -22,4 +22,11 @@ Route::middleware('auth')->group(function () {
     
         return response()->json($priceHistory);
     });
+
+    // Route pour récupérer les vendeurs d'une boutique
+    Route::get('/shops/{shop}/vendors', function (\App\Models\Shop $shop) {
+        return $shop->users()
+            ->where('role', 'vendeur')
+            ->get(['id', 'name']);
+    });
 });

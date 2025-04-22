@@ -17,23 +17,39 @@ use Illuminate\Support\Facades\Auth;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Gate;
 use App\Models\BillItem;
+use App\Models\Signature;
 
 class BillController extends Controller
 {
     public function index(Request $request)
     {
         $query = Bill::query()
-            ->with(['client', 'seller', 'shop']);
+            ->with(['client', 'seller', 'shop', 'items']);
 
-        // Filtrer par boutique si l'utilisateur n'est pas admin
-        if (!Gate::allows('admin')) {
-            $shops = Auth::user()->shops->pluck('id')->toArray();
-            $query->whereIn('shop_id', $shops);
-        }
-
-        // Filtrer par boutique spécifique si demandé
-        if ($request->has('shop_id')) {
-            $query->where('shop_id', $request->input('shop_id'));
+        // Appliquer les filtres de rôle
+        if (Auth::user()->role === 'vendeur') {
+            // Le vendeur ne voit que les factures de sa boutique actuelle
+            $shopIds = Auth::user()->shops->pluck('id')->toArray();
+            $query->whereIn('shop_id', $shopIds);
+            
+            // Si l'utilisateur est associé à plusieurs boutiques et qu'une boutique spécifique est sélectionnée
+            if ($request->has('shop_id') && in_array($request->input('shop_id'), $shopIds)) {
+                $query->where('shop_id', $request->input('shop_id'));
+            }
+        } elseif (Auth::user()->role === 'manager') {
+            // Le manager voit les factures des boutiques qu'il gère
+            $shopIds = Auth::user()->shops->pluck('id')->toArray();
+            $query->whereIn('shop_id', $shopIds);
+            
+            // Si une boutique spécifique est sélectionnée
+            if ($request->has('shop_id') && in_array($request->input('shop_id'), $shopIds)) {
+                $query->where('shop_id', $request->input('shop_id'));
+            }
+        } else {
+            // L'admin voit tout
+            if ($request->has('shop_id')) {
+                $query->where('shop_id', $request->input('shop_id'));
+            }
         }
 
         // Filtrer par vendeur si demandé
@@ -44,6 +60,25 @@ class BillController extends Controller
         // Filtrer par client si demandé
         if ($request->has('client_id')) {
             $query->where('client_id', $request->input('client_id'));
+        }
+
+        // Filtrer par recherche textuelle
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('reference', 'like', "%{$search}%")
+                  ->orWhereHas('client', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('shop', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('seller', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  });
+            });
         }
 
         // Filtrer par prix spécifique
@@ -69,12 +104,33 @@ class BillController extends Controller
 
         $bills = $query->orderBy('date', 'desc')->paginate(15);
 
-        $shops = Gate::allows('admin') 
+        // Récupérer les boutiques selon le rôle de l'utilisateur
+        $shops = Auth::user()->role === 'admin' 
             ? Shop::all() 
             : Auth::user()->shops;
             
-        $sellers = User::where('role', 'vendeur')->get();
-        $clients = Client::all();
+        // Récupérer les vendeurs selon le rôle et les boutiques
+        if (Auth::user()->role === 'admin') {
+            $sellers = User::where('role', 'vendeur')->get();
+        } elseif (Auth::user()->role === 'manager') {
+            $shopIds = Auth::user()->shops->pluck('id')->toArray();
+            $sellers = User::whereHas('shops', function($q) use ($shopIds) {
+                $q->whereIn('shop_id', $shopIds);
+            })->where('role', 'vendeur')->get();
+        } else {
+            // Vendeur: seulement lui-même
+            $sellers = User::where('id', Auth::id())->get();
+        }
+        
+        // Récupérer les clients selon le rôle et les boutiques
+        if (Auth::user()->role === 'admin') {
+            $clients = Client::all();
+        } else {
+            $shopIds = Auth::user()->shops->pluck('id')->toArray();
+            $clients = Client::whereHas('bills', function($q) use ($shopIds) {
+                $q->whereIn('shop_id', $shopIds);
+            })->get();
+        }
 
         // Récupérer la liste des prix uniques pour le filtre
         $uniquePrices = BillItem::select('unit_price')
@@ -92,22 +148,70 @@ class BillController extends Controller
             abort(403, 'Action non autorisée.');
         }
 
-        // Pour les vendeurs, ne montrer que les clients de leur boutique
-        if (Auth::user()->role === 'vendeur') {
-            $shopIds = Auth::user()->shops->pluck('id')->toArray();
+        // Récupérer l'utilisateur connecté
+        $user = Auth::user();
+        
+        // Déterminer la boutique selon le rôle de l'utilisateur
+        if ($user->role === 'admin') {
+            // Pour admin, on récupère toutes les boutiques
+            $shops = Shop::all();
+            // On prend la première boutique par défaut
+            $defaultShopId = $shops->first() ? $shops->first()->id : null;
+        } elseif ($user->role === 'manager') {
+            // Pour manager, on récupère toutes leurs boutiques
+            $shops = $user->shops;
+            // On prend la première boutique par défaut
+            $defaultShopId = $shops->first() ? $shops->first()->id : null;
+        } else {
+            // Pour un vendeur, on prend directement sa boutique
+            $shopIds = $user->shops->pluck('id')->toArray();
+            if (empty($shopIds)) {
+                abort(403, 'Vous n\'êtes associé à aucune boutique.');
+            }
+            $shops = $user->shops;
+            $defaultShopId = $shops->first()->id;
+        }
+        
+        // Déterminer le vendeur
+        if ($user->role === 'vendeur') {
+            // Si l'utilisateur est un vendeur, c'est automatiquement lui le vendeur
+            $sellers = collect([$user]);
+            $defaultSellerId = $user->id;
+        } elseif ($user->role === 'manager') {
+            // Si manager, on récupère les vendeurs de ses boutiques
+            $shopIds = $user->shops->pluck('id')->toArray();
+            $sellers = User::whereHas('shops', function($q) use ($shopIds) {
+                $q->whereIn('shop_id', $shopIds);
+            })->where('role', 'vendeur')->get();
+            $defaultSellerId = null;
+        } else {
+            // Si admin, il peut voir tous les vendeurs
+            $sellers = User::where('role', 'vendeur')->get();
+            $defaultSellerId = null;
+        }
+        
+        // Récupérer les clients selon le rôle
+        if ($user->role === 'admin') {
+            $clients = Client::all();
+        } else {
+            $shopIds = $user->shops->pluck('id')->toArray();
             $clients = Client::whereHas('bills', function ($query) use ($shopIds) {
                 $query->whereIn('shop_id', $shopIds);
             })->orderBy('name')->get();
-        } else {
-            $clients = Client::orderBy('name')->get();
         }
 
-        $products = Product::where('stock_quantity', '>', 0)->get();
-        
-        // Obtenir les boutiques de l'utilisateur actuel
-        $shops = Gate::allows('admin') 
-            ? Shop::all() 
-            : Auth::user()->shops;
+        // Récupérer les produits en fonction du rôle
+        // Les managers et admins peuvent voir tous les produits et services
+        // Les vendeurs ne voient que les produits physiques avec du stock
+        if ($user->role === 'admin' || $user->role === 'manager') {
+            $products = Product::orderBy('name')->get();
+        } else {
+            // Vendeurs: seulement les produits physiques avec stock
+            $products = Product::where(function($query) {
+                $query->where('type', 'physical')
+                      ->where('stock_quantity', '>', 0);
+            })->orderBy('name')->get();
+        }
         
         // Obtenir les vendeurs par boutique
         $shopVendors = [];
@@ -118,7 +222,7 @@ class BillController extends Controller
                 ->toArray();
         }
 
-        return view('bills.create', compact('clients', 'products', 'shops', 'shopVendors'));
+        return view('bills.create', compact('clients', 'products', 'shops', 'shopVendors', 'sellers', 'defaultShopId', 'defaultSellerId'));
     }
 
     public function store(Request $request)
@@ -170,8 +274,8 @@ class BillController extends Controller
             'tax_rate' => $validated['tax_rate'],
             'tax_amount' => $taxAmount,
             'status' => 'En attente',
-            'payment_method' => $validated['payment_method'],
-            'comments' => $validated['comments'],
+            'payment_method' => $validated['payment_method'] ?? 'espèces',
+            // 'comments' => $validated['comments'],
             'user_id' => Auth::id(),
             'client_id' => $validated['client_id'],
             'shop_id' => $validated['shop_id'],
@@ -180,40 +284,42 @@ class BillController extends Controller
         ]);
 
         // Ajouter les produits à la facture
-        foreach ($validated['products'] as $productData) {
-            $product = Product::find($productData['id']);
+        foreach ($validated['products'] as $product) {
+            $productItem = Product::find($product['id']);
             
-            // Vérifier le stock
-            if ($product->stock_quantity < $productData['quantity']) {
-                return back()->with('error', "Stock insuffisant pour {$product->name}");
+            // Vérifier le stock uniquement pour les produits physiques
+            if ($productItem->type === 'physical' && $productItem->stock_quantity < $product['quantity']) {
+                return back()->with('error', "Stock insuffisant pour {$productItem->name}");
             }
             
             // Ajouter le produit à la facture
             BillItem::create([
                 'bill_id' => $bill->id,
-                'product_id' => $product->id,
-                'unit_price' => $productData['price'],
-                'quantity' => $productData['quantity'],
-                'price' => $productData['price'],
-                'total' => $productData['price'] * $productData['quantity'],
+                'product_id' => $product['id'],
+                'unit_price' => $product['price'],
+                'quantity' => $product['quantity'],
+                'price' => $product['price'],
+                'total' => $product['price'] * $product['quantity'],
             ]);
             
-            // Mettre à jour le stock
-            $product->stock_quantity -= $productData['quantity'];
-            $product->save();
-            
-            // Créer un mouvement d'inventaire
-            $product->inventoryMovements()->create([
-                'type' => 'vente',
-                'quantity' => -$productData['quantity'],
-                'reference' => $reference,
-                'bill_id' => $bill->id,
-                'user_id' => Auth::id(),
-                'unit_price' => $productData['price'],
-                'total_price' => $productData['price'] * $productData['quantity'],
-                'stock_before' => $product->stock_quantity + $productData['quantity'],
-                'stock_after' => $product->stock_quantity,
-            ]);
+            // Mettre à jour le stock uniquement pour les produits physiques
+            if ($productItem->type === 'physical') {
+                $productItem->stock_quantity -= $product['quantity'];
+                $productItem->save();
+                
+                // Créer un mouvement d'inventaire
+                $productItem->inventoryMovements()->create([
+                    'type' => 'vente',
+                    'quantity' => -$product['quantity'],
+                    'reference' => $reference,
+                    'bill_id' => $bill->id,
+                    'user_id' => Auth::id(),
+                    'unit_price' => $product['price'],
+                    'total_price' => $product['price'] * $product['quantity'],
+                    'stock_before' => $productItem->stock_quantity + (int)$product['quantity'],
+                    'stock_after' => $productItem->stock_quantity,
+                ]);
+            }
         }
 
         // Calculer et créer la commission du vendeur
@@ -224,6 +330,7 @@ class BillController extends Controller
             Commission::create([
                 'user_id' => $seller->id,
                 'bill_id' => $bill->id,
+                'shop_id' => $bill->shop_id,
                 'amount' => $commissionAmount,
                 'rate' => $seller->commission_rate,
                 'base_amount' => $totalWithTax,
@@ -257,7 +364,7 @@ class BillController extends Controller
 
         $clients = Client::orderBy('name')->get();
         $products = Product::orderBy('name')->get();
-        $bill->load(['client', 'products']);
+        $bill->load(['client', 'items.product']);
 
         return view('bills.edit', compact('bill', 'clients', 'products'));
     }
@@ -267,6 +374,7 @@ class BillController extends Controller
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
             'date' => 'required|date',
+            'due_date' => 'nullable|date|after_or_equal:date',
             'tax_rate' => 'required|numeric',
             'description' => 'nullable|string',
             'products' => 'required|array',
@@ -284,6 +392,7 @@ class BillController extends Controller
         $bill->update([
             'client_id' => $validated['client_id'],
             'date' => $validated['date'],
+            'due_date' => $validated['due_date'] ?? $bill->due_date,
             'tax_rate' => $validated['tax_rate'],
             'description' => $validated['description'] ?? null,
             'status' => $validated['status'] ?? $bill->status,
@@ -424,13 +533,15 @@ class BillController extends Controller
 
     public function downloadPdf(Bill $bill)
     {
-        // Vérifier les autorisations en utilisant Gate
-        if (!Gate::allows('edit-bill', $bill)) {
-            abort(403, 'Action non autorisée.');
-        }
-
-        $bill->load(['client', 'products', 'user']);
-        $settings = Setting::first();
+        // Incrémenter le compteur de réimpressions
+        $bill->reprint_count = ($bill->reprint_count ?? 0) + 1;
+        $bill->save();
+        
+        // Récupérer les paramètres de l'entreprise
+        $settings = Setting::first() ?? new \stdClass();
+        
+        // Charger les relations nécessaires
+        $bill->load(['client', 'items.product', 'shop', 'seller']);
         
         // Conversion du chemin Storage en chemin réel pour l'accès du PDF
         if ($settings && $settings->logo_path) {
@@ -438,8 +549,12 @@ class BillController extends Controller
             $settings->logo_real_path = $logoRealPath;
         }
         
-        $pdf = PDF::loadView('bills.pdf', compact('bill', 'settings'));
-        return $pdf->download("facture-{$bill->reference}.pdf");
+        // Générer le QR code
+        $qrCode = $this->generateQrCode($bill);
+        
+        $pdf = PDF::loadView('bills.pdf', compact('bill', 'settings', 'qrCode'));
+        
+        return $pdf->download('facture_' . $bill->reference . '.pdf');
     }
 
     /**
@@ -511,26 +626,26 @@ class BillController extends Controller
      */
     public function print(Bill $bill)
     {
-        // Vérifier les autorisations en utilisant Gate
-        if (!Gate::allows('print-bill', $bill)) {
-            abort(403, 'Action non autorisée.');
-        }
-
+        // Incrémenter le compteur de réimpressions
+        $bill->reprint_count = ($bill->reprint_count ?? 0) + 1;
+        $bill->save();
+        
         // Charger les relations nécessaires
-        $bill->load(['client', 'products', 'shop', 'seller', 'user']);
-
-        // Mettre à jour le compteur d'impression
-        $bill->increment('print_count');
-        $bill->update(['last_printed_at' => now()]);
-
-        // Générer le code QR pour la vérification
-        $verificationUrl = route('bills.verify', ['code' => base64_encode($bill->reference)]);
-        $qrCode = QrCode::size(150)->generate($verificationUrl);
-
+        $bill->load(['client', 'items.product', 'shop', 'seller']);
+        
         // Récupérer les paramètres de l'entreprise
-        $company = Setting::where('key', 'company')->first() ? json_decode(Setting::where('key', 'company')->first()->value, true) : null;
-
-        return view('bills.print', compact('bill', 'qrCode', 'company'));
+        $settings = Setting::first() ?? new \stdClass();
+        $company = $settings->company_name ?? config('app.name');
+        $address = $settings->address ?? '';
+        $phone = $settings->phone ?? '';
+        
+        // Générer le QR code
+        $qrCode = $this->generateQrCode($bill);
+        
+        // Logo
+        $logo = $settings->logo_path ? asset('storage/' . $settings->logo_path) : null;
+        
+        return view('bills.print', compact('bill', 'company', 'address', 'phone', 'qrCode', 'logo'));
     }
 
     /**
@@ -538,8 +653,10 @@ class BillController extends Controller
      */
     public function addSignature(Request $request, Bill $bill)
     {
-        // Vérifier les autorisations
-        $this->authorize('update', $bill);
+        // Vérifier les autorisations en utilisant Gate
+        if (!Gate::allows('edit-bill', $bill)) {
+            abort(403, 'Action non autorisée.');
+        }
         
         $validated = $request->validate([
             'signature' => 'required|string',
@@ -624,8 +741,8 @@ class BillController extends Controller
 
         // Filtrer par boutique si l'utilisateur n'est pas admin
         if (!Gate::allows('admin')) {
-            $shops = Auth::user()->shops->pluck('id')->toArray();
-            $query->whereIn('shop_id', $shops);
+            $shopIds = Auth::user()->shops->pluck('id')->toArray();
+            $query->whereIn('shop_id', $shopIds);
         }
 
         $bills = $query->orderBy('date', 'desc')->paginate(15);
@@ -635,7 +752,16 @@ class BillController extends Controller
             : Auth::user()->shops;
             
         $sellers = User::where('role', 'vendeur')->get();
-        $clients = Client::all();
+        
+        // Si l'utilisateur est un vendeur, ne montrer que les clients de sa boutique
+        if (Auth::user()->role === 'vendeur') {
+            $shopIds = Auth::user()->shops->pluck('id')->toArray();
+            $clients = Client::whereHas('bills', function ($query) use ($shopIds) {
+                $query->whereIn('shop_id', $shopIds);
+            })->get();
+        } else {
+            $clients = Client::all();
+        }
 
         // Récupérer la liste des prix uniques pour le filtre
         $uniquePrices = BillItem::select('unit_price')
@@ -656,6 +782,14 @@ class BillController extends Controller
             abort(403, 'Action non autorisée.');
         }
 
+        // Vérifier que la facture appartient à une boutique à laquelle l'utilisateur a accès
+        if (!Gate::allows('admin')) {
+            $shopIds = Auth::user()->shops->pluck('id')->toArray();
+            if (!in_array($bill->shop_id, $shopIds)) {
+                abort(403, 'Vous n\'avez pas accès à cette facture.');
+            }
+        }
+
         $validated = $request->validate([
             'approval_notes' => 'nullable|string'
         ]);
@@ -669,5 +803,32 @@ class BillController extends Controller
 
         return redirect()->route('bills.show', $bill)
             ->with('success', 'Facture approuvée avec succès');
+    }
+
+    /**
+     * Génère un QR code pour une facture
+     * 
+     * @param Bill $bill La facture
+     * @return string|null Le QR code en format base64 ou null en cas d'erreur
+     */
+    private function generateQrCode(Bill $bill)
+    {
+        try {
+            // Générer les données pour le QR code (par exemple, URL de vérification)
+            $verificationUrl = route('bills.verify', ['code' => $bill->verification_code]);
+            
+            // Générer le QR code en utilisant la bibliothèque
+            $qrCode = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
+                ->size(200)
+                ->margin(1)
+                ->generate($verificationUrl);
+            
+            // Convertir en base64 pour l'affichage dans le PDF
+            return 'data:image/png;base64,' . base64_encode($qrCode);
+        } catch (\Exception $e) {
+            // Journaliser l'erreur mais ne pas interrompre la génération du PDF
+            Log::error('Erreur lors de la génération du QR code : ' . $e->getMessage());
+            return null;
+        }
     }
 }

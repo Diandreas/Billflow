@@ -29,7 +29,11 @@ class CommissionController extends Controller
 
         // Filtrer par statut
         if ($request->has('status')) {
-            $query->where('status', $request->input('status'));
+            if ($request->input('status') === 'pending') {
+                $query->where('is_paid', false);
+            } elseif ($request->input('status') === 'paid') {
+                $query->where('is_paid', true);
+            }
         }
 
         // Filtrer par vendeur
@@ -62,8 +66,8 @@ class CommissionController extends Controller
         // Statistiques
         $stats = [
             'total_commissions' => Commission::sum('amount'),
-            'pending_commissions' => Commission::where('status', 'pending')->sum('amount'),
-            'paid_commissions' => Commission::where('status', 'paid')->sum('amount'),
+            'pending_commissions' => Commission::where('is_paid', false)->sum('amount'),
+            'paid_commissions' => Commission::where('is_paid', true)->sum('amount'),
         ];
 
         return view('commissions.index', compact('commissions', 'sellers', 'shops', 'stats'));
@@ -90,8 +94,8 @@ class CommissionController extends Controller
         // Statistiques
         $stats = [
             'total_commissions' => Commission::where('user_id', $user->id)->sum('amount'),
-            'pending_commissions' => Commission::where('user_id', $user->id)->where('status', 'pending')->sum('amount'),
-            'paid_commissions' => Commission::where('user_id', $user->id)->where('status', 'paid')->sum('amount'),
+            'pending_commissions' => Commission::where('user_id', $user->id)->where('is_paid', false)->sum('amount'),
+            'paid_commissions' => Commission::where('user_id', $user->id)->where('is_paid', true)->sum('amount'),
             'total_sales' => Bill::where('seller_id', $user->id)->sum('total'),
             'total_bills' => Bill::where('seller_id', $user->id)->count(),
         ];
@@ -120,7 +124,7 @@ class CommissionController extends Controller
     public function export(Request $request)
     {
         // Vérifier l'autorisation
-        if (!auth()->user()->isAdmin() && !auth()->user()->isManager()) {
+        if (!(Auth::user()->role === 'admin' || Auth::user()->role === 'manager')) {
             return redirect()->route('dashboard')
                 ->with('error', 'Vous n\'avez pas les permissions nécessaires.');
         }
@@ -147,13 +151,15 @@ class CommissionController extends Controller
             });
         }
 
-        if ($status) {
-            $commissionsQuery->where('status', $status);
+        if ($status === 'pending') {
+            $commissionsQuery->where('is_paid', false);
+        } elseif ($status === 'paid') {
+            $commissionsQuery->where('is_paid', true);
         }
 
         // Restreindre pour les managers
-        if (auth()->user()->isManager() && !auth()->user()->isAdmin()) {
-            $managedShopIds = auth()->user()->managedShops()->pluck('shops.id')->toArray();
+        if (Auth::user()->role === 'manager' && Auth::user()->role !== 'admin') {
+            $managedShopIds = Auth::user()->shops->pluck('id')->toArray();
             $commissionsQuery->whereHas('bill', function($query) use ($managedShopIds) {
                 $query->whereIn('shop_id', $managedShopIds);
             });
@@ -199,7 +205,7 @@ class CommissionController extends Controller
                     $commission->bill ? $commission->bill->reference : 'N/A',
                     $commission->amount,
                     $commission->source,
-                    $commission->status,
+                    $commission->is_paid ? 'Payée' : 'En attente',
                     $commission->created_at->format('d/m/Y H:i'),
                     $shopName
                 ]);
@@ -244,7 +250,7 @@ class CommissionController extends Controller
 
         // Mettre à jour la commission
         $commission->update([
-            'status' => 'paid',
+            'is_paid' => true,
             'paid_at' => now(),
             'paid_by' => Auth::id(),
             'payment_method' => $validated['payment_method'] ?? null,
@@ -290,11 +296,11 @@ class CommissionController extends Controller
         
         // Récupérer les commissions en attente
         $query = Commission::where('user_id', $validated['user_id'])
-            ->where('status', 'pending');
+            ->where('is_paid', false);
         
         // Si l'utilisateur est un manager (non admin), limiter aux boutiques qu'il gère
-        if (Auth::user()->isManager() && !Auth::user()->isAdmin()) {
-            $managedShopIds = Auth::user()->managedShops()->pluck('shops.id')->toArray();
+        if (Auth::user()->role === 'manager' && Auth::user()->role !== 'admin') {
+            $managedShopIds = Auth::user()->shops->pluck('id')->toArray();
             $query->whereIn('shop_id', $managedShopIds);
         }
         
@@ -311,7 +317,7 @@ class CommissionController extends Controller
         try {
             foreach ($commissions as $commission) {
                 $commission->update([
-                    'status' => 'paid',
+                    'is_paid' => true,
                     'paid_at' => now(),
                     'paid_by' => Auth::id(),
                     'payment_method' => $validated['payment_method'] ?? null,

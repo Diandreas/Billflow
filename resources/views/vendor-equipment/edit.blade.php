@@ -70,7 +70,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="shop_id">Magasin <span class="text-danger">*</span></label>
-                                    <select class="form-control @error('shop_id') is-invalid @enderror" id="shop_id" name="shop_id" required>
+                                    <select class="form-control @error('shop_id') is-invalid @enderror" id="shop_id" name="shop_id" required onchange="updateVendorsList(this.value)">
                                         <option value="">Sélectionner un magasin</option>
                                         @foreach ($shops as $shop)
                                             <option value="{{ $shop->id }}" {{ old('shop_id', $equipment->shop_id) == $shop->id ? 'selected' : '' }}>
@@ -264,6 +264,46 @@
         
         // Ajouter un écouteur d'événements pour les changements
         statusSelect.addEventListener('change', toggleReturnFields);
+    });
+
+    function updateVendorsList(shopId) {
+        if (!shopId) return;
+        
+        // Faire une requête AJAX pour obtenir les vendeurs de cette boutique
+        fetch(`/api/shops/${shopId}/vendors`)
+            .then(response => response.json())
+            .then(data => {
+                // Récupérer le select des vendeurs
+                const vendorSelect = document.getElementById('user_id');
+                
+                // Sauvegarder la valeur actuelle si elle existe
+                const currentValue = vendorSelect.value;
+                
+                // Vider le select
+                vendorSelect.innerHTML = '<option value="">Sélectionner un vendeur</option>';
+                
+                // Ajouter les vendeurs à la liste
+                data.forEach(vendor => {
+                    const option = document.createElement('option');
+                    option.value = vendor.id;
+                    option.textContent = vendor.name;
+                    vendorSelect.appendChild(option);
+                });
+                
+                // Restaurer la valeur précédente si possible
+                if (currentValue && [...vendorSelect.options].find(opt => opt.value === currentValue)) {
+                    vendorSelect.value = currentValue;
+                }
+            })
+            .catch(error => console.error('Erreur lors de la récupération des vendeurs:', error));
+    }
+    
+    // Exécuter au chargement de la page si une boutique est déjà sélectionnée
+    document.addEventListener('DOMContentLoaded', function() {
+        const shopSelect = document.getElementById('shop_id');
+        if (shopSelect && shopSelect.value) {
+            updateVendorsList(shopSelect.value);
+        }
     });
 </script>
 @endpush

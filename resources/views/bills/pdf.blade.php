@@ -90,22 +90,43 @@
             margin-bottom: 20px;
             object-fit: contain;
         }
+        
+        .print-info {
+            font-size: 8px;
+            text-align: right;
+            margin-top: 5px;
+            color: #999;
+        }
+        
+        .reprint-mark {
+            position: absolute;
+            top: 40%;
+            left: 30%;
+            transform: rotate(-45deg);
+            font-size: 60px;
+            color: rgba(231, 76, 60, 0.15);
+            z-index: -1;
+        }
     </style>
 </head>
 <body>
+@if(isset($bill->reprint_count) && $bill->reprint_count > 1)
+<div class="reprint-mark">DUPLICATA</div>
+@endif
+
 <div class="container">
     <!-- En-tête -->
     <div class="header">
         <div class="company-info">
-            @if($settings->logo_path)
+            @if(isset($settings->logo_path) && $settings->logo_path)
                 <img src="{{ $settings->logo_real_path ?? Storage::path($settings->logo_path) }}" alt="Logo" class="logo">
             @endif
-            <h1>{{ $settings->company_name }}</h1>
+            <h1>{{ $settings->company_name ?? 'Entreprise' }}</h1>
             <p>
-                {!! nl2br(e($settings->address)) !!}<br>
-                Tel: {{ $settings->phone }}<br>
-                Email: {{ $settings->email }}<br>
-                Site: {{ $settings->website }}
+                {!! isset($settings->address) ? nl2br(e($settings->address)) : 'Adresse non spécifiée' !!}<br>
+                Tel: {{ $settings->phone ?? 'Non spécifié' }}<br>
+                Email: {{ $settings->email ?? 'Non spécifié' }}<br>
+                Site: {{ $settings->website ?? 'Non spécifié' }}
             </p>
         </div>
 
@@ -114,6 +135,12 @@
             <p>
                 N° : {{ $bill->reference }}<br>
                 Date : {{ $bill->date->format('d/m/Y') }}<br>
+                @if($bill->due_date)
+                Échéance : {{ $bill->due_date->format('d/m/Y') }}<br>
+                @endif
+                Boutique : {{ $bill->shop->name }}<br>
+                Vendeur : {{ $bill->seller->name }}<br>
+                Statut : {{ $bill->status }}
             </p>
         </div>
     </div>
@@ -123,8 +150,9 @@
         <h3>Facturer à:</h3>
         <p>
             {{ $bill->client->name }}<br>
-            {!! nl2br(e($bill->client->address)) !!}<br>
-            @if($bill->client->email)
+            {!! isset($bill->client->address) ? nl2br(e($bill->client->address)) : 'Adresse non spécifiée' !!}<br>
+            Tél: {{ isset($bill->client->phones) && $bill->client->phones->count() > 0 ? $bill->client->phones->first()->number : 'Non spécifié' }}<br>
+            @if(isset($bill->client->email) && $bill->client->email)
                 Email: {{ $bill->client->email }}
             @endif
         </p>
@@ -141,12 +169,12 @@
         </tr>
         </thead>
         <tbody>
-        @foreach($bill->products as $product)
+        @foreach($bill->items as $item)
             <tr>
-                <td>{{ $product->name }}</td>
-                <td style="text-align: right">{{ number_format($product->pivot->unit_price, 0, ',', ' ') }} FCFA</td>
-                <td style="text-align: right">{{ $product->pivot->quantity }}</td>
-                <td style="text-align: right">{{ number_format($product->pivot->total, 0, ',', ' ') }} FCFA</td>
+                <td>{{ $item->product->name }}</td>
+                <td style="text-align: right">{{ number_format($item->unit_price, 0, ',', ' ') }} FCFA</td>
+                <td style="text-align: right">{{ $item->quantity }}</td>
+                <td style="text-align: right">{{ number_format($item->total, 0, ',', ' ') }} FCFA</td>
             </tr>
         @endforeach
         </tbody>
@@ -173,8 +201,17 @@
     <!-- Pied de page -->
     <div class="footer">
         <p>
-            {{ $settings->company_name }} - SIRET: {{ $settings->siret }}
+            {{ $settings->company_name ?? 'Entreprise' }} - {{ isset($settings->siret) && $settings->siret ? 'SIRET: ' . $settings->siret : '' }}
         </p>
+        <p>Nous vous remercions pour votre confiance.</p>
+        <p>Cette facture constitue une preuve d'achat et peut être exigée pour tout service après-vente.</p>
+    </div>
+    
+    <div class="print-info">
+        Imprimé le {{ now()->format('d/m/Y H:i') }} 
+        @if(isset($bill->reprint_count) && $bill->reprint_count > 1)
+        (Réimpression #{{ $bill->reprint_count - 1 }})
+        @endif
     </div>
 </div>
 </body>
