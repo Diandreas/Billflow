@@ -19,11 +19,11 @@ class ProductController extends Controller
         // Filtrer les produits par boutique pour les non-administrateurs
         if (!Gate::allows('admin')) {
             $shopIds = Auth::user()->shops->pluck('id')->toArray();
-            
+
             // Trouver les produits qui ont des mouvements d'inventaire dans ces boutiques
-            $query->whereHas('inventoryMovements', function($q) use ($shopIds) {
-                $q->whereIn('shop_id', $shopIds);
-            });
+//            $query->whereHas('inventoryMovements', function($q) use ($shopIds) {
+//                $q->whereIn('shop_id', $shopIds);
+//            });
         }
 
         // Recherche
@@ -70,7 +70,7 @@ class ProductController extends Controller
         // Tri
         $sortField = $request->input('sort', 'name');
         $sortDirection = $request->input('direction', 'asc');
-        
+
         if ($sortField === 'stock') {
             $query->orderBy('stock_quantity', $sortDirection);
         } elseif ($sortField === 'price') {
@@ -80,12 +80,12 @@ class ProductController extends Controller
         }
 
         $products = $query->paginate(15)->withQueryString();
-        
+
         // Récupérer les boutiques pour le filtre
-        $shops = Gate::allows('admin') 
-            ? \App\Models\Shop::all() 
+        $shops = Gate::allows('admin')
+            ? \App\Models\Shop::all()
             : Auth::user()->shops;
-        
+
         // Préparer les statistiques pour la vue
         $stats = [
             'total_products' => Product::count(),
@@ -94,7 +94,7 @@ class ProductController extends Controller
             'total_revenue' => Product::withSum('bills as total_sales', DB::raw('bill_items.quantity * bill_items.price'))->sum('total_sales'),
             'average_price' => Product::avg('default_price') ?: 0,
         ];
-        
+
         return view('products.index', compact('products', 'shops', 'stats'));
     }
 
@@ -155,7 +155,7 @@ class ProductController extends Controller
     {
         // Charger toutes les factures sans pagination
         $invoices = $product->bills()->with('client')->latest('date')->get();
-        
+
         // Statistiques du produit
         $stats = [
             'total_sales' => $invoices->sum(function($bill) {

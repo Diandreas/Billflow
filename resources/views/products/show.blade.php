@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ $product->name }} 
+                {{ $product->name }}
                 <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $product->type == 'service' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' }}">
                     {{ $product->type == 'service' ? 'Service' : 'Produit physique' }}
                 </span>
@@ -27,19 +27,19 @@
                         <!-- Informations générales -->
                         <div class="space-y-4">
                             <h3 class="font-medium text-gray-900 text-lg">{{ __('Informations produit') }}</h3>
-                            
+
                             <div>
                                 <p class="text-sm text-gray-500">{{ __('Prix de vente') }}</p>
                                 <p class="text-lg font-bold">{{ number_format($product->default_price, 0, ',', ' ') }} FCFA</p>
                             </div>
-                            
+
                             @if($product->description)
                             <div>
                                 <p class="text-sm text-gray-500">{{ __('Description') }}</p>
                                 <p>{{ $product->description }}</p>
                             </div>
                             @endif
-                            
+
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <p class="text-sm text-gray-500">{{ __('Référence/SKU') }}</p>
@@ -51,11 +51,11 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Statistiques -->
                         <div class="space-y-4">
                             <h3 class="font-medium text-gray-900 text-lg">{{ __('Statistiques') }}</h3>
-                            
+
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <p class="text-sm text-gray-500">{{ __('Quantité vendue') }}</p>
@@ -74,7 +74,7 @@
                                     <p>{{ $stats['usage_count'] }} factures</p>
                                 </div>
                             </div>
-                            
+
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <p class="text-sm text-gray-500">{{ __('Première utilisation') }}</p>
@@ -86,12 +86,12 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Stock (pour produits physiques) ou message (pour services) -->
                         <div class="space-y-4">
                             @if($product->type != 'service')
                                 <h3 class="font-medium text-gray-900 text-lg">{{ __('Informations de stock') }}</h3>
-                                
+
                                 <div class="flex items-center">
                                     <div class="mr-4">
                                         <p class="text-sm text-gray-500">{{ __('Stock actuel') }}</p>
@@ -104,7 +104,7 @@
                                         <p>{{ $product->stock_alert_threshold ?: '-' }}</p>
                                     </div>
                                 </div>
-                                
+
                                 @if($product->cost_price)
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
@@ -119,7 +119,7 @@
                                     </div>
                                 </div>
                                 @endif
-                                
+
                                 <div class="mt-2">
                                     <a href="{{ route('inventory.adjustment') }}?product_id={{ $product->id }}" class="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800">
                                         <i class="bi bi-arrow-repeat mr-1"></i> {{ __('Ajuster le stock') }}
@@ -137,7 +137,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Onglets pour alterner entre les deux sections -->
             <div class="mb-6">
                 <div class="border-b border-gray-200">
@@ -151,39 +151,40 @@
                     </nav>
                 </div>
             </div>
-            
+
             <!-- Historique des prix - visible par défaut -->
             <div id="prices-content" class="tab-content bg-white shadow-sm sm:rounded-lg mb-6">
                 <div class="p-5">
                     <div class="mb-4 flex justify-between items-center">
                         <h3 class="font-medium text-gray-900 text-lg">{{ __('Historique des prix utilisés') }}</h3>
-                        
+
                         @if(count($priceHistory) > 0)
                         <div class="flex items-center space-x-2 text-sm">
                             <span class="text-gray-500">{{ __('Prix par défaut') }}: <span class="font-medium">{{ number_format($product->default_price, 0, ',', ' ') }} FCFA</span></span>
                         </div>
                         @endif
                     </div>
-                    
+
                     @if(count($priceHistory) > 0)
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             @foreach($priceHistory as $price)
                             @php
                                 $defaultPrice = $product->default_price ?: 1;
-                                $priceDiff = $price->unit_price - $product->default_price;
+                                $priceDiff = $price->price - $product->default_price;
                                 $pricePercent = ($priceDiff / $defaultPrice) * 100;
-                                $isDefaultPrice = $price->unit_price == $product->default_price;
+                                $isDefaultPrice = $price->price == $product->default_price;
+                                $usageCount = property_exists($price, 'usage_count') ? $price->usage_count : 1;
                             @endphp
-                            <div class="price-card border rounded-md {{ $isDefaultPrice ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200' }}" data-price="{{ $price->unit_price }}">
+                            <div class="price-card border rounded-md {{ $isDefaultPrice ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200' }}" data-price="{{ $price->price }}">
                                 <div class="p-4">
                                     <div class="flex justify-between">
                                         <div>
                                             <div class="text-lg font-bold text-gray-900">
-                                                {{ number_format($price->unit_price, 0, ',', ' ') }} FCFA
+                                                {{ number_format($price->price, 0, ',', ' ') }} FCFA
                                             </div>
                                             <div class="mt-1 flex items-center">
-                                                <span class="text-sm text-gray-500">{{ $price->usage_count }} facture(s)</span>
-                                                
+                                                <span class="text-sm text-gray-500">{{ $usageCount }} facture(s)</span>
+
                                                 @if($priceDiff != 0)
                                                 <span class="ml-2 text-sm {{ $priceDiff > 0 ? 'text-green-600' : 'text-red-600' }}">
                                                     {{ $priceDiff > 0 ? '+' : '' }}{{ number_format($pricePercent, 1) }}%
@@ -199,15 +200,15 @@
                                     </div>
                                 </div>
                                 <div class="px-4 py-2 bg-gray-50 border-t border-gray-200 flex justify-between">
-                                    <button 
-                                        onclick="showInvoicesByPrice('{{ $price->unit_price }}')" 
+                                    <button
+                                        onclick="showInvoicesByPrice('{{ $price->price }}')"
                                         class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center"
                                         title="Voir les factures utilisant ce prix">
                                         <i class="bi bi-filter mr-1"></i> Voir factures
                                     </button>
-                                    
+
                                     @if(!$isDefaultPrice)
-                                    <a href="{{ route('products.edit', $product) }}?set_price={{ $price->unit_price }}" 
+                                    <a href="{{ route('products.edit', $product) }}?set_price={{ $price->price }}"
                                         class="text-xs text-gray-600 hover:text-gray-800"
                                         title="Définir comme prix par défaut">
                                         Définir par défaut
@@ -224,7 +225,7 @@
                     @endif
                 </div>
             </div>
-            
+
             <!-- Liste des factures - caché par défaut -->
             <div id="invoices-content" class="tab-content bg-white shadow-sm sm:rounded-lg mb-6 hidden">
                 <div class="p-5">
@@ -237,22 +238,22 @@
                                 <input type="text" id="searchInvoice" placeholder="Rechercher par référence, client ou date..." class="pl-10 w-full sm:w-96 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             </div>
                         </div>
-                        
+
                         <div class="flex items-center space-x-3">
                             @if($priceHistory && $priceHistory->count() > 0)
                             <div class="flex items-center">
                                 <select id="priceFilter" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                     <option value="">Tous les prix</option>
                                     @foreach($priceHistory as $price)
-                                        <option value="{{ $price->unit_price }}">
-                                            {{ number_format($price->unit_price, 0, ',', ' ') }} FCFA 
-                                            ({{ $price->usage_count }})
+                                        <option value="{{ $price->price }}">
+                                            {{ number_format($price->price, 0, ',', ' ') }} FCFA
+                                            ({{ $usageCount }})
                                         </option>
                                     @endforeach
                                 </select>
                             </div>
                             @endif
-                            
+
                             <div class="flex items-center">
                                 <select id="pageSizeFilter" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                     <option value="10">10 par page</option>
@@ -272,7 +273,7 @@
                         <div id="noInvoiceResults" class="text-gray-500 py-4 hidden">
                             <p>{{ __('Aucune facture ne correspond à votre recherche.') }}</p>
                         </div>
-                        
+
                         <div class="overflow-x-auto">
                             <table class="min-w-full leading-normal">
                                 <thead>
@@ -302,12 +303,12 @@
                                 </thead>
                                 <tbody id="invoicesTableBody">
                                     @foreach($invoices as $invoice)
-                                        <tr class="invoice-row hover:bg-gray-50" 
-                                            data-reference="{{ strtolower($invoice->reference) }}" 
-                                            data-client="{{ strtolower($invoice->client->name) }}" 
+                                        <tr class="invoice-row hover:bg-gray-50"
+                                            data-reference="{{ strtolower($invoice->reference) }}"
+                                            data-client="{{ strtolower($invoice->client->name) }}"
                                             data-date="{{ $invoice->date->format('d/m/Y') }}"
                                             data-date-sort="{{ $invoice->date->format('Y-m-d') }}"
-                                            data-price="{{ $invoice->pivot->unit_price }}"
+                                            data-price="{{ $invoice->pivot->price }}"
                                             data-quantity="{{ $invoice->pivot->quantity }}"
                                             data-total="{{ $invoice->pivot->total }}"
                                             data-status="{{ strtolower($invoice->status) }}">
@@ -324,13 +325,13 @@
                                                 {{ $invoice->pivot->quantity }}
                                             </td>
                                             <td class="px-4 py-3 border-b border-gray-200 text-sm font-medium">
-                                                {{ number_format($invoice->pivot->unit_price, 0, ',', ' ') }} FCFA
+                                                {{ number_format($invoice->pivot->price, 0, ',', ' ') }} FCFA
                                             </td>
                                             <td class="px-4 py-3 border-b border-gray-200 text-sm">
-                                                <span class="px-2 py-1 text-xs rounded-full {{ 
-                                                    $invoice->status == 'paid' ? 'bg-green-100 text-green-800' : 
-                                                    ($invoice->status == 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                                                    'bg-red-100 text-red-800') 
+                                                <span class="px-2 py-1 text-xs rounded-full {{
+                                                    $invoice->status == 'paid' ? 'bg-green-100 text-green-800' :
+                                                    ($invoice->status == 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                    'bg-red-100 text-red-800')
                                                 }}">{{ $invoice->status }}</span>
                                             </td>
                                             <td class="px-4 py-3 border-b border-gray-200 text-sm text-right">
@@ -343,7 +344,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <!-- Pagination client-side simplifiée -->
                         <div class="mt-4 flex justify-between items-center">
                             <div>
@@ -378,7 +379,7 @@
             // Gestion des onglets
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabContents = document.querySelectorAll('.tab-content');
-            
+
             tabButtons.forEach(button => {
                 button.addEventListener('click', () => {
                     // Désactiver tous les boutons et contenus
@@ -386,24 +387,24 @@
                         btn.classList.remove('border-indigo-500', 'text-indigo-600');
                         btn.classList.add('border-transparent', 'text-gray-500');
                     });
-                    
+
                     tabContents.forEach(content => content.classList.add('hidden'));
-                    
+
                     // Activer l'onglet cliqué
                     button.classList.remove('border-transparent', 'text-gray-500');
                     button.classList.add('border-indigo-500', 'text-indigo-600');
-                    
+
                     // Afficher le contenu correspondant
                     const contentId = button.id.replace('tab-', '') + '-content';
                     document.getElementById(contentId).classList.remove('hidden');
                 });
             });
-            
+
             // Fonctionnalité pour afficher les factures par prix
             window.showInvoicesByPrice = function(price) {
                 // Passer à l'onglet factures
                 document.getElementById('tab-invoices').click();
-                
+
                 // Définir le filtre de prix
                 const priceFilter = document.getElementById('priceFilter');
                 if (priceFilter) {
@@ -411,42 +412,42 @@
                     filterInvoices();
                 }
             };
-            
+
             // Filtrage des factures
             const searchInput = document.getElementById('searchInvoice');
             const priceFilter = document.getElementById('priceFilter');
-            
+
             if (searchInput) {
                 searchInput.addEventListener('input', filterInvoices);
             }
-            
+
             if (priceFilter) {
                 priceFilter.addEventListener('change', filterInvoices);
             }
-            
+
             function filterInvoices() {
                 const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
                 const selectedPrice = priceFilter ? priceFilter.value : '';
-                
+
                 // Filtrer les factures
                 const rows = Array.from(document.querySelectorAll('.invoice-row'));
-                
+
                 filteredRows = rows.filter(row => {
                     const reference = row.dataset.reference;
                     const client = row.dataset.client;
                     const date = row.dataset.date;
                     const price = row.dataset.price;
-                    
-                    const matchesSearch = !searchTerm || 
-                        reference.includes(searchTerm) || 
-                        client.includes(searchTerm) || 
+
+                    const matchesSearch = !searchTerm ||
+                        reference.includes(searchTerm) ||
+                        client.includes(searchTerm) ||
                         date.includes(searchTerm);
-                        
+
                     const matchesPrice = !selectedPrice || price === selectedPrice;
-                    
+
                     return matchesSearch && matchesPrice;
                 });
-                
+
                 // Mise à jour du message d'aucun résultat
                 const noResults = document.getElementById('noInvoiceResults');
                 if (filteredRows.length === 0 && rows.length > 0) {
@@ -454,27 +455,27 @@
                 } else {
                     noResults.classList.add('hidden');
                 }
-                
+
                 // Appliquer le tri actuel
                 applySorting();
-                
+
                 // Réinitialiser la pagination
                 currentPage = 1;
                 updatePagination();
             }
-            
+
             // Système de pagination côté client
             let currentPage = 1;
             let pageSize = 10;
             let filteredRows = [];
             let sortField = 'date';
             let sortDirection = 'desc';
-            
+
             // Initialiser la pagination
             function setupClientPagination() {
                 // Initialiser le tableau filtré
                 filteredRows = Array.from(document.querySelectorAll('.invoice-row'));
-                
+
                 // Configurer les contrôles de pagination
                 document.getElementById('prev-page').addEventListener('click', () => {
                     if (currentPage > 1) {
@@ -482,7 +483,7 @@
                         updatePagination();
                     }
                 });
-                
+
                 document.getElementById('next-page').addEventListener('click', () => {
                     const maxPage = Math.ceil(filteredRows.length / pageSize);
                     if (currentPage < maxPage) {
@@ -490,7 +491,7 @@
                         updatePagination();
                     }
                 });
-                
+
                 // Gérer la taille de page
                 const pageSizeFilter = document.getElementById('pageSizeFilter');
                 if (pageSizeFilter) {
@@ -504,70 +505,70 @@
                         updatePagination();
                     });
                 }
-                
+
                 // Configurer le tri des colonnes
                 document.querySelectorAll('th[data-sort]').forEach(header => {
                     header.addEventListener('click', () => {
                         const field = header.dataset.sort;
-                        
+
                         if (field === sortField) {
                             sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
                         } else {
                             sortField = field;
                             sortDirection = 'asc';
                         }
-                        
+
                         // Mettre à jour l'icône de tri
                         document.querySelectorAll('th[data-sort] i').forEach(icon => {
                             icon.className = 'bi bi-arrow-down-up ml-1';
                         });
-                        
+
                         const icon = header.querySelector('i');
                         if (icon) {
                             icon.className = `bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'} ml-1`;
                         }
-                        
+
                         applySorting();
                         updatePagination();
                     });
                 });
-                
+
                 // Tri initial par date (desc)
                 const dateHeader = document.querySelector('th[data-sort="date"]');
                 if (dateHeader) {
                     const icon = dateHeader.querySelector('i');
                     if (icon) icon.className = 'bi bi-arrow-down ml-1';
                 }
-                
+
                 applySorting();
                 updatePagination();
             }
-            
+
             // Fonction de tri
             function applySorting() {
                 filteredRows.sort((a, b) => {
                     let valueA = a.dataset[sortField];
                     let valueB = b.dataset[sortField];
-                    
+
                     // Tri spécial pour les dates
                     if (sortField === 'date' && a.dataset['dateSort'] && b.dataset['dateSort']) {
                         valueA = a.dataset['dateSort'];
                         valueB = b.dataset['dateSort'];
                     }
-                    
+
                     // Convertir en nombres si nécessaire
                     if (['price', 'quantity', 'total'].includes(sortField)) {
                         valueA = parseFloat(valueA) || 0;
                         valueB = parseFloat(valueB) || 0;
                     }
-                    
+
                     // Comparaison
                     if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
                     if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
                     return 0;
                 });
             }
-            
+
             // Mettre à jour l'affichage de la pagination
             function updatePagination() {
                 const paginationNumbers = document.getElementById('pagination-numbers');
@@ -576,21 +577,21 @@
                 const showingStart = document.getElementById('showing-start');
                 const showingEnd = document.getElementById('showing-end');
                 const totalEntries = document.getElementById('total-entries');
-                
+
                 // Masquer toutes les lignes
                 document.querySelectorAll('.invoice-row').forEach(row => {
                     row.style.display = 'none';
                 });
-                
+
                 // Calculer les indices
                 const startIndex = (currentPage - 1) * pageSize;
                 const endIndex = Math.min(startIndex + pageSize, filteredRows.length);
-                
+
                 // Afficher les lignes de la page actuelle
                 for (let i = startIndex; i < endIndex; i++) {
                     filteredRows[i].style.display = '';
                 }
-                
+
                 // Mettre à jour l'info de pagination
                 if (filteredRows.length > 0) {
                     showingStart.textContent = startIndex + 1;
@@ -601,15 +602,15 @@
                     showingEnd.textContent = '0';
                     totalEntries.textContent = '0';
                 }
-                
+
                 // État des boutons
                 prevButton.disabled = currentPage === 1;
                 nextButton.disabled = endIndex >= filteredRows.length;
-                
+
                 // Générer les boutons de page
                 const maxPage = Math.ceil(filteredRows.length / pageSize);
                 paginationNumbers.innerHTML = '';
-                
+
                 if (maxPage <= 5) {
                     // Afficher tous les numéros de page
                     for (let i = 1; i <= maxPage; i++) {
@@ -635,26 +636,26 @@
                         addPageButton(maxPage);
                     }
                 }
-                
+
                 function addPageButton(page) {
                     const button = document.createElement('button');
                     button.classList.add('px-3', 'py-1', 'rounded', 'border', 'text-sm');
-                    
+
                     if (page === currentPage) {
                         button.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
                     } else {
                         button.classList.add('border-gray-300', 'text-gray-700', 'hover:bg-indigo-50');
                     }
-                    
+
                     button.textContent = page;
                     button.addEventListener('click', () => {
                         currentPage = page;
                         updatePagination();
                     });
-                    
+
                     paginationNumbers.appendChild(button);
                 }
-                
+
                 function addEllipsis() {
                     const span = document.createElement('span');
                     span.classList.add('px-2', 'py-1', 'text-sm', 'text-gray-500');
@@ -662,7 +663,7 @@
                     paginationNumbers.appendChild(span);
                 }
             }
-            
+
             // Initialiser la pagination
             setupClientPagination();
         });

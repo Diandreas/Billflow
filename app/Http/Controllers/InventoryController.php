@@ -41,6 +41,12 @@ class InventoryController extends Controller
             ->orderBy('stock_quantity')
             ->get();
 
+        // Liste complète des produits pour l'inventaire
+        $inventories = Product::where('type', 'physical')
+            ->with('category')
+            ->orderBy('name')
+            ->paginate(25);
+
         // Derniers mouvements de stock
         $recentMovements = InventoryMovement::with(['product', 'user'])
             ->latest()
@@ -49,7 +55,7 @@ class InventoryController extends Controller
         // Catégories pour les filtres
         $categories = ProductCategory::orderBy('name')->get();
 
-        return view('inventory.index', compact('stats', 'lowStockProducts', 'recentMovements', 'categories'));
+        return view('inventory.index', compact('stats', 'lowStockProducts', 'recentMovements', 'categories', 'inventories'));
     }
 
     /**

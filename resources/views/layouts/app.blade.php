@@ -169,6 +169,11 @@
             background-color: rgba(156, 163, 175, 0.5);
             border-radius: 20px;
         }
+
+        /* User dropdown animation */
+        .animate-dropdown-enter {
+            transform-origin: top right;
+        }
     </style>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -422,7 +427,7 @@
         </div>
 
         <!-- Sidebar footer -->
-        <div class="absolute bottom-0 w-full p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div class="relative  w-full p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200 flex items-center justify-center">
@@ -518,22 +523,13 @@
                         <i class="fas fa-bars text-lg"></i>
                     </button>
 
-                    <!-- User menu -->
-                    <div x-data="{ open: false }" class="relative" data-intro-id="user-menu" data-title="Menu utilisateur" data-intro="Accédez à votre profil, paramètres et option de déconnexion.">
-                        <button @click="open = !open"
-                                class="flex items-center justify-center h-12 w-12 rounded-full bg-indigo-500 text-white font-bold focus:outline-none hover:bg-indigo-600 transition-colors">
+                    <!-- User menu - REPLACED Alpine.js with Vanilla JS -->
+                    <div id="userMenuContainer" class="relative" data-intro-id="user-menu" data-title="Menu utilisateur" data-intro="Accédez à votre profil, paramètres et option de déconnexion.">
+                        <button id="userMenuBtn" class="flex items-center justify-center h-12 w-12 rounded-full bg-indigo-500 text-white font-bold focus:outline-none hover:bg-indigo-600 transition-colors">
                             {{ Auth::user()->initials ?? substr(Auth::user()->name, 0, 1) }}
                         </button>
 
-                        <div x-cloak x-show="open"
-                             @click.away="open = false"
-                             x-transition:enter="transition ease-out duration-200"
-                             x-transition:enter-start="opacity-0 scale-95"
-                             x-transition:enter-end="opacity-100 scale-100"
-                             x-transition:leave="transition ease-in duration-100"
-                             x-transition:leave-start="opacity-100 scale-100"
-                             x-transition:leave-end="opacity-0 scale-95"
-                             class="absolute right-0 z-50 mt-2 w-64 origin-top-right rounded-lg bg-white dark:bg-gray-800 shadow-xl ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-gray-700">
+                        <div id="userDropdown" class="hidden absolute right-0 z-50 mt-2 w-64 origin-top-right rounded-lg bg-white dark:bg-gray-800 shadow-xl ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-gray-700">
                             <div class="px-4 py-3">
                                 <p class="text-sm font-medium text-gray-900 dark:text-white">{{ Auth::user()->name }}</p>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</p>
@@ -747,6 +743,69 @@
                     const currentDarkMode = document.documentElement.classList.contains('dark');
                     toggleDarkMode(!currentDarkMode);
                 });
+            }
+
+            // User menu dropdown functionality
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userDropdown = document.getElementById('userDropdown');
+
+            if (userMenuBtn && userDropdown) {
+                let isOpen = false;
+
+                // Toggle dropdown
+                userMenuBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+
+                    if (!isOpen) {
+                        // Open dropdown
+                        openDropdown();
+                    } else {
+                        // Close dropdown
+                        closeDropdown();
+                    }
+                });
+
+                // Close when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (isOpen && !userDropdown.contains(e.target) && e.target !== userMenuBtn) {
+                        closeDropdown();
+                    }
+                });
+
+                // Function to open dropdown with animation
+                function openDropdown() {
+                    isOpen = true;
+                    userDropdown.classList.remove('hidden');
+
+                    // Add enter transition classes
+                    userDropdown.classList.add('animate-dropdown-enter');
+                    userDropdown.style.opacity = '0';
+                    userDropdown.style.transform = 'scale(0.95)';
+
+                    // Trigger reflow
+                    void userDropdown.offsetWidth;
+
+                    // Start animation
+                    userDropdown.style.transition = 'opacity 200ms ease-out, transform 200ms ease-out';
+                    userDropdown.style.opacity = '1';
+                    userDropdown.style.transform = 'scale(1)';
+                }
+
+                // Function to close dropdown with animation
+                function closeDropdown() {
+                    isOpen = false;
+
+                    // Add leave transition
+                    userDropdown.style.transition = 'opacity 100ms ease-in, transform 100ms ease-in';
+                    userDropdown.style.opacity = '0';
+                    userDropdown.style.transform = 'scale(0.95)';
+
+                    // Hide after animation completes
+                    setTimeout(() => {
+                        userDropdown.classList.add('hidden');
+                        userDropdown.classList.remove('animate-dropdown-enter');
+                    }, 100);
+                }
             }
 
             // Vérifiez si l'utilisateur a déjà vu le tutorial

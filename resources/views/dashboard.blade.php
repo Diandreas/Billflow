@@ -73,8 +73,9 @@
 
                         <a href="{{ route('inventory.receive') }}" class="flex flex-col items-center p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors group">
                             <div class="w-10 h-10 bg-orange-100 dark:bg-orange-800/40 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center mb-1 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/60 transition-colors">
-                                <i class="fas fa-box-arrow-in text-lg"></i>
+                                <i class="fas fa-solid fa-arrow-down text-lg"></i>
                             </div>
+{{--                            <i class="fa-solid fa-arrow-down"></i>--}}
                             <span class="text-xs font-medium text-orange-700 dark:text-orange-400 text-center">{{ __('Réception') }}</span>
                         </a>
 
