@@ -21,7 +21,10 @@ class Commission extends Model
         'period_start',
         'period_end',
         'status',
-        'paid_at'
+        'paid_at',
+        'paid_by',
+        'payment_method',
+        'payment_reference'
     ];
 
     protected $casts = [
@@ -55,6 +58,14 @@ class Commission extends Model
     public function shop()
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    /**
+     * Relation avec l'utilisateur qui a effectué le paiement
+     */
+    public function paidByUser()
+    {
+        return $this->belongsTo(User::class, 'paid_by');
     }
 
     /**

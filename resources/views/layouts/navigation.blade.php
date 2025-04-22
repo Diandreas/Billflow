@@ -1,283 +1,217 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+<nav x-data="{ open: false }" 
+     @search-hotkey.window="$dispatch('toggle-search')"
+     class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-20">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
-                <!-- Logo -->
-                <div class="shrink-0 flex items-center">
+                <!-- Logo - Only visible on mobile when sidebar is hidden -->
+                <div class="shrink-0 flex items-center md:hidden">
                     <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800 dark:text-white" />
                     </a>
                 </div>
 
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        <i class="bi bi-house-door mr-1"></i> {{ __('Dashboard') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('bills.index')" :active="request()->routeIs('bills.*')">
-                         <i class="bi bi-receipt mr-1"></i> {{ __('Factures') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
-                         <i class="bi bi-people mr-1"></i> {{ __('Clients') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('products.index')" :active="request()->routeIs('products.*')">
-                         <i class="bi bi-box-seam mr-1"></i> {{ __('Produits') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">
-                         <i class="bi bi-archive mr-1"></i> {{ __('Inventaire') }}
-                    </x-nav-link>
-                    
-                    <!-- Boutiques - visible seulement pour les administrateurs -->
-                    @if (auth()->user()->isAdmin())
-                        <x-nav-link :href="route('shops.index')" :active="request()->routeIs('shops.*')">
-                            <i class="bi bi-shop mr-1"></i> {{ __('Boutiques') }}
-                        </x-nav-link>
-                        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-                            <i class="bi bi-people-fill mr-1"></i> {{ __('Utilisateurs') }}
-                        </x-nav-link>
-                    @endif
-                    
-                    <x-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
-                         <i class="bi bi-gear mr-1"></i> {{ __('Paramètres') }}
-                    </x-nav-link>
+                <!-- Page Title - Dynamically shows current page -->
+                <div class="hidden sm:flex items-center ml-4">
+                    <h1 class="text-xl font-semibold text-gray-800 dark:text-white">
+                        @if(request()->routeIs('dashboard'))
+                            {{ __('Tableau de bord') }}
+                        @elseif(request()->routeIs('bills.*'))
+                            {{ __('Factures') }}
+                        @elseif(request()->routeIs('clients.*'))
+                            {{ __('Clients') }}
+                        @elseif(request()->routeIs('products.*'))
+                            {{ __('Catalogue produits') }}
+                        @elseif(request()->routeIs('inventory.*'))
+                            {{ __('Gestion d\'inventaire') }}
+                        @elseif(request()->routeIs('commissions.*'))
+                            {{ __('Commissions') }}
+                        @elseif(request()->routeIs('users.*'))
+                            {{ __('Utilisateurs') }}
+                        @elseif(request()->routeIs('shops.*'))
+                            {{ __('Boutiques') }}
+                        @elseif(request()->routeIs('settings.*'))
+                            {{ __('Paramètres') }}
+                        @elseif(request()->routeIs('profile.*'))
+                            {{ __('Profil') }}
+                        @else
+                            {{ config('app.name', 'BillFlow') }}
+                        @endif
+                    </h1>
                 </div>
             </div>
 
-            <!-- Notifications and Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ml-6">
-                {{-- Temporairement désactivé
-                 <div x-data="{
-                    notificationsOpen: false, 
-                    notifications: [], 
-                    unreadCount: 0,
-                    fetchNotifications() {
-                        fetch('{{ route("notifications.index") }}', { headers: { 'Accept': 'application/json' } })
-                            .then(response => response.ok ? response.json() : Promise.reject('Network response was not ok.'))
-                            .then(data => {
-                                if(data && data.notifications) {
-                                    this.notifications = data.notifications.data; 
-                                    this.unreadCount = data.unreadCount;
-                                } else {
-                                    console.error('Invalid data structure received:', data);
-                                    this.notifications = [];
-                                    this.unreadCount = 0;
-                                }
-                            }).catch(error => {
-                                console.error('Fetch notifications error:', error);
-                                this.notifications = [];
-                                this.unreadCount = 0;
-                            });
-                    },
-                    markAsRead(notificationId, event) {
-                        fetch(`/notifications/${notificationId}/read`, {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                                'Accept': 'application/json'
-                            }
-                        }).then(response => response.ok ? response.json() : Promise.reject('Failed to mark as read'))
-                          .then(data => {
-                              if(data.success) {
-                                  this.unreadCount = data.unreadCount;
-                                  let notif = this.notifications.find(n => n.id === notificationId);
-                                  if (notif) notif.read_at = new Date().toISOString();
-                              }
-                          }).catch(error => console.error('Mark as read error:', error));
-                    },
-                    markAllAsRead() {
-                        fetch('{{ route("notifications.read-all") }}', {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                                'Accept': 'application/json'
-                            }
-                        }).then(response => response.ok ? response.json() : Promise.reject('Failed to mark all as read'))
-                          .then(data => {
-                              if(data.success) {
-                                  this.unreadCount = 0;
-                                  this.notifications.forEach(n => n.read_at = new Date().toISOString());
-                              }
-                          }).catch(error => console.error('Mark all as read error:', error));
-                    },
-                    formatDate(dateString) {
-                        if (!dateString) return '';
-                        try {
-                            // Essayer de déterminer si c'est 'il y a x temps' ou une date
-                            // Simple heuristique: si ça ne contient pas ':', c'est probablement déjà formaté
-                            if (!dateString.includes(':') && isNaN(Date.parse(dateString))) {
-                                return dateString; // Probablement déjà 'diffForHumans'
-                            }
-                            const date = new Date(dateString);
-                            const now = new Date();
-                            const diffSeconds = Math.round((now - date) / 1000);
-                            const diffMinutes = Math.round(diffSeconds / 60);
-                            const diffHours = Math.round(diffMinutes / 60);
-                            const diffDays = Math.round(diffHours / 24);
-
-                            if (diffSeconds < 60) return `à l'instant`;
-                            if (diffMinutes < 60) return `il y a ${diffMinutes} min`;
-                            if (diffHours < 24) return `il y a ${diffHours} h`;
-                            if (diffDays === 1) return `hier`;
-                            if (diffDays < 7) return `il y a ${diffDays} j`;
-                            
-                            const options = { year: 'numeric', month: 'short', day: 'numeric' };
-                            return date.toLocaleDateString('fr-FR', options);
-                        } catch (e) {
-                            console.error('Error formatting date:', dateString, e);
-                            return dateString; // Retourne la chaîne originale en cas d'erreur
-                        }
-                    },
-                    getNotificationIcon(type) {
-                        if (!type) return 'bi-info-circle text-gray-600';
-                        if (type.includes('LowStockNotification')) return 'bi-exclamation-triangle text-yellow-600';
-                        if (type.includes('PaymentReceivedNotification')) return 'bi-check-circle text-green-600';
-                        if (type.includes('NewBillNotification')) return 'bi-receipt text-blue-600';
-                        return 'bi-info-circle text-gray-600';
-                    },
-                    getNotificationColor(type) {
-                        if (!type) return 'bg-gray-100';
-                        if (type.includes('LowStockNotification')) return 'bg-yellow-100';
-                        if (type.includes('PaymentReceivedNotification')) return 'bg-green-100';
-                        if (type.includes('NewBillNotification')) return 'bg-blue-100';
-                        return 'bg-gray-100';
-                    }
-                 }"
-                 x-init="fetchNotifications(); setInterval(fetchNotifications, 60000)" > 
-                 
-                <!-- Notifications Dropdown -->
-                <div class="relative">
-                    <x-dropdown align="right" width="96">
-                        <x-slot name="trigger">
-                            <button @click="notificationsOpen = !notificationsOpen" 
-                                    class="relative inline-flex items-center p-2 border border-transparent text-sm leading-4 font-medium rounded-full text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                                <i class="bi bi-bell text-xl"></i>
-                                <template x-if="unreadCount > 0">
-                                    <span x-text="unreadCount" 
-                                          class="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full"></span>
-                                </template>
-                            </button>
-                        </x-slot>
-
-                        <x-slot name="content">
-                           <!-- Contenu du dropdown -->
-                        </x-slot>
-                    </x-dropdown>
+            <!-- Right Side Options -->
+            <div class="hidden sm:flex sm:items-center sm:ml-6 space-x-4">
+                <!-- Search Button -->
+                <button @click="$dispatch('toggle-search')" 
+                        class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
+                        title="Recherche (⌘K)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </button>
+                
+                <!-- Dark Mode Toggle -->
+                <div x-data="{ darkMode: localStorage.getItem('dark-mode') === 'true' }" 
+                     class="relative">
+                    <button @click="darkMode = !darkMode; localStorage.setItem('dark-mode', darkMode); document.documentElement.classList.toggle('dark', darkMode);" 
+                            class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
+                            title="Mode sombre">
+                        <svg x-show="!darkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                        <svg x-show="darkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    </button>
                 </div>
-                --}}
 
                 <!-- Settings Dropdown -->
-                <div class="ml-3 relative">
-                    <x-dropdown align="right" width="48">
-                        <x-slot name="trigger">
-                            <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                                <div>{{ Auth::user()->name }}</div>
-                                <div class="ml-1">
-                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                            </button>
-                        </x-slot>
+                <div x-data="{ open: false }" class="relative">
+                    <button @click="open = !open" 
+                            class="flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
+                        <div class="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold">
+                            {{ Auth::user()->initials ?? substr(Auth::user()->name, 0, 1) }}
+                        </div>
+                    </button>
 
-                        <x-slot name="content">
-                            <x-dropdown-link :href="route('profile.edit')">
-                                {{ __('Profile') }}
-                            </x-dropdown-link>
+                    <div x-show="open" 
+                         @click.away="open = false"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-100"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50"
+                         style="display: none;">
+                        <!-- User Info -->
+                        <div class="p-4 border-b border-gray-100 dark:border-gray-700">
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ Auth::user()->name }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ Auth::user()->email }}</p>
+                            <div class="flex items-center mt-2">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100">
+                                    @if(Auth::user()->isAdmin())
+                                        {{ __('Administrateur') }}
+                                    @elseif(Auth::user()->isManager())
+                                        {{ __('Manager') }}
+                                    @elseif(Auth::user()->role === 'vendeur')
+                                        {{ __('Vendeur') }}
+                                    @else
+                                        {{ Auth::user()->role }}
+                                    @endif
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Profile Options -->
+                        <div class="py-1">
+                            <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <div class="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    {{ __('Profil') }}
+                                </div>
+                            </a>
+                            <a href="{{ route('settings.index') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <div class="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    {{ __('Paramètres') }}
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Logout -->
+                        <div class="border-t border-gray-100 dark:border-gray-700">
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <x-dropdown-link :href="route('logout')"
-                                                 onclick="event.preventDefault(); this.closest('form').submit();">
-                                    {{ __('Déconnexion') }}
-                                </x-dropdown-link>
+                                <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <div class="flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
+                                        {{ __('Déconnexion') }}
+                                    </div>
+                                </button>
                             </form>
-                        </x-slot>
-                    </x-dropdown>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Hamburger -->
-            <div class="-mr-2 flex items-center sm:hidden">
-                 {{-- Icône mobile des notifications - Temporairement désactivé
-                 <button @click="notificationsOpen = !notificationsOpen; fetchNotifications()" 
-                         class="relative inline-flex items-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out mr-2">
-                    <i class="bi bi-bell text-xl"></i>
-                    <template x-if="unreadCount > 0">
-                        <span x-text="unreadCount" 
-                              class="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full"></span>
-                    </template>
+            <!-- Hamburger (Mobile Menu) -->
+            <div class="flex items-center sm:hidden">
+                <!-- Mobile Search Button -->
+                <button @click="$dispatch('toggle-search')" 
+                        class="p-2 mr-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                 </button>
-                 --}}
                 
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
+                <!-- Mobile Dark Mode Toggle -->
+                <div x-data="{ darkMode: localStorage.getItem('dark-mode') === 'true' }" class="relative">
+                    <button @click="darkMode = !darkMode; localStorage.setItem('dark-mode', darkMode); document.documentElement.classList.toggle('dark', darkMode);" 
+                            class="p-2 mr-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <svg x-show="!darkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                        <svg x-show="darkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <button @click="open = !open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 focus:text-gray-500 dark:focus:text-gray-400">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        <path :class="{'hidden': open, 'inline-flex': !open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        <path :class="{'hidden': !open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <!-- Liens de navigation responsive existants -->
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('bills.index')" :active="request()->routeIs('bills.*')">
-                {{ __('Factures') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
-                {{ __('Clients') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('products.index')" :active="request()->routeIs('products.*')">
-                {{ __('Produits') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">
-                {{ __('Inventaire') }}
-            </x-responsive-nav-link>
-            
-            <!-- Boutiques - visible seulement pour les administrateurs -->
-            @if (auth()->user()->isAdmin())
-                <x-responsive-nav-link :href="route('shops.index')" :active="request()->routeIs('shops.*')">
-                    {{ __('Boutiques') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-                    {{ __('Utilisateurs') }}
-                </x-responsive-nav-link>
-            @endif
-            
-            <x-responsive-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
-                {{ __('Paramètres') }}
-            </x-responsive-nav-link>
-        </div>
-
-        <!-- Options de langue responsive -->
-        <div class="mt-4 text-center">
-            <a href="{{ route('language.switch', 'en') }}" class="inline-block px-3 py-1 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 mr-2">English</a>
-            <a href="{{ route('language.switch', 'fr') }}" class="inline-block px-3 py-1 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200">Français</a>
-        </div>
-
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200 mt-4">
-            <div class="px-4">
-                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
+    <!-- Mobile Menu -->
+    <div :class="{'block': open, 'hidden': !open}" class="hidden sm:hidden">
+        <!-- User Profile -->
+        <div class="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center px-4">
+                <div class="flex-shrink-0">
+                    <div class="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold">
+                        {{ Auth::user()->initials ?? substr(Auth::user()->name, 0, 1) }}
+                    </div>
+                </div>
+                <div class="ml-3">
+                    <div class="text-base font-medium text-gray-800 dark:text-white">{{ Auth::user()->name }}</div>
+                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</div>
+                </div>
             </div>
-
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <x-responsive-nav-link :href="route('logout')"
-                                           onclick="event.preventDefault(); this.closest('form').submit();">
-                        {{ __('Déconnexion') }}
-                    </x-responsive-nav-link>
-                </form>
+            
+            <div class="mt-3 space-y-1 px-2">
+                <a href="{{ route('profile.edit') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    {{ __('Profil') }}
+                </a>
+                <a href="{{ route('settings.index') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    {{ __('Paramètres') }}
+                </a>
+                
+                <!-- Logout option -->
+                <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            {{ __('Déconnexion') }}
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

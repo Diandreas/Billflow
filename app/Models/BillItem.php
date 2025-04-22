@@ -2,24 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class BillProduct extends Model
+class BillItem extends Model
 {
-    protected $table = 'bill_products';
+    use HasFactory;
+    
+    protected $table = 'bill_items';
     
     protected $fillable = [
         'bill_id',
         'product_id',
         'unit_price',
         'quantity',
-        'total'
-    ];
-    
-    protected $casts = [
-        'unit_price' => 'decimal:2',
-        'quantity' => 'integer',
-        'total' => 'decimal:2',
+        'price',
+        'total',
     ];
     
     /**

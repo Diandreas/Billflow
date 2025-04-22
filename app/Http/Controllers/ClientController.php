@@ -93,16 +93,8 @@ class ClientController extends Controller
             }
         }
 
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'client' => $client->load('phones'),
-                'message' => 'Client créé avec succès'
-            ]);
-        }
-
         return redirect()
-            ->route('clients.show', $client)
+            ->route('clients.index')
             ->with('success', 'Client créé avec succès');
     }
 

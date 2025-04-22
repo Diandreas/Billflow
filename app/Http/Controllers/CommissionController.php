@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Spatie\Activitylog\Facades\LogActivity;
 
 class CommissionController extends Controller
 {
@@ -237,15 +238,111 @@ class CommissionController extends Controller
 
         $validated = $request->validate([
             'notes' => 'nullable|string',
+            'payment_method' => 'nullable|string|max:50',
+            'payment_reference' => 'nullable|string|max:100',
         ]);
 
+        // Mettre à jour la commission
         $commission->update([
             'status' => 'paid',
             'paid_at' => now(),
-            'description' => $commission->description . "\n" . ($validated['notes'] ?? '')
+            'paid_by' => Auth::id(),
+            'payment_method' => $validated['payment_method'] ?? null,
+            'payment_reference' => $validated['payment_reference'] ?? null,
+            'description' => trim($commission->description . "\n" . ($validated['notes'] ?? ''))
         ]);
+
+        // Log d'activité (si vous avez la librairie d'activité installée)
+        // Sinon, vous pouvez retirer ce bloc
+        /*
+        activity()
+            ->performedOn($commission)
+            ->causedBy(auth()->user())
+            ->withProperties([
+                'payment_method' => $validated['payment_method'] ?? 'Non spécifiée',
+                'amount' => $commission->amount
+            ])
+            ->log('Commission marquée comme payée');
+        */
 
         return redirect()->route('commissions.show', $commission)
             ->with('success', 'Commission marquée comme payée');
+    }
+
+    /**
+     * Marque toutes les commissions en attente d'un vendeur comme payées
+     */
+    public function payBatch(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'payment_method' => 'nullable|string|max:50',
+            'payment_reference' => 'nullable|string|max:100',
+            'notes' => 'nullable|string',
+        ]);
+
+        $user = User::findOrFail($validated['user_id']);
+        
+        // Vérifier si l'utilisateur peut payer les commissions
+        if (!Gate::allows('pay-vendor-commissions', $user)) {
+            abort(403, 'Action non autorisée.');
+        }
+        
+        // Récupérer les commissions en attente
+        $query = Commission::where('user_id', $validated['user_id'])
+            ->where('status', 'pending');
+        
+        // Si l'utilisateur est un manager (non admin), limiter aux boutiques qu'il gère
+        if (Auth::user()->isManager() && !Auth::user()->isAdmin()) {
+            $managedShopIds = Auth::user()->managedShops()->pluck('shops.id')->toArray();
+            $query->whereIn('shop_id', $managedShopIds);
+        }
+        
+        $commissions = $query->get();
+        
+        if ($commissions->isEmpty()) {
+            return redirect()->back()->with('info', 'Aucune commission en attente trouvée pour ce vendeur.');
+        }
+        
+        // Payer toutes les commissions
+        $totalAmount = 0;
+        DB::beginTransaction();
+        
+        try {
+            foreach ($commissions as $commission) {
+                $commission->update([
+                    'status' => 'paid',
+                    'paid_at' => now(),
+                    'paid_by' => Auth::id(),
+                    'payment_method' => $validated['payment_method'] ?? null,
+                    'payment_reference' => $validated['payment_reference'] ?? null,
+                    'description' => trim($commission->description . "\n" . ($validated['notes'] ?? "Paiement groupé"))
+                ]);
+                
+                $totalAmount += $commission->amount;
+            }
+            
+            // Log d'activité (si vous avez la librairie d'activité installée)
+            // Sinon, vous pouvez retirer ce bloc
+            /*
+            activity()
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'user_id' => $validated['user_id'],
+                    'count' => $commissions->count(),
+                    'total_amount' => $totalAmount,
+                    'payment_method' => $validated['payment_method'] ?? 'Non spécifiée'
+                ])
+                ->log('Paiement groupé de commissions');
+            */
+            
+            DB::commit();
+            
+            return redirect()->route('commissions.vendor-report', $validated['user_id'])
+                ->with('success', 'Toutes les commissions en attente ont été marquées comme payées (' . number_format($totalAmount, 0, ',', ' ') . ' FCFA)');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Une erreur est survenue lors du paiement des commissions: ' . $e->getMessage());
+        }
     }
 } 

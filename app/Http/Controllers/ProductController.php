@@ -13,7 +13,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $query = Product::withCount('bills')
-            ->withSum('bills as total_sales', DB::raw('bill_products.unit_price * bill_products.quantity'))
+            ->withSum('bills as total_sales', DB::raw('bill_items.quantity * bill_items.price'))
             ->select('products.*'); // S'assurer que toutes les colonnes sont chargées pour les méthodes isLowStock et isOutOfStock
 
         // Filtrer les produits par boutique pour les non-administrateurs
@@ -91,7 +91,7 @@ class ProductController extends Controller
             'total_products' => Product::count(),
             'active_products' => Product::where('status', 'actif')->count(),
             'physical_products' => Product::where('type', 'physical')->count(),
-            'total_revenue' => Product::withSum('bills as total_sales', DB::raw('bill_products.unit_price * bill_products.quantity'))->sum('total_sales'),
+            'total_revenue' => Product::withSum('bills as total_sales', DB::raw('bill_items.quantity * bill_items.price'))->sum('total_sales'),
             'average_price' => Product::avg('default_price') ?: 0,
         ];
         
@@ -159,10 +159,10 @@ class ProductController extends Controller
         // Statistiques du produit
         $stats = [
             'total_sales' => $invoices->sum(function($bill) {
-                return $bill->pivot->unit_price * $bill->pivot->quantity;
+                return $bill->pivot->quantity * $bill->pivot->price;
             }),
             'total_quantity' => $invoices->sum('pivot.quantity'),
-            'average_price' => $invoices->avg('pivot.unit_price'),
+            'average_price' => $invoices->avg('pivot.price'),
             'usage_count' => $invoices->count(),
             'first_use' => $invoices->last()?->date,
             'last_use' => $invoices->first()?->date,
@@ -177,19 +177,20 @@ class ProductController extends Controller
                 return [
                     'count' => $bills->count(),
                     'total' => $bills->sum(function($bill) {
-                        return $bill->pivot->unit_price * $bill->pivot->quantity;
+                        return $bill->pivot->quantity * $bill->pivot->price;
                     }),
                     'quantity' => $bills->sum('pivot.quantity'),
-                    'average_price' => $bills->avg('pivot.unit_price')
+                    'average_price' => $bills->avg('pivot.price')
                 ];
             });
 
         // Prix utilisés
-        $priceHistory = DB::table('bill_products')
-            ->select('unit_price', DB::raw('COUNT(*) as usage_count'))
-            ->where('product_id', $product->id)
-            ->groupBy('unit_price')
-            ->orderByDesc('usage_count')
+        $priceHistory = DB::table('bill_items')
+            ->join('bills', 'bill_items.bill_id', '=', 'bills.id')
+            ->where('bill_items.product_id', $product->id)
+            ->orderBy('bills.date', 'desc')
+            ->select('bills.date', 'bill_items.price')
+            ->limit(10)
             ->get();
 
         return view('products.show', compact('product', 'stats', 'monthlyStats', 'priceHistory', 'invoices'));

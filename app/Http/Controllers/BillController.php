@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Gate;
-use App\Models\BillProduct;
+use App\Models\BillItem;
 
 class BillController extends Controller
 {
@@ -48,7 +48,7 @@ class BillController extends Controller
 
         // Filtrer par prix spécifique
         if ($request->has('unit_price')) {
-            $query->whereHas('billProducts', function($q) use ($request) {
+            $query->whereHas('items', function($q) use ($request) {
                 $q->where('unit_price', $request->input('unit_price'));
             });
         }
@@ -77,7 +77,7 @@ class BillController extends Controller
         $clients = Client::all();
 
         // Récupérer la liste des prix uniques pour le filtre
-        $uniquePrices = BillProduct::select('unit_price')
+        $uniquePrices = BillItem::select('unit_price')
             ->distinct()
             ->orderBy('unit_price')
             ->pluck('unit_price');
@@ -92,7 +92,16 @@ class BillController extends Controller
             abort(403, 'Action non autorisée.');
         }
 
-        $clients = Client::all();
+        // Pour les vendeurs, ne montrer que les clients de leur boutique
+        if (Auth::user()->role === 'vendeur') {
+            $shopIds = Auth::user()->shops->pluck('id')->toArray();
+            $clients = Client::whereHas('bills', function ($query) use ($shopIds) {
+                $query->whereIn('shop_id', $shopIds);
+            })->orderBy('name')->get();
+        } else {
+            $clients = Client::orderBy('name')->get();
+        }
+
         $products = Product::where('stock_quantity', '>', 0)->get();
         
         // Obtenir les boutiques de l'utilisateur actuel
@@ -180,11 +189,12 @@ class BillController extends Controller
             }
             
             // Ajouter le produit à la facture
-            BillProduct::create([
+            BillItem::create([
                 'bill_id' => $bill->id,
                 'product_id' => $product->id,
                 'unit_price' => $productData['price'],
                 'quantity' => $productData['quantity'],
+                'price' => $productData['price'],
                 'total' => $productData['price'] * $productData['quantity'],
             ]);
             
@@ -233,7 +243,7 @@ class BillController extends Controller
             abort(403, 'Action non autorisée.');
         }
 
-        $bill->load(['client', 'seller', 'shop', 'billProducts.product']);
+        $bill->load(['client', 'seller', 'shop', 'items.product']);
 
         return view('bills.show', compact('bill'));
     }
@@ -608,7 +618,7 @@ class BillController extends Controller
     {
         $query = Bill::query()
             ->with(['client', 'seller', 'shop'])
-            ->whereHas('billProducts', function($q) use ($price) {
+            ->whereHas('items', function($q) use ($price) {
                 $q->where('unit_price', $price);
             });
 
@@ -628,7 +638,7 @@ class BillController extends Controller
         $clients = Client::all();
 
         // Récupérer la liste des prix uniques pour le filtre
-        $uniquePrices = BillProduct::select('unit_price')
+        $uniquePrices = BillItem::select('unit_price')
             ->distinct()
             ->orderBy('unit_price')
             ->pluck('unit_price');

@@ -1,7 +1,11 @@
 <?php
 
 return [
-    // Providers essentiels de Laravel
+    App\Providers\AppServiceProvider::class,
+    App\Providers\AuthServiceProvider::class,
+    App\Providers\CommissionServiceProvider::class,
+    App\Providers\EventServiceProvider::class,
+    App\Providers\RouteServiceProvider::class,
     Illuminate\Auth\AuthServiceProvider::class,
     Illuminate\Cache\CacheServiceProvider::class,
     Illuminate\Cookie\CookieServiceProvider::class,
@@ -15,10 +19,4 @@ return [
     Illuminate\Translation\TranslationServiceProvider::class,
     Illuminate\Validation\ValidationServiceProvider::class,
     Illuminate\View\ViewServiceProvider::class,
-    
-    // Providers de l'application
-    App\Providers\AppServiceProvider::class,
-    App\Providers\AuthServiceProvider::class,
-    App\Providers\RouteServiceProvider::class,
-    App\Providers\EventServiceProvider::class,
 ];

@@ -54,17 +54,17 @@ class Bill extends Model
 
     public function products()
     {
-        return $this->belongsToMany(Product::class, 'bill_products')
-            ->withPivot('unit_price', 'quantity', 'total')
+        return $this->belongsToMany(Product::class, 'bill_items')
+            ->withPivot('quantity', 'unit_price', 'price', 'total')
             ->withTimestamps();
     }
 
     /**
-     * Relation avec les produits de la facture via le modèle BillProduct
+     * Relation avec les produits de la facture via le modèle BillItem
      */
-    public function billProducts()
+    public function items()
     {
-        return $this->hasMany(BillProduct::class);
+        return $this->hasMany(BillItem::class);
     }
 
     // Méthode pour générer une référence unique

@@ -13,18 +13,19 @@ return new class extends Migration
     {
         Schema::create('commissions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('bill_id')->nullable()->constrained()->onDelete('set null');
-            $table->foreignId('shop_id')->constrained()->onDelete('cascade');
-            $table->string('type')->default('vente'); // vente, surplus, performance, etc.
-            $table->decimal('amount', 12, 2);
-            $table->decimal('rate', 5, 2)->nullable();
-            $table->decimal('base_amount', 12, 2)->nullable(); // Montant sur lequel la commission est calculée
-            $table->text('description')->nullable();
-            $table->date('period_start')->nullable();
-            $table->date('period_end')->nullable();
-            $table->string('status')->default('pending'); // pending, approved, paid
-            $table->dateTime('paid_at')->nullable();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade')->comment('Vendeur qui reçoit la commission');
+            $table->foreignId('bill_id')->nullable()->constrained()->onDelete('set null')->comment('Facture liée à cette commission');
+            $table->foreignId('barter_id')->nullable()->comment('Troc lié à cette commission');
+            $table->foreignId('shop_id')->constrained()->comment('Boutique où la vente a été effectuée');
+            $table->decimal('amount', 10, 2)->comment('Montant de la commission');
+            $table->decimal('rate', 5, 2)->comment('Taux appliqué pour cette commission');
+            $table->decimal('base_amount', 10, 2)->comment('Montant sur lequel la commission a été calculée');
+            $table->enum('type', ['vente', 'troc', 'surplus'])->default('vente')->comment('Type de commission');
+            $table->text('description')->nullable()->comment('Description ou détails supplémentaires');
+            $table->enum('status', ['pending', 'approved', 'paid'])->default('pending')->comment('Statut de la commission');
+            $table->date('paid_at')->nullable()->comment('Date de paiement de la commission');
+            $table->foreignId('paid_by')->nullable()->comment('Utilisateur qui a effectué le paiement');
+            $table->foreign('paid_by')->references('id')->on('users')->onDelete('set null');
             $table->timestamps();
         });
     }

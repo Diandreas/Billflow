@@ -45,29 +45,131 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
             <!-- Actions rapides -->
-            <div class="mb-4 bg-gradient-to-r from-indigo-600 to-blue-500 rounded-lg shadow">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-4">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="font-semibold text-lg text-gray-800 dark:text-white">
+                        <i class="bi bi-lightning-charge-fill text-yellow-500 mr-1"></i>
+                        {{ __('Actions rapides') }}
+                    </h3>
+                </div>
                 <div class="p-4">
-                    <h3 class="text-base font-bold text-white mb-2">{{ __('Actions rapides') }}</h3>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <a href="{{ route('bills.create') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-2 text-white flex flex-col items-center justify-center transition duration-200"
-                           title="{{ __('Créer une nouvelle facture rapidement') }}">
-                            <i class="bi bi-receipt text-xl mb-1"></i>
-                            <span class="text-sm font-medium">{{ __('Nouvelle facture') }}</span>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                        <a href="{{ route('bills.create') }}" class="flex flex-col items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors group">
+                            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-800/40 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/60 transition-colors">
+                                <i class="bi bi-receipt text-xl"></i>
+                            </div>
+                            <span class="text-xs font-medium text-blue-700 dark:text-blue-400 text-center">{{ __('Nouvelle facture') }}</span>
                         </a>
-                        <a href="{{ route('clients.create') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-2 text-white flex flex-col items-center justify-center transition duration-200"
-                           title="{{ __('Ajouter un nouveau client à votre base de données') }}">
-                            <i class="bi bi-person-plus text-xl mb-1"></i>
-                            <span class="text-sm font-medium">{{ __('Nouveau client') }}</span>
+                        
+                        <a href="{{ route('clients.create') }}" class="flex flex-col items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors group">
+                            <div class="w-12 h-12 bg-green-100 dark:bg-green-800/40 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-green-200 dark:group-hover:bg-green-800/60 transition-colors">
+                                <i class="bi bi-person-plus text-xl"></i>
+                            </div>
+                            <span class="text-xs font-medium text-green-700 dark:text-green-400 text-center">{{ __('Nouveau client') }}</span>
                         </a>
-                        <a href="{{ route('products.create') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-2 text-white flex flex-col items-center justify-center transition duration-200"
-                           title="{{ __('Ajouter un nouveau produit ou service à votre catalogue') }}">
-                            <i class="bi bi-box-seam text-xl mb-1"></i>
-                            <span class="text-sm font-medium">{{ __('Nouveau produit') }}</span>
+                        
+                        <a href="{{ route('products.create') }}" class="flex flex-col items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-100 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors group">
+                            <div class="w-12 h-12 bg-purple-100 dark:bg-purple-800/40 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-purple-200 dark:group-hover:bg-purple-800/60 transition-colors">
+                                <i class="bi bi-box-seam text-xl"></i>
+                            </div>
+                            <span class="text-xs font-medium text-purple-700 dark:text-purple-400 text-center">{{ __('Nouveau produit') }}</span>
                         </a>
-                        <a href="{{ route('inventory.receive') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-2 text-white flex flex-col items-center justify-center transition duration-200"
-                           title="{{ __('Enregistrer une entrée de stock pour vos produits') }}">
-                            <i class="bi bi-truck text-xl mb-1"></i>
-                            <span class="text-sm font-medium">{{ __('Réception stock') }}</span>
+                        
+                        <a href="{{ route('inventory.receive') }}" class="flex flex-col items-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-100 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors group">
+                            <div class="w-12 h-12 bg-orange-100 dark:bg-orange-800/40 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/60 transition-colors">
+                                <i class="bi bi-box-arrow-in-down text-xl"></i>
+                            </div>
+                            <span class="text-xs font-medium text-orange-700 dark:text-orange-400 text-center">{{ __('Nouvelle réception') }}</span>
+                        </a>
+                        
+                        <a href="{{ route('barters.create') }}" class="flex flex-col items-center p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-100 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors group">
+                            <div class="w-12 h-12 bg-violet-100 dark:bg-violet-800/40 text-violet-600 dark:text-violet-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-violet-200 dark:group-hover:bg-violet-800/60 transition-colors">
+                                <i class="bi bi-arrow-left-right text-xl"></i>
+                            </div>
+                            <span class="text-xs font-medium text-violet-700 dark:text-violet-400 text-center">{{ __('Nouveau troc') }}</span>
+                        </a>
+                        
+                        @if(auth()->user()->isAdmin() || auth()->user()->isManager())
+                        <a href="{{ route('commissions.index') }}" class="flex flex-col items-center p-3 bg-teal-50 dark:bg-teal-900/20 rounded-lg border border-teal-100 dark:border-teal-800 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors group">
+                            <div class="w-12 h-12 bg-teal-100 dark:bg-teal-800/40 text-teal-600 dark:text-teal-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-teal-200 dark:group-hover:bg-teal-800/60 transition-colors">
+                                <i class="bi bi-cash-coin text-xl"></i>
+                            </div>
+                            <span class="text-xs font-medium text-teal-700 dark:text-teal-400 text-center">{{ __('Gérer les commissions') }}</span>
+                        </a>
+                        @elseif(auth()->user()->role === 'vendeur')
+                        <a href="{{ route('commissions.vendor-report', auth()->id()) }}" class="flex flex-col items-center p-3 bg-teal-50 dark:bg-teal-900/20 rounded-lg border border-teal-100 dark:border-teal-800 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors group">
+                            <div class="w-12 h-12 bg-teal-100 dark:bg-teal-800/40 text-teal-600 dark:text-teal-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-teal-200 dark:group-hover:bg-teal-800/60 transition-colors">
+                                <i class="bi bi-cash-coin text-xl"></i>
+                            </div>
+                            <span class="text-xs font-medium text-teal-700 dark:text-teal-400 text-center">{{ __('Mes commissions') }}</span>
+                        </a>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            
+            <!-- MODULE D'ACCÈS RAPIDE -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <!-- Accès rapide aux ventes et échanges -->
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 class="font-semibold text-lg text-gray-800 dark:text-white">
+                            <i class="bi bi-cart text-indigo-500 mr-1"></i>
+                            {{ __('Ventes et échanges') }}
+                        </h3>
+                    </div>
+                    <div class="p-4 grid grid-cols-2 gap-4">
+                        <a href="{{ route('bills.index') }}" class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
+                            <div class="h-12 w-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center text-indigo-500 mb-3">
+                                <i class="bi bi-receipt-cutoff text-xl"></i>
+                            </div>
+                            <span class="font-medium text-gray-700 dark:text-gray-300">{{ __('Factures') }}</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ __('Gérer vos factures') }}</span>
+                        </a>
+                        
+                        <a href="{{ route('barters.index') }}" class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
+                            <div class="h-12 w-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-500 mb-3">
+                                <i class="bi bi-arrow-left-right text-xl"></i>
+                            </div>
+                            <span class="font-medium text-gray-700 dark:text-gray-300">{{ __('Trocs') }}</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ __('Gérer vos échanges') }}</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Accès rapide aux commissions -->
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 class="font-semibold text-lg text-gray-800 dark:text-white">
+                            <i class="bi bi-cash-coin text-green-500 mr-1"></i>
+                            {{ __('Commissions') }}
+                        </h3>
+                    </div>
+                    <div class="p-4 grid grid-cols-2 gap-4">
+                        @if(auth()->user()->isAdmin() || auth()->user()->isManager())
+                        <a href="{{ route('commissions.index') }}" class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
+                            <div class="h-12 w-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-500 mb-3">
+                                <i class="bi bi-cash-stack text-xl"></i>
+                            </div>
+                            <span class="font-medium text-gray-700 dark:text-gray-300">{{ __('Toutes les commissions') }}</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ __('Gestion complète') }}</span>
+                        </a>
+                        @elseif(auth()->user()->role === 'vendeur')
+                        <a href="{{ route('commissions.vendor-report', auth()->id()) }}" class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
+                            <div class="h-12 w-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-500 mb-3">
+                                <i class="bi bi-cash text-xl"></i>
+                            </div>
+                            <span class="font-medium text-gray-700 dark:text-gray-300">{{ __('Mes commissions') }}</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ __('Suivre vos gains') }}</span>
+                        </a>
+                        @endif
+                        
+                        <a href="{{ route('users.index') }}" class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
+                            <div class="h-12 w-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-500 mb-3">
+                                <i class="bi bi-people text-xl"></i>
+                            </div>
+                            <span class="font-medium text-gray-700 dark:text-gray-300">{{ __('Utilisateurs') }}</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ __('Vendeurs et managers') }}</span>
                         </a>
                     </div>
                 </div>
@@ -181,6 +283,100 @@
                             <a href="#" id="showAverageChart" class="text-xs text-yellow-600 hover:text-yellow-800 inline-flex items-center">
                                 {{ __('Analyser') }} <i class="bi bi-arrow-right ml-1"></i>
                             </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vue d'ensemble des activités -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg mb-4">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="font-semibold text-lg text-gray-800 dark:text-white">
+                        <i class="bi bi-activity text-indigo-600 mr-1"></i>
+                        {{ __('Vue d\'ensemble des activités') }}
+                    </h3>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Résumé des factures -->
+                        <div class="border rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-900">
+                            <div class="p-3 bg-indigo-50 dark:bg-indigo-900/30 border-b border-indigo-100 dark:border-indigo-800">
+                                <h4 class="font-medium text-indigo-700 dark:text-indigo-300 flex items-center">
+                                    <i class="bi bi-receipt mr-2"></i>
+                                    {{ __('Factures récentes') }}
+                                </h4>
+                            </div>
+                            <div class="p-3">
+                                <div class="flex justify-between items-center text-sm mb-3">
+                                    <span class="text-gray-600 dark:text-gray-300">{{ __('En attente') }}:</span>
+                                    <span class="font-medium text-gray-800 dark:text-white">{{ $globalStats['pendingBills'] ?? 0 }}</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600 dark:text-gray-300">{{ __('Montant impayé') }}:</span>
+                                    <span class="font-medium text-gray-800 dark:text-white">{{ isset($globalStats['pendingAmount']) ? number_format($globalStats['pendingAmount'], 0, ',', ' ') : 0 }} FCFA</span>
+                                </div>
+                                <div class="mt-3 text-center">
+                                    <a href="{{ route('bills.index') }}" class="inline-flex items-center text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                        {{ __('Voir toutes les factures') }} <i class="bi bi-arrow-right ml-1"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Résumé des trocs -->
+                        <div class="border rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-900">
+                            <div class="p-3 bg-purple-50 dark:bg-purple-900/30 border-b border-purple-100 dark:border-purple-800">
+                                <h4 class="font-medium text-purple-700 dark:text-purple-300 flex items-center">
+                                    <i class="bi bi-arrow-left-right mr-2"></i>
+                                    {{ __('Trocs') }}
+                                </h4>
+                            </div>
+                            <div class="p-3">
+                                <div class="flex justify-between items-center text-sm mb-3">
+                                    <span class="text-gray-600 dark:text-gray-300">{{ __('En attente') }}:</span>
+                                    <span class="font-medium text-gray-800 dark:text-white">{{ $globalStats['pendingBarters'] ?? 0 }}</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600 dark:text-gray-300">{{ __('Complétés') }}:</span>
+                                    <span class="font-medium text-gray-800 dark:text-white">{{ $globalStats['completedBarters'] ?? 0 }}</span>
+                                </div>
+                                <div class="mt-3 text-center">
+                                    <a href="{{ route('barters.index') }}" class="inline-flex items-center text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300">
+                                        {{ __('Gérer les trocs') }} <i class="bi bi-arrow-right ml-1"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Résumé des commissions -->
+                        <div class="border rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-900">
+                            <div class="p-3 bg-green-50 dark:bg-green-900/30 border-b border-green-100 dark:border-green-800">
+                                <h4 class="font-medium text-green-700 dark:text-green-300 flex items-center">
+                                    <i class="bi bi-cash-coin mr-2"></i>
+                                    {{ __('Commissions') }}
+                                </h4>
+                            </div>
+                            <div class="p-3">
+                                <div class="flex justify-between items-center text-sm mb-3">
+                                    <span class="text-gray-600 dark:text-gray-300">{{ __('À payer') }}:</span>
+                                    <span class="font-medium text-gray-800 dark:text-white">{{ $globalStats['pendingCommissions'] ?? 0 }} FCFA</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600 dark:text-gray-300">{{ __('Payées (mois)') }}:</span>
+                                    <span class="font-medium text-gray-800 dark:text-white">{{ $globalStats['paidCommissionsMonth'] ?? 0 }} FCFA</span>
+                                </div>
+                                <div class="mt-3 text-center">
+                                    @if(auth()->user()->isAdmin() || auth()->user()->isManager())
+                                    <a href="{{ route('commissions.index') }}" class="inline-flex items-center text-xs font-medium text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300">
+                                        {{ __('Voir toutes les commissions') }} <i class="bi bi-arrow-right ml-1"></i>
+                                    </a>
+                                    @elseif(auth()->user()->role === 'vendeur')
+                                    <a href="{{ route('commissions.vendor-report', auth()->id()) }}" class="inline-flex items-center text-xs font-medium text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300">
+                                        {{ __('Voir mes commissions') }} <i class="bi bi-arrow-right ml-1"></i>
+                                    </a>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

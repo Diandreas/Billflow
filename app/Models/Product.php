@@ -29,8 +29,8 @@ class Product extends Model
 
     public function bills()
     {
-        return $this->belongsToMany(Bill::class, 'bill_products')
-            ->withPivot('unit_price', 'quantity', 'total')
+        return $this->belongsToMany(Bill::class, 'bill_items')
+            ->withPivot('quantity', 'unit_price', 'price', 'total')
             ->withTimestamps();
     }
 

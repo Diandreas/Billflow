@@ -61,12 +61,13 @@ return new class extends Migration
         });
 
         // Table pivot facture-produit
-        Schema::create('bill_products', function (Blueprint $table) {
+        Schema::create('bill_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('bill_id')->constrained()->onDelete('cascade');
             $table->foreignId('product_id')->constrained()->onDelete('restrict');
             $table->decimal('unit_price', 12, 2);
             $table->integer('quantity');
+            $table->decimal('price', 12, 2);
             $table->decimal('total', 12, 2);
             $table->timestamps();
         });
@@ -98,7 +99,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('inventory_movements');
-        Schema::dropIfExists('bill_products');
+        Schema::dropIfExists('bill_items');
         Schema::dropIfExists('bills');
         Schema::dropIfExists('client_phone');
         Schema::dropIfExists('clients');

@@ -1,443 +1,250 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-2xl text-gray-900 leading-tight">
-                {{ __('Factures') }}
-            </h2>
-            <div class="flex space-x-3">
-                <a href="{{ route('bills.export') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-5 rounded-lg shadow-sm inline-flex items-center transition-colors duration-150">
-                    <i class="bi bi-cloud-download mr-2"></i>
-                    Exporter
-                </a>
-                <a href="{{ route('bills.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-5 rounded-lg shadow-sm inline-flex items-center transition-colors duration-150">
-                    <i class="bi bi-plus-lg mr-2"></i>
-                    Nouvelle Facture
+        <div class="bg-gradient-to-r from-emerald-500 to-teal-500 py-3 px-3 rounded-lg shadow-sm mb-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-white">
+                    {{ __('Factures') }}
+                </h2>
+                <a href="{{ route('bills.create') }}" class="inline-flex items-center px-3 py-1 text-xs bg-white text-teal-700 rounded-md hover:bg-teal-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    {{ __('Nouvelle Facture') }}
                 </a>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-12 bg-gray-50">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-lg rounded-xl">
-                <div class="p-8">
-                    <!-- Filtres et recherche -->
-                    <div class="mb-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                <i class="bi bi-people mr-2"></i>Client
-                            </label>
-                            <select id="client_filter" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                <option value="">Tous les clients</option>
-                                @foreach($clients as $client)
-                                    <option value="{{ $client->id }}">{{ $client->name }}</option>
-                                @endforeach
-                            </select>
+    <div class="py-3">
+        <div class="max-w-7xl mx-auto sm:px-4 lg:px-6">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-3">
+                    @if (session('status'))
+                        <div class="mb-2 bg-green-100 border-l-4 border-green-500 text-green-700 p-2 text-sm rounded" role="alert">
+                            {{ session('status') }}
                         </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                <i class="bi bi-check2-circle mr-2"></i>Statut
-                            </label>
-                            <select id="status_filter" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                <option value="">Tous les statuts</option>
-                                <option value="paid">Payée</option>
-                                <option value="pending">En attente</option>
-                                <option value="overdue">En retard</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                <i class="bi bi-calendar3 mr-2"></i>Période
-                            </label>
-                            <select id="period_filter" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                <option value="">Toutes les périodes</option>
-                                <option value="current_month">Mois en cours</option>
-                                <option value="last_month">Mois dernier</option>
-                                <option value="current_year">Année en cours</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                <i class="bi bi-search mr-2"></i>Recherche
-                            </label>
-                            <div class="relative">
-                                <input type="text" id="search" placeholder="N° facture, référence..."
-                                       class="w-full pl-10 rounded-lg border-gray-300 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                <i class="bi bi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    @endif
+
+                    <div class="mb-3 bg-gray-50 p-2 rounded-lg">
+                        <form action="{{ route('bills.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-2">
+                            <div>
+                                <label for="search" class="block text-xs font-medium text-gray-700 mb-1">{{ __('Recherche') }}</label>
+                                <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="{{ __('N° Facture, Magasin, Client...') }}" class="w-full text-xs rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring focus:ring-teal-200 focus:ring-opacity-50">
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Recherche avancée -->
-                    <div class="mb-8">
-                        <button id="toggle_advanced_search" class="inline-flex items-center px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors duration-150">
-                            <i class="bi bi-funnel mr-2"></i>
-                            Recherche avancée
-                        </button>
-                        <div id="advanced_search_fields" class="hidden mt-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <div>
-                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                        <i class="bi bi-calendar2-minus mr-2"></i>Date de début
-                                    </label>
-                                    <input type="date" id="start_date" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                        <i class="bi bi-calendar2-plus mr-2"></i>Date de fin
-                                    </label>
-                                    <input type="date" id="end_date" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                        <i class="bi bi-currency-dollar mr-2"></i>Montant minimum
-                                    </label>
-                                    <input type="number" id="min_amount" placeholder="0" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                        <i class="bi bi-currency-dollar mr-2"></i>Montant maximum
-                                    </label>
-                                    <input type="number" id="max_amount" placeholder="999999" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                </div>
+                            <div>
+                                <label for="shop" class="block text-xs font-medium text-gray-700 mb-1">{{ __('Magasin') }}</label>
+                                <select name="shop" id="shop" class="w-full text-xs rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring focus:ring-teal-200 focus:ring-opacity-50">
+                                    <option value="">{{ __('Tous les magasins') }}</option>
+                                    @foreach($shops as $shop)
+                                        <option value="{{ $shop->id }}" {{ request('shop') == $shop->id ? 'selected' : '' }}>{{ $shop->name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
-                        </div>
+                            <div>
+                                <label for="status" class="block text-xs font-medium text-gray-700 mb-1">{{ __('Statut') }}</label>
+                                <select name="status" id="status" class="w-full text-xs rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring focus:ring-teal-200 focus:ring-opacity-50">
+                                    <option value="">{{ __('Tous les statuts') }}</option>
+                                    <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>{{ __('Payée') }}</option>
+                                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>{{ __('En attente') }}</option>
+                                    <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>{{ __('En retard') }}</option>
+                                    <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>{{ __('Annulée') }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="period" class="block text-xs font-medium text-gray-700 mb-1">{{ __('Période') }}</label>
+                                <select name="period" id="period" class="w-full text-xs rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring focus:ring-teal-200 focus:ring-opacity-50">
+                                    <option value="">{{ __('Toutes les périodes') }}</option>
+                                    <option value="today" {{ request('period') == 'today' ? 'selected' : '' }}>{{ __('Aujourd\'hui') }}</option>
+                                    <option value="week" {{ request('period') == 'week' ? 'selected' : '' }}>{{ __('Cette semaine') }}</option>
+                                    <option value="month" {{ request('period') == 'month' ? 'selected' : '' }}>{{ __('Ce mois') }}</option>
+                                    <option value="quarter" {{ request('period') == 'quarter' ? 'selected' : '' }}>{{ __('Ce trimestre') }}</option>
+                                    <option value="year" {{ request('period') == 'year' ? 'selected' : '' }}>{{ __('Cette année') }}</option>
+                                </select>
+                            </div>
+                            <div class="md:flex md:flex-col md:justify-end">
+                                <button type="submit" class="mt-4 inline-flex justify-center items-center px-3 py-1.5 bg-teal-600 border border-transparent rounded text-xs font-medium text-white hover:bg-teal-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                                    </svg>
+                                    {{ __('Filtrer') }}
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
-                    <!-- Bouton Rechercher -->
-                    <div class="mb-8">
-                        <button id="search_button" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-150">
-                            <i class="bi bi-search mr-2"></i>
-                            Rechercher
-                        </button>
-                    </div>
-
-                    <!-- Filtres actifs -->
-                    <div class="mb-8">
-                        <h3 class="text-lg font-semibold mb-3 flex items-center">
-                            <i class="bi bi-funnel-fill mr-2"></i>Filtres actifs
-                        </h3>
-                        <div id="active_filters" class="flex flex-wrap gap-2">
-                            <!-- Les filtres actifs seront affichés ici -->
-                        </div>
-                    </div>
-
-                    <!-- Tableau des factures -->
-                    <div class="overflow-x-auto rounded-lg border border-gray-200">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead>
-                            <tr class="bg-gray-50">
-                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    <i class="bi bi-hash mr-1"></i>Référence
-                                </th>
-                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    <i class="bi bi-person mr-1"></i>Client
-                                </th>
-                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    <i class="bi bi-calendar2 mr-1"></i>Date
-                                </th>
-                                <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    Total HT
-                                </th>
-                                <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    TVA
-                                </th>
-                                <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    Total TTC
-                                </th>
-                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    <i class="bi bi-check2-circle mr-1"></i>Statut
-                                </th>
-                                <th class="px-6 py-4"></th>
-                            </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200" id="bills-table-body">
-                            @foreach($bills as $bill)
-                                <tr class="bill-row hover:bg-gray-50 transition-colors duration-150"
-                                    data-client="{{ $bill->client->id }}"
-                                    data-status="{{ $bill->status }}"
-                                    data-date="{{ $bill->date->format('Y-m-d') }}">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <a href="{{ route('bills.show', $bill) }}" class="text-blue-600 hover:text-blue-800 font-medium">
-                                            {{ $bill->reference }}
-                                        </a>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        {{ $bill->client->name }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        {{ $bill->date->format('d/m/Y') }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right">
-                                        {{ number_format($bill->total - $bill->tax_amount, 0, ',', ' ') }} FCFA
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right">
-                                        {{ number_format($bill->tax_amount, 0, ',', ' ') }} FCFA
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right font-medium">
-                                        {{ number_format($bill->total, 0, ',', ' ') }} FCFA
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-center">
-                                        <span class="px-3 py-1 inline-flex items-center text-sm font-semibold rounded-full
-                                            {{ $bill->status === 'paid' ? 'bg-green-100 text-green-800' :
-                                               ($bill->status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                'bg-red-100 text-red-800') }}">
-                                            <i class="bi {{ $bill->status === 'paid' ? 'bi-check-circle' :
-                                                           ($bill->status === 'pending' ? 'bi-clock' :
-                                                            'bi-exclamation-circle') }} mr-1"></i>
-                                            {{ ucfirst($bill->status) }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
-                                        <div class="flex justify-end space-x-3">
-                                            <a href="{{ route('bills.show', $bill) }}"
-                                               class="text-gray-600 hover:text-gray-900 transition-colors duration-150"
-                                               title="Voir">
-                                                <i class="bi bi-eye text-lg"></i>
-                                            </a>
-                                            <a href="{{ route('bills.edit', $bill) }}"
-                                               class="text-blue-600 hover:text-blue-900 transition-colors duration-150"
-                                               title="Modifier">
-                                                <i class="bi bi-pencil text-lg"></i>
-                                            </a>
-                                            <a href="{{ route('bills.download', $bill) }}"
-                                               class="text-gray-600 hover:text-gray-900 transition-colors duration-150"
-                                               title="Télécharger">
-                                                <i class="bi bi-download text-lg"></i>
-                                            </a>
-                                        </div>
-                                    </td>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">{{ __('Facture') }}</th>
+                                    <th scope="col" class="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">{{ __('Magasin') }}</th>
+                                    <th scope="col" class="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">{{ __('Client') }}</th>
+                                    <th scope="col" class="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">{{ __('Date') }}</th>
+                                    <th scope="col" class="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">{{ __('Échéance') }}</th>
+                                    <th scope="col" class="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">{{ __('Montant') }}</th>
+                                    <th scope="col" class="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">{{ __('Statut') }}</th>
+                                    <th scope="col" class="px-3 py-1.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">{{ __('Actions') }}</th>
                                 </tr>
-                            @endforeach
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @forelse ($bills as $bill)
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-3 py-1.5 whitespace-nowrap text-xs font-medium">
+                                            {{ $bill->invoice_number }}
+                                        </td>
+                                        <td class="px-3 py-1.5 whitespace-nowrap text-xs">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-6 w-6 mr-2">
+                                                    @if ($bill->shop->logo)
+                                                        <img class="h-6 w-6 rounded-md object-cover" src="{{ asset('storage/'.$bill->shop->logo) }}" alt="{{ $bill->shop->name }}">
+                                                    @else
+                                                        <div class="h-6 w-6 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd" />
+                                                            </svg>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                                <div>
+                                                    {{ $bill->shop->name }}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-3 py-1.5 whitespace-nowrap text-xs">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-6 w-6 mr-2">
+                                                    <div class="h-6 w-6 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    {{ $bill->customer_name }}
+                                                    <div class="text-gray-500 text-xs">{{ $bill->customer_email }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-3 py-1.5 whitespace-nowrap text-xs text-gray-500">
+                                            {{ $bill->bill_date }}
+                                        </td>
+                                        <td class="px-3 py-1.5 whitespace-nowrap text-xs text-gray-500">
+                                            {{ $bill->due_date}}
+                                        </td>
+                                        <td class="px-3 py-1.5 whitespace-nowrap text-xs font-medium">
+                                            <span class="text-teal-600">{{ number_format($bill->total_amount, 2) }} €</span>
+                                        </td>
+                                        <td class="px-3 py-1.5 whitespace-nowrap">
+                                            @if ($bill->status === 'paid')
+                                                <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-green-100 text-green-800">
+                                                    {{ __('Payée') }}
+                                                </span>
+                                            @elseif ($bill->status === 'pending')
+                                                <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-yellow-100 text-yellow-800">
+                                                    {{ __('En attente') }}
+                                                </span>
+                                            @elseif ($bill->status === 'overdue')
+                                                <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-red-100 text-red-800">
+                                                    {{ __('En retard') }}
+                                                </span>
+                                            @elseif ($bill->status === 'cancelled')
+                                                <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-gray-100 text-gray-800">
+                                                    {{ __('Annulée') }}
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-1.5 whitespace-nowrap text-xs text-right">
+                                            <div class="flex justify-end space-x-1">
+                                                <a href="{{ route('bills.show', $bill) }}" class="text-teal-600 hover:text-teal-900" title="{{ __('Voir') }}">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                                        <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </a>
+                                                <a href="{{ route('bills.edit', $bill) }}" class="text-teal-600 hover:text-teal-900" title="{{ __('Modifier') }}">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                                    </svg>
+                                                </a>
+                                                <a href="{{ route('bills.download', $bill) }}" class="text-teal-600 hover:text-teal-900" title="{{ __('Télécharger') }}">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </a>
+                                                <button type="button" onclick="confirmDelete('{{ $bill->id }}')" class="text-red-600 hover:text-red-900" title="{{ __('Supprimer') }}">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="8" class="px-3 py-2 text-center text-gray-500 text-xs">{{ __('Aucune facture trouvée') }}</td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
+                    
+                    <div class="mt-3">
+                        {{ $bills->appends(request()->except('page'))->links() }}
+                    </div>
 
-                    <!-- Pagination -->
-                    <div class="mt-6">
-                        {{ $bills->links() }}
+                    <!-- Modal de confirmation de suppression -->
+                    <div id="deleteModal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                                <div class="bg-white p-3">
+                                    <div class="sm:flex sm:items-start">
+                                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                            <svg class="h-5 w-5 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                        </div>
+                                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                            <h3 class="text-sm font-medium text-gray-900" id="modal-title">
+                                                {{ __('Confirmation de suppression') }}
+                                            </h3>
+                                            <div class="mt-2">
+                                                <p class="text-xs text-gray-500">
+                                                    {{ __('Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.') }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 flex justify-end space-x-2">
+                                        <button type="button" onclick="cancelDelete()" class="inline-flex justify-center px-3 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+                                            {{ __('Annuler') }}
+                                        </button>
+                                        <form id="deleteForm" method="POST" action="">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="inline-flex justify-center px-3 py-1 text-xs font-medium text-white bg-red-600 border border-transparent rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                                {{ __('Supprimer') }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    @push('styles')
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    @endpush
+    <script>
+        function confirmDelete(billId) {
+            document.getElementById('deleteForm').action = `/bills/${billId}`;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
 
-    @push('scripts')
-        <script>
-            // Fonction globale pour supprimer un filtre
-            function removeFilter(key) {
-                const url = new URL(window.location);
-                url.searchParams.delete(key);
-                window.location.href = url.toString();
-            }
-
-            // Fonction globale pour effacer tous les filtres
-            function clearAllFilters() {
-                window.location.href = window.location.pathname;
-            }
-            
-            document.addEventListener('DOMContentLoaded', function() {
-                const clientFilter = document.getElementById('client_filter');
-                const statusFilter = document.getElementById('status_filter');
-                const periodFilter = document.getElementById('period_filter');
-                const searchInput = document.getElementById('search');
-                const startDateInput = document.getElementById('start_date');
-                const endDateInput = document.getElementById('end_date');
-                const minAmountInput = document.getElementById('min_amount');
-                const maxAmountInput = document.getElementById('max_amount');
-                const searchButton = document.getElementById('search_button');
-                const toggleAdvancedSearchButton = document.getElementById('toggle_advanced_search');
-                const advancedSearchFields = document.getElementById('advanced_search_fields');
-                const activeFilters = document.getElementById('active_filters');
-
-                // Séparer les champs de recherche standard et avancée
-                const standardFilterInputs = [
-                    clientFilter,
-                    statusFilter,
-                    periodFilter,
-                    searchInput
-                ];
-
-                const advancedFilterInputs = [
-                    startDateInput,
-                    endDateInput,
-                    minAmountInput,
-                    maxAmountInput
-                ];
-
-                function updateQueryString() {
-                    const url = new URL(window.location);
-                    const params = {
-                        client: clientFilter.value,
-                        status: statusFilter.value,
-                        period: periodFilter.value,
-                        search: searchInput.value,
-                        start_date: startDateInput.value,
-                        end_date: endDateInput.value,
-                        min_amount: minAmountInput.value,
-                        max_amount: maxAmountInput.value
-                    };
-
-                    Object.keys(params).forEach(key => {
-                        if (params[key]) {
-                            url.searchParams.set(key, params[key]);
-                        } else {
-                            url.searchParams.delete(key);
-                        }
-                    });
-
-                    window.location.href = url.toString();
-                }
-
-                // Les filtres standard déclenchent toujours la recherche immédiatement
-                standardFilterInputs.forEach(input => {
-                    input.addEventListener('change', updateQueryString);
-                });
-
-                // Appliquer les filtres lors de l'appui sur Entrée dans le champ de recherche standard
-                searchInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        updateQueryString();
-                    }
-                });
-
-                // Pour la recherche avancée, on attend le clic sur le bouton Rechercher
-                searchButton.addEventListener('click', function() {
-                    // Vérifier si au moins un champ de recherche avancée est rempli
-                    const hasAdvancedFilters = advancedFilterInputs.some(input => input.value !== '');
-                    if (hasAdvancedFilters) {
-                        updateQueryString();
-                    } else {
-                        // Si aucun champ avancé n'est rempli, utiliser les filtres standard
-                        updateQueryString();
-                    }
-                });
-
-                function displayActiveFilters() {
-                    activeFilters.innerHTML = '';
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const filterLabels = {
-                        client: 'Client',
-                        status: 'Statut',
-                        period: 'Période',
-                        search: 'Recherche',
-                        start_date: 'Date début',
-                        end_date: 'Date fin',
-                        min_amount: 'Montant min',
-                        max_amount: 'Montant max'
-                    };
-
-                    const filterIcons = {
-                        client: 'bi-people',
-                        status: 'bi-check2-circle',
-                        period: 'bi-calendar3',
-                        search: 'bi-search',
-                        start_date: 'bi-calendar2-minus',
-                        end_date: 'bi-calendar2-plus',
-                        min_amount: 'bi-currency-dollar',
-                        max_amount: 'bi-currency-dollar'
-                    };
-
-                    urlParams.forEach((value, key) => {
-                        if (filterLabels[key]) {
-                            const filterElement = document.createElement('div');
-                            filterElement.classList.add(
-                                'bg-gray-100',
-                                'hover:bg-gray-200',
-                                'text-gray-800',
-                                'px-4',
-                                'py-2',
-                                'rounded-lg',
-                                'flex',
-                                'items-center',
-                                'transition-colors',
-                                'duration-150'
-                            );
-                            filterElement.innerHTML = `
-                                <i class="bi ${filterIcons[key]} mr-2"></i>
-                                <span>${filterLabels[key]}: ${value}</span>
-                                <button class="ml-2 text-gray-500 hover:text-red-500 transition-colors duration-150"
-                                        onclick="removeFilter('${key}')"
-                                        title="Supprimer le filtre">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                            `;
-                            activeFilters.appendChild(filterElement);
-                        }
-                    });
-
-                    // Ajouter le bouton "Effacer tous les filtres" s'il y a des filtres actifs
-                    if (urlParams.toString()) {
-                        const clearAllButton = document.createElement('div');
-                        clearAllButton.classList.add(
-                            'bg-red-100',
-                            'hover:bg-red-200',
-                            'text-red-800',
-                            'px-4',
-                            'py-2',
-                            'rounded-lg',
-                            'flex',
-                            'items-center',
-                            'cursor-pointer',
-                            'transition-colors',
-                            'duration-150'
-                        );
-                        clearAllButton.innerHTML = `
-                            <i class="bi bi-trash mr-2"></i>
-                            <span>Effacer tous les filtres</span>
-                        `;
-                        clearAllButton.addEventListener('click', clearAllFilters);
-                        activeFilters.appendChild(clearAllButton);
-                    }
-                }
-
-                // Gestionnaires d'événements
-                searchButton.addEventListener('click', updateQueryString);
-                toggleAdvancedSearchButton.addEventListener('click', function() {
-                    const isHidden = advancedSearchFields.classList.contains('hidden');
-                    advancedSearchFields.classList.toggle('hidden');
-
-                    // Animation de rotation de l'icône
-                    const icon = this.querySelector('i');
-                    if (isHidden) {
-                        this.classList.add('bg-gray-200');
-                        icon.style.transform = 'rotate(180deg)';
-                    } else {
-                        this.classList.remove('bg-gray-200');
-                        icon.style.transform = 'rotate(0deg)';
-                    }
-                });
-
-                // Initialisation
-                displayActiveFilters();
-
-                // Appliquer les filtres lors de la modification des champs
-                const filterInputs = [
-                    clientFilter,
-                    statusFilter,
-                    periodFilter,
-                    searchInput,
-                    startDateInput,
-                    endDateInput,
-                    minAmountInput,
-                    maxAmountInput
-                ];
-
-                filterInputs.forEach(input => {
-                    input.addEventListener('change', updateQueryString);
-                });
-
-                // Appliquer les filtres lors de l'appui sur Entrée dans le champ de recherche
-                searchInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        updateQueryString();
-                    }
-                });
-            });
-        </script>
-    @endpush
+        function cancelDelete() {
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+    </script>
 </x-app-layout>

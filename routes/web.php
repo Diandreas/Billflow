@@ -164,6 +164,7 @@ Route::middleware('auth')->group(function () {
     Route::get('commissions', [App\Http\Controllers\CommissionController::class, 'index'])->name('commissions.index');
     Route::get('commissions/{commission}', [App\Http\Controllers\CommissionController::class, 'show'])->name('commissions.show');
     Route::post('commissions/{commission}/pay', [App\Http\Controllers\CommissionController::class, 'markAsPaid'])->name('commissions.pay');
+    Route::post('commissions/pay-batch', [App\Http\Controllers\CommissionController::class, 'payBatch'])->name('commissions.pay-batch');
     Route::get('commissions/vendor/{user}', [App\Http\Controllers\CommissionController::class, 'vendorReport'])->name('commissions.vendor-report');
     
     // Routes pour les trocs
