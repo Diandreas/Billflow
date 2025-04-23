@@ -80,9 +80,14 @@
 
         /* Styles pour IntroJS en mode sombre */
         .introjs-tooltip {
+            padding: 20px;
             border-radius: 0.75rem !important;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
             border: 1px solid rgba(209, 213, 219, 0.2) !important;
+        }
+        .introjs-overlay {
+         
+            transform: scale(2);
         }
 
         .dark .introjs-tooltip,

@@ -351,8 +351,8 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center">
-                                            <span class="text-sm text-gray-900" title="{{ $bill->products->pluck('name')->implode(', ') }}">{{ $bill->products->count() }} produit(s)</span>
-                                            @if($bill->products->count() > 5)
+                                            <span class="text-sm text-gray-900" title="{{ $bill->items->pluck('product.name')->implode(', ') }}">{{ $bill->items->count() }} produit(s)</span>
+                                            @if($bill->items->count() > 5)
                                                 <span class="ml-2 bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded"
                                                       title="{{ __('Facture volumineuse') }}">
                                                     <i class="bi bi-cart-check"></i>

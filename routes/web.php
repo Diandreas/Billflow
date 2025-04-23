@@ -17,6 +17,7 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\VendorEquipmentController;
 use App\Http\Controllers\ShopDashboardController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CommissionController;
 
 Route::get('/', [DashboardController::class, 'index'])
     ->middleware(['auth'])
@@ -161,18 +162,30 @@ Route::middleware('auth')->group(function () {
     */
 
     // Routes pour les commissions
-    Route::get('commissions', [App\Http\Controllers\CommissionController::class, 'index'])->name('commissions.index');
-    Route::get('commissions/{commission}', [App\Http\Controllers\CommissionController::class, 'show'])->name('commissions.show');
-    Route::post('commissions/{commission}/pay', [App\Http\Controllers\CommissionController::class, 'markAsPaid'])->name('commissions.pay');
-    Route::post('commissions/pay-batch', [App\Http\Controllers\CommissionController::class, 'payBatch'])->name('commissions.pay-batch');
-    Route::get('commissions/vendor/{user}', [App\Http\Controllers\CommissionController::class, 'vendorReport'])->name('commissions.vendor-report');
-    
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/commissions', [CommissionController::class, 'index'])->name('commissions.index');
+        Route::get('/commissions/create', [CommissionController::class, 'create'])->name('commissions.create');
+        Route::post('/commissions', [CommissionController::class, 'store'])->name('commissions.store');
+        Route::get('/commissions/{commission}', [CommissionController::class, 'show'])->name('commissions.show');
+        Route::get('/commissions/{commission}/edit', [CommissionController::class, 'edit'])->name('commissions.edit');
+        Route::put('/commissions/{commission}', [CommissionController::class, 'update'])->name('commissions.update');
+        Route::delete('/commissions/{commission}', [CommissionController::class, 'destroy'])->name('commissions.destroy');
+        Route::post('/commissions/{commission}/pay', [CommissionController::class, 'markAsPaid'])->name('commissions.pay');
+        Route::post('/commissions/pay-batch', [CommissionController::class, 'payBatch'])->name('commissions.pay-batch');
+        Route::get('/vendors/{user}/commissions', [CommissionController::class, 'vendorReport'])->name('commissions.vendor-report');
+        Route::get('/shops/{shop}/commissions', [CommissionController::class, 'shopReport'])->name('commissions.shop-report');
+        Route::post('/commissions/{commissionId}/pay-individual', [CommissionController::class, 'payCommission'])->name('commissions.pay-individual');
+        Route::post('/vendors/{userId}/pay-all', [CommissionController::class, 'payVendorCommissions'])->name('commissions.pay-vendor');
+        Route::get('/commissions/export', [CommissionController::class, 'export'])->name('commissions.export');
+    });
+
     // Routes pour les trocs
     Route::resource('barters', App\Http\Controllers\BarterController::class);
     Route::post('barters/{barter}/complete', [App\Http\Controllers\BarterController::class, 'complete'])->name('barters.complete');
     Route::post('barters/{barter}/cancel', [App\Http\Controllers\BarterController::class, 'cancel'])->name('barters.cancel');
     Route::post('barters/{barter}/images', [App\Http\Controllers\BarterController::class, 'addImages'])->name('barters.add-images');
     Route::delete('barters/images/{image}', [App\Http\Controllers\BarterController::class, 'deleteImage'])->name('barters.delete-image');
+    Route::get('api/barter/products', [App\Http\Controllers\BarterController::class, 'getBarterableProducts'])->name('api.barter.products');
     
     // Routes pour les livraisons
     Route::resource('deliveries', App\Http\Controllers\DeliveryController::class);
@@ -184,5 +197,19 @@ Route::middleware('auth')->group(function () {
 
 // Route publique pour vérifier l'authenticité d'une facture par QR code
 Route::post('verify-bill-qr', [BillController::class, 'verifyQrCode'])->name('bills.verify-qr');
+
+// Routes pour les QR codes
+Route::prefix('qrcodes')->name('qrcodes.')->group(function () {
+    // Routes publiques
+    Route::get('verify', [App\Http\Controllers\QrCodeController::class, 'showVerifier'])->name('verify');
+    Route::post('verify-bill', [App\Http\Controllers\QrCodeController::class, 'verifyBill'])->name('verify-bill');
+    Route::get('url/{type}/{id}', [App\Http\Controllers\QrCodeController::class, 'generateUrl'])->name('generate-url');
+    
+    // Routes authentifiées
+    Route::middleware('auth')->group(function () {
+        Route::get('generator', [App\Http\Controllers\QrCodeController::class, 'showGenerator'])->name('generator');
+        Route::post('generate', [App\Http\Controllers\QrCodeController::class, 'generate'])->name('generate');
+    });
+});
 
 require __DIR__.'/auth.php';

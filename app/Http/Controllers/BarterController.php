@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use App\Models\TemporaryUpload;
 
 class BarterController extends Controller
 {
@@ -366,5 +367,80 @@ class BarterController extends Controller
 
         return redirect()->route('barters.show', $barterId)
             ->with('success', 'Image supprimée avec succès');
+    }
+
+    /**
+     * Stocke les images pour un article de troc
+     */
+    private function storeBarterItemImages($request, $barterItem, $imageField = 'images')
+    {
+        if ($request->hasFile($imageField)) {
+            $images = $request->file($imageField);
+            foreach ($images as $key => $image) {
+                $path = $image->store('barter-items', 'public');
+                
+                $barterItem->images()->create([
+                    'path' => $path,
+                    'description' => $request->input('image_descriptions.'.$key, null),
+                    'order' => $key,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Traite un article dans un formulaire de troc
+     */
+    private function processBarterItem($barter, $item, $type)
+    {
+        // Créer l'article
+        $barterItem = $barter->items()->create([
+            'product_id' => $item['product_id'] ?? null,
+            'name' => $item['name'] ?? 'Article sans nom',
+            'description' => $item['description'] ?? null,
+            'type' => $type,
+            'value' => $item['value'] ?? 0,
+            'quantity' => $item['quantity'] ?? 1
+        ]);
+
+        // Si des images sont spécifiées, les traiter
+        if (isset($item['images'])) {
+            // Cette partie dépend de la façon dont vous gérez les images
+            // Si c'est un tableau d'IDs d'images déjà téléchargées, procédez comme suit :
+            foreach ($item['images'] as $key => $imageId) {
+                // Récupérer l'image temporaire et la déplacer
+                $tempImage = TemporaryUpload::find($imageId);
+                if ($tempImage) {
+                    $barterItem->images()->create([
+                        'path' => $tempImage->file_path,
+                        'description' => $item['image_descriptions'][$key] ?? null,
+                        'order' => $key,
+                    ]);
+                    $tempImage->delete(); // Supprimer l'entrée temporaire
+                }
+            }
+        }
+
+        return $barterItem;
+    }
+
+    /**
+     * Affiche la liste des produits pouvant être utilisés pour le troc
+     */
+    public function getBarterableProducts(Request $request)
+    {
+        $products = Product::where('is_barterable', true)
+                          ->where('type', 'physical')
+                          ->where('stock_quantity', '>', 0)
+                          ->when($request->search, function($query, $search) {
+                              return $query->where('name', 'like', "%{$search}%");
+                          })
+                          ->select('id', 'name', 'default_price', 'stock_quantity')
+                          ->get();
+                          
+        return response()->json([
+            'success' => true,
+            'products' => $products
+        ]);
     }
 } 

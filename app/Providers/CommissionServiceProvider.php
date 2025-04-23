@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Commission;
 use App\Models\User;
+use App\Models\Shop;
 
 class CommissionServiceProvider extends ServiceProvider
 {
@@ -50,35 +51,31 @@ class CommissionServiceProvider extends ServiceProvider
 
         // Autorisation pour voir le rapport d'un vendeur
         Gate::define('view-vendor-report', function (User $user, User $vendor) {
-            // Admins peuvent voir tous les rapports
+            // Seuls les admins et managers peuvent voir les rapports des vendeurs
+            if (!in_array($user->role, ['admin', 'manager'])) {
+                return false;
+            }
+            
+            // Vérifier que c'est bien un vendeur
+            if ($vendor->role !== 'vendeur') {
+                return false;
+            }
+            
+            // Un admin peut voir tous les vendeurs
             if ($user->role === 'admin') {
                 return true;
             }
             
-            // Un manager peut voir les rapports des vendeurs des boutiques qu'il gère
-            if ($user->role === 'manager') {
-                $managedShopIds = $user->managedShops()->pluck('shops.id')->toArray();
-                $vendorShopIds = $vendor->shops()->pluck('shops.id')->toArray();
-                return !empty(array_intersect($managedShopIds, $vendorShopIds));
-            }
-            
-            // Un vendeur ne peut voir que son propre rapport
-            if ($user->role === 'vendeur') {
-                return $user->id === $vendor->id;
-            }
-            
-            return false;
+            // Un manager ne peut voir que les vendeurs des boutiques qu'il gère
+            $managedShopIds = $user->managedShops()->pluck('shops.id')->toArray();
+            $vendorShopIds = $vendor->shops()->pluck('shops.id')->toArray();
+            return !empty(array_intersect($managedShopIds, $vendorShopIds));
         });
 
         // Autorisation pour payer une commission
         Gate::define('pay-commission', function (User $user, Commission $commission) {
             // Seuls les admins et managers peuvent payer des commissions
             if (!in_array($user->role, ['admin', 'manager'])) {
-                return false;
-            }
-            
-            // La commission doit être en attente
-            if ($commission->status !== 'pending') {
                 return false;
             }
             
@@ -118,6 +115,22 @@ class CommissionServiceProvider extends ServiceProvider
         // Autorisation pour gérer les paramètres des commissions
         Gate::define('manage-commissions-settings', function (User $user) {
             return $user->role === 'admin';
+        });
+
+        // Autorisation pour voir les commissions d'une boutique
+        Gate::define('view-shop-commissions', function (User $user, Shop $shop) {
+            // Seuls les admins et managers peuvent voir les rapports des boutiques
+            if (!in_array($user->role, ['admin', 'manager'])) {
+                return false;
+            }
+            
+            // Un admin peut voir toutes les boutiques
+            if ($user->role === 'admin') {
+                return true;
+            }
+            
+            // Un manager ne peut voir que les boutiques qu'il gère
+            return $user->managedShops()->where('shops.id', $shop->id)->exists();
         });
     }
 }

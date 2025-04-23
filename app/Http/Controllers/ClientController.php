@@ -101,7 +101,7 @@ class ClientController extends Controller
     public function show(Client $client)
     {
         $client->load(['phones', 'bills' => function($query) {
-            $query->latest()->with('products');
+            $query->latest()->with(['items.product', 'products']);
         }]);
 
         // Statistiques du client
@@ -127,7 +127,7 @@ class ClientController extends Controller
             });
             
         // Factures avec pagination
-        $paginatedBills = $client->bills()->with('products')->latest()->paginate(10);
+        $paginatedBills = $client->bills()->with(['products', 'items.product'])->latest()->paginate(10);
 
         return view('clients.show', compact('client', 'stats', 'monthlyStats', 'paginatedBills'));
     }
@@ -273,7 +273,7 @@ class ClientController extends Controller
      */
     public function billsIndex(Client $client)
     {
-        $bills = $client->bills()->latest()->with('products')->paginate(10);
+        $bills = $client->bills()->latest()->with(['products', 'items.product'])->paginate(10);
         
         return view('clients.bills.index', compact('client', 'bills'));
     }

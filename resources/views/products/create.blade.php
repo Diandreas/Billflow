@@ -83,6 +83,17 @@
                                     <input type="number" step="0.01" min="0" id="cost_price" name="cost_price" value="{{ old('cost_price') }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5">
                                 </div>
                             </div>
+                            
+                            <!-- Option de troc -->
+                            <div class="mt-4">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="is_barterable" name="is_barterable" value="1" {{ old('is_barterable') ? 'checked' : '' }} class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                                    <label for="is_barterable" class="ml-2 block text-sm font-medium text-gray-900">
+                                        {{ __('Disponible pour le troc') }}
+                                    </label>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">{{ __('Cochez cette case si ce produit peut être utilisé dans les opérations de troc') }}</p>
+                            </div>
                         </div>
 
                         <div class="mb-4">

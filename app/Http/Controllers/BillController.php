@@ -14,7 +14,8 @@ use App\Models\Shop;
 use App\Models\Commission;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
 use Illuminate\Support\Facades\Gate;
 use App\Models\BillItem;
 use App\Models\Signature;
@@ -70,7 +71,9 @@ class BillController extends Controller
                   ->orWhereHas('client', function($q) use ($search) {
                       $q->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
+                        ->orWhereHas('phones', function($phoneQuery) use ($search) {
+                            $phoneQuery->where('number', 'like', "%{$search}%");
+                        });
                   })
                   ->orWhereHas('shop', function($q) use ($search) {
                       $q->where('name', 'like', "%{$search}%");
@@ -550,9 +553,24 @@ class BillController extends Controller
         }
         
         // Générer le QR code
-        $qrCode = $this->generateQrCode($bill);
+        try {
+            $qrCode = $this->generateQrCode($bill);
+            if (!$qrCode) {
+                Log::warning('QR code non généré pour la facture ' . $bill->reference);
+            }
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la génération du QR code pour PDF: ' . $e->getMessage());
+            $qrCode = null;
+        }
         
         $pdf = PDF::loadView('bills.pdf', compact('bill', 'settings', 'qrCode'));
+        
+        // Configurer dompdf pour permettre les images base64 et SVG
+        $dompdf = $pdf->getDomPDF();
+        $options = $dompdf->getOptions();
+        $options->set('isRemoteEnabled', true);
+        $options->set('isHtml5ParserEnabled', true);
+        $dompdf->setOptions($options);
         
         return $pdf->download('facture_' . $bill->reference . '.pdf');
     }
@@ -640,7 +658,15 @@ class BillController extends Controller
         $phone = $settings->phone ?? '';
         
         // Générer le QR code
-        $qrCode = $this->generateQrCode($bill);
+        try {
+            $qrCode = $this->generateQrCode($bill);
+            if (!$qrCode) {
+                Log::warning('QR code non généré pour la facture ' . $bill->reference);
+            }
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la génération du QR code pour impression: ' . $e->getMessage());
+            $qrCode = null;
+        }
         
         // Logo
         $logo = $settings->logo_path ? asset('storage/' . $settings->logo_path) : null;
@@ -806,28 +832,49 @@ class BillController extends Controller
     }
 
     /**
-     * Génère un QR code pour une facture
-     * 
-     * @param Bill $bill La facture
-     * @return string|null Le QR code en format base64 ou null en cas d'erreur
+     * Générer un QR code pour la facture.
      */
-    private function generateQrCode(Bill $bill)
+    public function generateQrCode(Bill $bill)
     {
         try {
-            // Générer les données pour le QR code (par exemple, URL de vérification)
-            $verificationUrl = route('bills.verify', ['code' => $bill->verification_code]);
+            // Charger les relations nécessaires si elles ne sont pas déjà chargées
+            if (!$bill->relationLoaded('client') || !$bill->relationLoaded('shop') || !$bill->relationLoaded('seller')) {
+                $bill->load(['client', 'shop', 'seller']);
+            }
             
-            // Générer le QR code en utilisant la bibliothèque
-            $qrCode = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
-                ->size(200)
-                ->margin(1)
-                ->generate($verificationUrl);
+            // Générer les données pour le QR code
+            $data = json_encode([
+                'reference' => $bill->reference,
+                'date' => $bill->date->format('Y-m-d H:i:s'),
+                'total' => $bill->total,
+                'client' => $bill->client->name,
+                'shop' => $bill->shop->name,
+                'seller' => $bill->seller->name
+            ]);
             
-            // Convertir en base64 pour l'affichage dans le PDF
-            return 'data:image/png;base64,' . base64_encode($qrCode);
+            // Options pour le QR code
+            $options = new QROptions([
+                'outputType' => QRCode::OUTPUT_IMAGE_PNG,
+                'eccLevel' => QRCode::ECC_L,
+                'scale' => 5,
+                'imageBase64' => true,
+            ]);
+            
+            // Générer le QR code
+            $qrcode = (new QRCode($options))->render($data);
+            
+            // Le résultat est déjà en base64 (avec le préfixe data:image/png;base64,)
+            // On enlève le préfixe pour stocker seulement le code base64
+            $base64 = str_replace('data:image/png;base64,', '', $qrcode);
+            
+            return $base64;
         } catch (\Exception $e) {
             // Journaliser l'erreur mais ne pas interrompre la génération du PDF
             Log::error('Erreur lors de la génération du QR code : ' . $e->getMessage());
+            // Stocker l'erreur pour le débogage en environnement de développement
+            if (config('app.debug')) {
+                session()->flash('qr_error', 'Erreur de QR code: ' . $e->getMessage());
+            }
             return null;
         }
     }

@@ -24,7 +24,9 @@ class Commission extends Model
         'paid_at',
         'paid_by',
         'payment_method',
-        'payment_reference'
+        'payment_reference',
+        'payment_group_id',
+        'payment_notes'
     ];
 
     protected $casts = [
@@ -67,6 +69,14 @@ class Commission extends Model
     public function paidByUser()
     {
         return $this->belongsTo(User::class, 'paid_by');
+    }
+
+    /**
+     * Relation avec le groupe de paiement
+     */
+    public function payment()
+    {
+        return $this->belongsTo(CommissionPayment::class, 'payment_group_id');
     }
 
     /**

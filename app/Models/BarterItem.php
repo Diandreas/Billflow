@@ -38,6 +38,14 @@ class BarterItem extends Model
     }
 
     /**
+     * Relation avec les images de cet article
+     */
+    public function images()
+    {
+        return $this->hasMany(BarterItemImage::class);
+    }
+
+    /**
      * Calcule la valeur totale de l'article
      */
     public function getTotalValueAttribute()
@@ -59,5 +67,26 @@ class BarterItem extends Model
     public function isReceived()
     {
         return $this->type === 'received';
+    }
+
+    /**
+     * Retourne l'URL de la première image ou une image par défaut
+     */
+    public function getMainImageUrlAttribute()
+    {
+        $firstImage = $this->images()->orderBy('order')->first();
+        
+        if ($firstImage) {
+            return $firstImage->url;
+        }
+        
+        // Si c'est un produit, essayer d'utiliser son image
+        if ($this->product_id) {
+            // Cette partie dépend de comment vous gérez les images de produits
+            // Adaptez selon votre logique d'images de produits
+            return asset('images/products/default.png');
+        }
+        
+        return asset('images/no-image.png');
     }
 } 

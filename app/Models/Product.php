@@ -18,6 +18,7 @@ class Product extends Model
         'cost_price',
         'status',
         'category_id',
+        'is_barterable',
     ];
 
     protected $casts = [
@@ -25,6 +26,7 @@ class Product extends Model
         'cost_price' => 'decimal:2',
         'stock_quantity' => 'integer',
         'stock_alert_threshold' => 'integer',
+        'is_barterable' => 'boolean',
     ];
 
     public function bills()
@@ -48,6 +50,14 @@ class Product extends Model
     public function inventoryMovements()
     {
         return $this->hasMany(InventoryMovement::class);
+    }
+
+    /**
+     * Relation avec les trocs où ce produit a été utilisé
+     */
+    public function barterItems()
+    {
+        return $this->hasMany(BarterItem::class);
     }
 
     public function isLowStock()
@@ -76,5 +86,21 @@ class Product extends Model
     {
         if ($this->default_price == 0) return 0;
         return ($this->getProfit() / $this->default_price) * 100;
+    }
+
+    /**
+     * Vérifie si le produit peut être utilisé dans un troc
+     */
+    public function isBarterable()
+    {
+        return $this->is_barterable && $this->type === 'physical';
+    }
+    
+    /**
+     * Scope pour les produits qui peuvent être utilisés dans un troc
+     */
+    public function scopeBarterable($query)
+    {
+        return $query->where('is_barterable', true)->where('type', 'physical');
     }
 }

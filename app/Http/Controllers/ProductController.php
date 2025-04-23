@@ -118,6 +118,7 @@ class ProductController extends Controller
             'cost_price' => 'nullable|numeric|min:0',
             'status' => 'nullable|string|in:actif,inactif',
             'category_id' => 'nullable|exists:product_categories,id',
+            'is_barterable' => 'nullable|boolean',
         ]);
 
         // S'assurer que le prix par défaut n'est jamais NULL
@@ -130,11 +131,15 @@ class ProductController extends Controller
             $validated['type'] = 'service';
         }
 
-        // Pour les services, mettre les valeurs de stock à zéro
+        // Pour les services, mettre les valeurs de stock à zéro et désactiver le troc
         if ($validated['type'] === 'service') {
             $validated['stock_quantity'] = 0;
             $validated['stock_alert_threshold'] = 0;
+            $validated['is_barterable'] = false;
         }
+
+        // Conversion de la valeur de is_barterable
+        $validated['is_barterable'] = isset($validated['is_barterable']) && $validated['is_barterable'] ? true : false;
 
         $product = Product::create($validated);
 
@@ -193,7 +198,10 @@ class ProductController extends Controller
             ->limit(10)
             ->get();
 
-        return view('products.show', compact('product', 'stats', 'monthlyStats', 'priceHistory', 'invoices'));
+        // Obtenir les trocs associés
+        $barterItems = $product->barterItems()->with('barter')->latest()->take(5)->get();
+
+        return view('products.show', compact('product', 'stats', 'monthlyStats', 'priceHistory', 'invoices', 'barterItems'));
     }
 
     public function edit(Product $product)
@@ -216,20 +224,33 @@ class ProductController extends Controller
             'cost_price' => 'nullable|numeric|min:0',
             'status' => 'nullable|string|in:actif,inactif',
             'category_id' => 'nullable|exists:product_categories,id',
+            'is_barterable' => 'nullable|boolean',
         ]);
 
-        // Si le type n'est pas spécifié, considérer comme un service par défaut
-        if (empty($validated['type'])) {
-            $validated['type'] = 'service';
+        // S'assurer que le prix par défaut n'est jamais NULL
+        if (!isset($validated['default_price']) || $validated['default_price'] === null) {
+            $validated['default_price'] = 0;
         }
 
-        // Pour les services, mettre les valeurs de stock à zéro
-        if ($validated['type'] === 'service') {
+        // Si le type change pour 'service', réinitialiser les valeurs de stock et troc
+        if (isset($validated['type']) && $validated['type'] === 'service') {
             $validated['stock_quantity'] = 0;
             $validated['stock_alert_threshold'] = 0;
+            $validated['is_barterable'] = false;
         }
 
+        // Conversion de la valeur de is_barterable
+        $validated['is_barterable'] = isset($validated['is_barterable']) && $validated['is_barterable'] ? true : false;
+
         $product->update($validated);
+
+        if ($request->ajax() || $request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'product' => $product,
+                'message' => 'Produit mis à jour avec succès'
+            ]);
+        }
 
         return redirect()
             ->route('products.show', $product)

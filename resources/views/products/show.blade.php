@@ -50,6 +50,19 @@
                                     <p>{{ $product->category ? $product->category->name : __('Non catégorisé') }}</p>
                                 </div>
                             </div>
+                            
+                            @if($product->type === 'physical')
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <p class="text-sm text-gray-500">{{ __('Disponible pour le troc') }}</p>
+                                <div class="flex items-center mt-1">
+                                    @if($product->is_barterable)
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">{{ __('Oui') }}</span>
+                                    @else
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{{ __('Non') }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                            @endif
                         </div>
 
                         <!-- Statistiques -->
@@ -367,6 +380,73 @@
                     @endif
                 </div>
             </div>
+
+            <!-- Section des trocs associés -->
+            @if($product->type === 'physical' && isset($barterItems) && $barterItems->count() > 0)
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-5">
+                    <h3 class="font-medium text-gray-900 text-xl mb-4">{{ __('Trocs associés') }}</h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Référence') }}</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Date') }}</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Client') }}</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Quantité') }}</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Type') }}</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Statut') }}</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach($barterItems as $item)
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        <a href="{{ route('barters.show', $item->barter) }}" class="text-indigo-600 hover:text-indigo-900">
+                                            {{ $item->barter->reference }}
+                                        </a>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ $item->barter->created_at->format('d/m/Y') }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ $item->barter->client->name }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ $item->quantity }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        @if($item->type === 'given')
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">{{ __('Donné par client') }}</span>
+                                        @else
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">{{ __('Reçu par client') }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @php
+                                            $statusClass = [
+                                                'pending' => 'bg-yellow-100 text-yellow-800',
+                                                'completed' => 'bg-green-100 text-green-800',
+                                                'cancelled' => 'bg-red-100 text-red-800',
+                                            ][$item->barter->status] ?? 'bg-gray-100 text-gray-800';
+                                        @endphp
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full {{ $statusClass }}">
+                                            {{ __($item->barter->status) }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <a href="{{ route('barters.show', $item->barter) }}" class="text-indigo-600 hover:text-indigo-900">{{ __('Voir') }}</a>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 

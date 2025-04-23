@@ -86,8 +86,12 @@
             margin: 5px 0;
             font-size: 14px;
         }
+        .footer-container {
+            clear: both;
+            position: relative;
+            margin-top: 50px;
+        }
         .footer { 
-            margin-top: 30px; 
             text-align: center; 
             font-size: 10px; 
             border-top: 1px solid #ddd;
@@ -96,6 +100,7 @@
         }
         .signature-area { 
             margin-top: 30px; 
+            margin-bottom: 40px;
             display: flex; 
             justify-content: space-between;
             clear: both;
@@ -115,7 +120,7 @@
         .print-info { 
             font-size: 8px; 
             text-align: right; 
-            margin-top: 5px; 
+            margin-top: 10px; 
             color: #999; 
         }
         .reprint-mark {
@@ -220,16 +225,18 @@
         </div>
     </div>
     
-    <div class="footer">
-        <p>Nous vous remercions pour votre confiance.</p>
-        <p>Cette facture constitue une preuve d'achat et peut être exigée pour tout service après-vente.</p>
-    </div>
-    
-    <div class="print-info">
-        Imprimé le {{ now()->format('d/m/Y H:i') }} 
-        @if($bill->reprint_count > 1)
-        (Réimpression #{{ $bill->reprint_count - 1 }})
-        @endif
+    <div class="footer-container">
+        <div class="footer">
+            <p>Nous vous remercions pour votre confiance.</p>
+            <p>Cette facture constitue une preuve d'achat et peut être exigée pour tout service après-vente.</p>
+        </div>
+        
+        <div class="print-info">
+            Imprimé le {{ now()->format('d/m/Y H:i') }} 
+            @if($bill->reprint_count > 1)
+            (Réimpression #{{ $bill->reprint_count - 1 }})
+            @endif
+        </div>
     </div>
 </body>
 </html> 

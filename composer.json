@@ -11,10 +11,11 @@
     "require": {
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^3.0",
+        "chillerlan/php-qrcode": "^5.0",
         "doctrine/dbal": "^4.2",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
-        "simplesoftwareio/simple-qrcode": "*"
+        "meyfa/php-svg": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

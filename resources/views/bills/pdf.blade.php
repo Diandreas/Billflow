@@ -56,6 +56,7 @@
             float: right;
             width: 300px;
             margin-top: 20px;
+            margin-bottom: 40px;
         }
 
         .amounts table {
@@ -76,8 +77,19 @@
             font-size: 16px;
         }
 
+        .clearfix:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+        
+        .footer-container {
+            clear: both;
+            position: relative;
+            margin-top: 70px;
+        }
+
         .footer {
-            margin-top: 50px;
             padding-top: 20px;
             border-top: 1px solid #ddd;
             font-size: 12px;
@@ -94,7 +106,7 @@
         .print-info {
             font-size: 8px;
             text-align: right;
-            margin-top: 5px;
+            margin-top: 10px;
             color: #999;
         }
         
@@ -181,7 +193,7 @@
     </table>
 
     <!-- Totaux -->
-    <div class="amounts">
+    <div class="amounts clearfix">
         <table>
             <tr>
                 <td>Total HT:</td>
@@ -198,20 +210,34 @@
         </table>
     </div>
 
-    <!-- Pied de page -->
-    <div class="footer">
-        <p>
-            {{ $settings->company_name ?? 'Entreprise' }} - {{ isset($settings->siret) && $settings->siret ? 'SIRET: ' . $settings->siret : '' }}
-        </p>
-        <p>Nous vous remercions pour votre confiance.</p>
-        <p>Cette facture constitue une preuve d'achat et peut être exigée pour tout service après-vente.</p>
+    <!-- QR Code -->
+    @if(isset($qrCode) && $qrCode)
+    <div style="position: absolute; top: 90px; right: 30px; text-align: center;">
+        <img src="data:image/png;base64,{{ $qrCode }}" alt="QR Code" style="width: 100px; height: 100px; max-width: 100px; max-height: 100px;">
+        <p style="font-size: 9px; margin-top: 5px;">Scanner pour vérifier l'authenticité</p>
     </div>
-    
-    <div class="print-info">
-        Imprimé le {{ now()->format('d/m/Y H:i') }} 
-        @if(isset($bill->reprint_count) && $bill->reprint_count > 1)
-        (Réimpression #{{ $bill->reprint_count - 1 }})
-        @endif
+    @else
+    <div style="position: absolute; top: 90px; right: 30px; text-align: center; width: 100px; height: 100px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center;">
+        <p style="font-size: 9px; color: #999;">QR code non disponible</p>
+    </div>
+    @endif
+
+    <!-- Pied de page -->
+    <div class="footer-container">
+        <div class="footer">
+            <p>
+                {{ $settings->company_name ?? 'Entreprise' }} - {{ isset($settings->siret) && $settings->siret ? 'SIRET: ' . $settings->siret : '' }}
+            </p>
+            <p>Nous vous remercions pour votre confiance.</p>
+            <p>Cette facture constitue une preuve d'achat et peut être exigée pour tout service après-vente.</p>
+        </div>
+        
+        <div class="print-info">
+            Imprimé le {{ now()->format('d/m/Y H:i') }} 
+            @if(isset($bill->reprint_count) && $bill->reprint_count > 1)
+            (Réimpression #{{ $bill->reprint_count - 1 }})
+            @endif
+        </div>
     </div>
 </div>
 </body>

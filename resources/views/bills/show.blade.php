@@ -180,6 +180,57 @@
                     </div>
                 </div>
 
+                <!-- QR Code d'authenticité -->
+                <div class="mb-8 mt-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">{{ __('QR Code d\'authenticité') }}</h3>
+                    </div>
+                    <div class="flex items-center space-x-6">
+                        <div class="p-4 bg-gray-50 rounded-lg inline-flex flex-col items-center">
+                            @php
+                                try {
+                                    $qrCodeData = App::make(\App\Http\Controllers\BillController::class)->generateQrCode($bill);
+                                    $error = null;
+                                } catch (\Exception $e) {
+                                    $qrCodeData = null;
+                                    $error = $e->getMessage();
+                                }
+                            @endphp
+                            
+                            @if($error)
+                                <div class="text-red-500 mb-2">Erreur: {{ $error }}</div>
+                            @endif
+                            
+                            @if(session('qr_error'))
+                                <div class="text-red-500 mb-2">{{ session('qr_error') }}</div>
+                            @endif
+                            
+                            @if($qrCodeData)
+                                <img src="data:image/png;base64,{{ $qrCodeData }}" class="w-32 h-32" alt="QR Code">
+                            @else
+                                <div class="w-32 h-32 flex items-center justify-center bg-gray-200 text-gray-500">
+                                    QR code non disponible
+                                    @if(config('app.debug'))
+                                    <div class="text-xs text-red-400 mt-2">
+                                        Vérifiez les extensions PHP: GD ou Imagick
+                                    </div>
+                                    @endif
+                                </div>
+                            @endif
+                            <p class="text-xs text-gray-500 mt-2">{{ __('Scanner pour vérifier l\'authenticité') }}</p>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <p class="mb-2">{{ __('Ce QR code contient les informations sécurisées de cette facture:') }}</p>
+                            <ul class="list-disc pl-5 space-y-1">
+                                <li>{{ __('Référence') }}: {{ $bill->reference }}</li>
+                                <li>{{ __('Date') }}: {{ $bill->date->format('d/m/Y') }}</li>
+                                <li>{{ __('Client') }}: {{ $bill->client->name }}</li>
+                                <li>{{ __('Montant') }}: {{ number_format($bill->total, 0, ',', ' ') }} FCFA</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Informations client et entreprise -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                     <div class="bg-gray-50 p-4 rounded-lg">
