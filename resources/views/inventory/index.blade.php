@@ -74,7 +74,7 @@
                         </div>
                         <div>
                             <div class="text-xs text-gray-500">Valeur du Stock</div>
-                            <div class="text-lg font-semibold">{{ number_format($stats['total_stock_value'], 2) }} €</div>
+                            <div class="text-lg font-semibold">{{ number_format($stats['total_stock_value'], 2) }} FCFA</div>
                         </div>
                     </div>
                 </div>
@@ -190,14 +190,28 @@
                     
                     <!-- Filtres rapides -->
                     <div class="flex space-x-2">
-                        <form action="{{ route('inventory.index') }}" method="GET" class="flex items-center">
-                            <input type="text" name="search" placeholder="Rechercher..." class="text-xs rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 w-40">
-                            <button type="submit" class="ml-1 p-1.5 bg-orange-600 text-white rounded-md text-xs hover:bg-orange-700">
+                        <div class="flex items-center">
+                            <input type="text" id="searchInput" placeholder="Rechercher..." class="text-xs rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 w-40">
+                            <button type="button" id="searchButton" class="ml-1 p-1.5 bg-orange-600 text-white rounded-md text-xs hover:bg-orange-700">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
                                 </svg>
                             </button>
-                        </form>
+                        </div>
+                        
+                        <select id="categoryFilter" class="text-xs rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                            <option value="">Toutes catégories</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->name }}">{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                        
+                        <select id="stockFilter" class="text-xs rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                            <option value="">Tous stocks</option>
+                            <option value="in-stock">En stock</option>
+                            <option value="low-stock">Stock faible</option>
+                            <option value="out-of-stock">Rupture de stock</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -205,18 +219,37 @@
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Produit') }}</th>
-                                <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Référence') }}</th>
-                                <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Catégorie') }}</th>
-                                <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Prix') }}</th>
-                                <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Stock') }}</th>
-                                <th scope="col" class="px-2 py-1.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Actions') }}</th>
+                                <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="name">
+                                    {{ __('Produit') }} <span class="sort-icon">↕</span>
+                                </th>
+                                <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="sku">
+                                    {{ __('Référence') }} <span class="sort-icon">↕</span>
+                                </th>
+                                <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="category">
+                                    {{ __('Catégorie') }} <span class="sort-icon">↕</span>
+                                </th>
+                                <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="price">
+                                    {{ __('Prix') }} <span class="sort-icon">↕</span>
+                                </th>
+                                <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" data-sort="stock">
+                                    {{ __('Stock') }} <span class="sort-icon">↕</span>
+                                </th>
+                                <th scope="col" class="px-2 py-1.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    {{ __('Actions') }}
+                                </th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody id="inventoryTableBody" class="bg-white divide-y divide-gray-200">
                             @if(isset($inventories))
                                 @forelse ($inventories as $product)
-                                    <tr class="hover:bg-gray-50">
+                                    <tr class="hover:bg-gray-50 inventory-row" 
+                                        data-name="{{ $product->name }}" 
+                                        data-sku="{{ $product->sku }}" 
+                                        data-category="{{ $product->category->name ?? 'N/A' }}" 
+                                        data-price="{{ $product->price }}" 
+                                        data-stock="{{ $product->stock_quantity }}"
+                                        data-barcode="{{ $product->barcode ?? '' }}"
+                                        data-description="{{ $product->description ?? '' }}">
                                         <td class="px-2 py-1.5 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <div class="flex-shrink-0 h-8 w-8 mr-2">
@@ -246,9 +279,9 @@
                                             {{ $product->category->name ?? 'N/A' }}
                                         </td>
                                         <td class="px-2 py-1.5 whitespace-nowrap">
-                                            <div class="text-xs font-medium text-gray-900">{{ number_format($product->price, 2) }} €</div>
+                                            <div class="text-xs font-medium text-gray-900">{{ number_format($product->price, 2) }} FCFA</div>
                                             @if ($product->compare_price > 0)
-                                                <div class="text-xs text-gray-500 line-through">{{ number_format($product->compare_price, 2) }} €</div>
+                                                <div class="text-xs text-gray-500 line-through">{{ number_format($product->compare_price, 2) }} FCFA</div>
                                             @endif
                                         </td>
                                         <td class="px-2 py-1.5 whitespace-nowrap">
@@ -296,8 +329,23 @@
                     </table>
                 </div>
 
-                <div class="p-3">
-                    {{ $inventories->appends(request()->except('page'))->links() }}
+                <div class="flex justify-between items-center mt-4 px-4 py-2">
+                    <div class="text-sm text-gray-600">
+                        Affichage de <span id="startIndex">1</span> à <span id="endIndex">{{ min(10, count($inventories)) }}</span> sur <span id="totalItems">{{ count($inventories) }}</span> produits
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="prevPage" class="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Précédent
+                        </button>
+                        <button id="nextPage" class="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Suivant
+                        </button>
+                    </div>
+                </div>
+                <div class="p-2 text-center">
+                    <a href="{{ route('inventory.movements') }}" class="text-sm text-blue-600 hover:text-blue-800">
+                        Voir tous les mouvements d'inventaire →
+                    </a>
                 </div>
             </div>
 
@@ -307,3 +355,201 @@
         </div>
     </div>
 </x-app-layout>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const itemsPerPage = 10;
+        let currentPage = 1;
+        let filteredItems = [];
+        let sortConfig = {
+            column: 'name',
+            direction: 'asc'
+        };
+        
+        // Get all table rows and convert to array
+        const inventoryRows = Array.from(document.querySelectorAll('.inventory-row'));
+        
+        // Get UI elements
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const stockFilter = document.getElementById('stockFilter');
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+        const startIndexElem = document.getElementById('startIndex');
+        const endIndexElem = document.getElementById('endIndex');
+        const totalItemsElem = document.getElementById('totalItems');
+        const tableHeaders = document.querySelectorAll('th[data-sort]');
+        
+        // Initialize
+        filterAndDisplayItems();
+        
+        // Event listeners
+        searchInput.addEventListener('input', filterAndDisplayItems);
+        searchButton.addEventListener('click', filterAndDisplayItems);
+        categoryFilter.addEventListener('change', filterAndDisplayItems);
+        stockFilter.addEventListener('change', filterAndDisplayItems);
+        prevPageBtn.addEventListener('click', goToPrevPage);
+        nextPageBtn.addEventListener('click', goToNextPage);
+        
+        // Add sort event listeners
+        tableHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const column = header.dataset.sort;
+                
+                // Toggle direction if same column clicked again
+                if (sortConfig.column === column) {
+                    sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortConfig.column = column;
+                    sortConfig.direction = 'asc';
+                }
+                
+                // Update sort icons
+                updateSortIcons();
+                
+                // Re-filter and display
+                filterAndDisplayItems();
+            });
+        });
+        
+        function updateSortIcons() {
+            tableHeaders.forEach(header => {
+                const icon = header.querySelector('.sort-icon');
+                if (header.dataset.sort === sortConfig.column) {
+                    icon.textContent = sortConfig.direction === 'asc' ? '↑' : '↓';
+                } else {
+                    icon.textContent = '↕';
+                }
+            });
+        }
+        
+        function filterAndDisplayItems() {
+            // Reset pagination
+            currentPage = 1;
+            
+            // Get filter values
+            const searchValue = searchInput.value.toLowerCase();
+            const categoryValue = categoryFilter.value.toLowerCase();
+            const stockValue = stockFilter.value;
+            
+            // Filter items
+            filteredItems = inventoryRows.filter(row => {
+                const name = row.dataset.name.toLowerCase();
+                const sku = row.dataset.sku.toLowerCase();
+                const barcode = row.dataset.barcode ? row.dataset.barcode.toLowerCase() : '';
+                const category = row.dataset.category.toLowerCase();
+                const description = row.dataset.description ? row.dataset.description.toLowerCase() : '';
+                const stock = parseInt(row.dataset.stock, 10);
+                
+                // Search filter
+                const matchesSearch = !searchValue || 
+                    name.includes(searchValue) || 
+                    sku.includes(searchValue) || 
+                    barcode.includes(searchValue) ||
+                    description.includes(searchValue);
+                
+                // Category filter
+                const matchesCategory = !categoryValue || category === categoryValue;
+                
+                // Stock filter
+                let matchesStock = true;
+                if (stockValue === 'in-stock') {
+                    matchesStock = stock > 5;
+                } else if (stockValue === 'low-stock') {
+                    matchesStock = stock > 0 && stock <= 5;
+                } else if (stockValue === 'out-of-stock') {
+                    matchesStock = stock <= 0;
+                }
+                
+                return matchesSearch && matchesCategory && matchesStock;
+            });
+            
+            // Sort items
+            filteredItems.sort((a, b) => {
+                let aValue = a.dataset[sortConfig.column];
+                let bValue = b.dataset[sortConfig.column];
+                
+                if (sortConfig.column === 'price' || sortConfig.column === 'stock') {
+                    aValue = parseFloat(aValue);
+                    bValue = parseFloat(bValue);
+                }
+                
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            displayItems();
+            updatePaginationControls();
+        }
+        
+        function displayItems() {
+            const tableBody = document.getElementById('inventoryTableBody');
+            
+            // Calculate start and end indices for current page
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, filteredItems.length);
+            
+            // Update pagination info
+            startIndexElem.textContent = filteredItems.length > 0 ? startIndex + 1 : 0;
+            endIndexElem.textContent = endIndex;
+            totalItemsElem.textContent = filteredItems.length;
+            
+            // Hide all rows
+            inventoryRows.forEach(row => {
+                row.style.display = 'none';
+            });
+            
+            // Show filtered rows for current page
+            for (let i = startIndex; i < endIndex; i++) {
+                filteredItems[i].style.display = '';
+            }
+            
+            // No results found
+            if (filteredItems.length === 0) {
+                const noResultsRow = document.createElement('tr');
+                noResultsRow.innerHTML = `
+                    <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
+                        Aucun produit ne correspond à votre recherche.
+                    </td>
+                `;
+                tableBody.appendChild(noResultsRow);
+            } else {
+                // Remove any "no results" message if it exists
+                const noResultsRow = tableBody.querySelector('tr:not(.inventory-row)');
+                if (noResultsRow) {
+                    noResultsRow.remove();
+                }
+            }
+        }
+        
+        function updatePaginationControls() {
+            const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+        }
+        
+        function goToPrevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                displayItems();
+                updatePaginationControls();
+            }
+        }
+        
+        function goToNextPage() {
+            const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayItems();
+                updatePaginationControls();
+            }
+        }
+        
+        // Initial sort icon update
+        updateSortIcons();
+    });
+</script>
+@endpush

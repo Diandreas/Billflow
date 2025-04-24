@@ -64,12 +64,14 @@
                             <span class="text-xs font-medium text-green-700 dark:text-green-400 text-center">{{ __('Nouveau client') }}</span>
                         </a>
 
+                        @if(auth()->user()->isAdmin() || auth()->user()->isManager())
                         <a href="{{ route('products.create') }}" class="flex flex-col items-center p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors group">
                             <div class="w-10 h-10 bg-purple-100 dark:bg-purple-800/40 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mb-1 group-hover:bg-purple-200 dark:group-hover:bg-purple-800/60 transition-colors">
                                 <i class="fas fa-box text-lg"></i>
                             </div>
                             <span class="text-xs font-medium text-purple-700 dark:text-purple-400 text-center">{{ __('Nouveau produit') }}</span>
                         </a>
+                        @endif
 
                         <a href="{{ route('inventory.receive') }}" class="flex flex-col items-center p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors group">
                             <div class="w-10 h-10 bg-orange-100 dark:bg-orange-800/40 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center mb-1 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/60 transition-colors">
@@ -93,6 +95,13 @@
                                 </div>
                                 <span class="text-xs font-medium text-teal-700 dark:text-teal-400 text-center">{{ __('Commissions') }}</span>
                             </a>
+                            
+                            <a href="{{ route('commission-payments.index') }}" class="flex flex-col items-center p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors group">
+                                <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-800/40 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mb-1 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/60 transition-colors">
+                                    <i class="fas fa-money-bill-wave text-lg"></i>
+                                </div>
+                                <span class="text-xs font-medium text-indigo-700 dark:text-indigo-400 text-center">{{ __('Paiements') }}</span>
+                            </a>
                         @elseif(auth()->user()->role === 'vendeur')
                             <a href="{{ route('commissions.vendor-report', auth()->id()) }}" class="flex flex-col items-center p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors group">
                                 <div class="w-10 h-10 bg-teal-100 dark:bg-teal-800/40 text-teal-600 dark:text-teal-400 rounded-full flex items-center justify-center mb-1 group-hover:bg-teal-200 dark:group-hover:bg-teal-800/60 transition-colors">
@@ -100,12 +109,20 @@
                                 </div>
                                 <span class="text-xs font-medium text-teal-700 dark:text-teal-400 text-center">{{ __('Mes commissions') }}</span>
                             </a>
+                            
+                            <a href="{{ route('commission-payments.vendor-history', auth()->id()) }}" class="flex flex-col items-center p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors group">
+                                <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-800/40 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mb-1 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/60 transition-colors">
+                                    <i class="fas fa-money-bill-wave text-lg"></i>
+                                </div>
+                                <span class="text-xs font-medium text-indigo-700 dark:text-indigo-400 text-center">{{ __('Mes paiements') }}</span>
+                            </a>
                         @endif
                     </div>
                 </div>
             </div>
 
             <!-- Statistiques sommaires -->
+            @if(auth()->user()->role !== 'vendeur')
             <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
                     <div class="p-3 flex items-start">
@@ -169,7 +186,191 @@
                     </div>
                 </div>
             </div>
+            @endif
 
+            @if(auth()->user()->role === 'vendeur' && isset($vendorStats))
+            <!-- Statistiques personnelles du vendeur -->
+            <div class="mb-3">
+                <h3 class="text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-chart-line text-indigo-500 mr-1"></i>
+                    {{ __('Mes statistiques de vente') }}
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+                        <div class="p-3 flex items-start">
+                            <div class="rounded-full p-2 bg-indigo-100 dark:bg-indigo-900/30 mr-3">
+                                <i class="fas fa-receipt text-indigo-600 dark:text-indigo-400"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('Mes Ventes') }}</div>
+                                <div class="text-lg font-bold text-gray-900 dark:text-white">{{ $vendorStats['total_sales'] ?? 0 }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">
+                                    @if(isset($vendorStats['monthly_sales']))
+                                        <span class="{{ $vendorStats['monthly_sales_percent_change'] >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                            <i class="fas {{ $vendorStats['monthly_sales_percent_change'] >= 0 ? 'fa-arrow-up' : 'fa-arrow-down' }}"></i>
+                                            {{ abs($vendorStats['monthly_sales_percent_change']) }}% ce mois
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+                        <div class="p-3 flex items-start">
+                            <div class="rounded-full p-2 bg-blue-100 dark:bg-blue-900/30 mr-3">
+                                <i class="fas fa-hand-holding-usd text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('Total Commissions') }}</div>
+                                <div class="text-lg font-bold text-gray-900 dark:text-white">{{ $vendorStats['total_commissions'] ?? 0 }}</div>
+                                <div class="text-xs text-green-600 dark:text-green-400">
+                                    {{ $vendorStats['commission_rate'] ?? '0%' }} de taux
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+                        <div class="p-3 flex items-start">
+                            <div class="rounded-full p-2 bg-green-100 dark:bg-green-900/30 mr-3">
+                                <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('Commissions Payées') }}</div>
+                                <div class="text-lg font-bold text-gray-900 dark:text-white">{{ $vendorStats['paid_commissions'] ?? 0 }}</div>
+                                <a href="{{ route('commissions.user-history', auth()->id()) }}" class="text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 inline-flex items-center">
+                                    {{ __('Historique') }} <i class="fas fa-arrow-right ml-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+                        <div class="p-3 flex items-start">
+                            <div class="rounded-full p-2 bg-yellow-100 dark:bg-yellow-900/30 mr-3">
+                                <i class="fas fa-clock text-yellow-600 dark:text-yellow-400"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('En Attente') }}</div>
+                                <div class="text-lg font-bold text-gray-900 dark:text-white">{{ $vendorStats['pending_commissions'] ?? 0 }}</div>
+                                <a href="{{ route('commissions.pending', auth()->id()) }}" class="text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-300 inline-flex items-center">
+                                    {{ __('Voir détails') }} <i class="fas fa-arrow-right ml-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Résumé de performance du vendeur -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg mb-3">
+                <div class="p-3 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="font-semibold text-gray-800 dark:text-white">
+                        <i class="fas fa-user-chart text-indigo-500 mr-1"></i>
+                        {{ __('Mon Profil de Performance') }}
+                    </h3>
+                </div>
+                <div class="p-4">
+                    <div class="flex flex-col md:flex-row md:items-center md:space-x-6">
+                        <div class="mb-4 md:mb-0">
+                            <div class="w-24 h-24 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto">
+                                <i class="fas fa-user text-indigo-600 dark:text-indigo-400 text-4xl"></i>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-1">
+                                {{ auth()->user()->name }}
+                            </h4>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm mb-3">
+                                <span class="text-indigo-600 dark:text-indigo-400 font-medium">{{ auth()->user()->role }}</span>
+                                @if(isset($selectedShop))
+                                    <span class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-800 dark:text-gray-300 text-xs">
+                                        {{ $selectedShop->name }}
+                                    </span>
+                                @endif
+                            </p>
+                            
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('Total Ventes') }}</p>
+                                    <p class="text-lg font-bold text-gray-800 dark:text-white">{{ $vendorStats['total_sales'] ?? 0 }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('Chiffre d\'affaires') }}</p>
+                                    <p class="text-lg font-bold text-gray-800 dark:text-white">{{ $vendorStats['total_sales_amount'] ?? '0 FCFA' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('Taux de commission') }}</p>
+                                    <p class="text-lg font-bold text-indigo-600 dark:text-indigo-400">{{ $vendorStats['commission_rate'] ?? '0%' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('Total Commissions') }}</p>
+                                    <p class="text-lg font-bold text-gray-800 dark:text-white">{{ $vendorStats['total_amount'] ?? '0 FCFA' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            @if(auth()->user()->isAdmin() || auth()->user()->isManager())
+                <!-- Statistiques des paiements de commissions -->
+                @if(isset($globalStats['commissionsPayments']))
+                <div class="mb-3">
+                    <h3 class="text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-money-bill-wave text-indigo-500 mr-1"></i>
+                        {{ __('Paiements de commissions') }}
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+                            <div class="p-3 flex items-start">
+                                <div class="rounded-full p-2 bg-indigo-100 dark:bg-indigo-900/30 mr-3">
+                                    <i class="fas fa-money-bill-wave text-indigo-600 dark:text-indigo-400"></i>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('Total Paiements') }}</div>
+                                    <div class="text-lg font-bold text-gray-900 dark:text-white">{{ $globalStats['commissionsPayments']['totalPayments'] ?? 0 }}</div>
+                                    <a href="{{ route('commission-payments.index') }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 inline-flex items-center">
+                                        {{ __('Voir tous') }} <i class="fas fa-arrow-right ml-1"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+                            <div class="p-3 flex items-start">
+                                <div class="rounded-full p-2 bg-green-100 dark:bg-green-900/30 mr-3">
+                                    <i class="fas fa-calendar-check text-green-600 dark:text-green-400"></i>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('Ce mois') }}</div>
+                                    <div class="text-lg font-bold text-gray-900 dark:text-white">{{ $globalStats['commissionsPayments']['monthlyPayments'] ?? 0 }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        @if(isset($globalStats['commissionsPayments']['monthlyPaymentsPercentChange']))
+                                            <span class="{{ $globalStats['commissionsPayments']['monthlyPaymentsPercentChange'] >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                                <i class="fas {{ $globalStats['commissionsPayments']['monthlyPaymentsPercentChange'] >= 0 ? 'fa-arrow-up' : 'fa-arrow-down' }}"></i>
+                                                {{ abs($globalStats['commissionsPayments']['monthlyPaymentsPercentChange']) }}%
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+                            <div class="p-3 flex items-start">
+                                <div class="rounded-full p-2 bg-blue-100 dark:bg-blue-900/30 mr-3">
+                                    <i class="fas fa-hand-holding-usd text-blue-600 dark:text-blue-400"></i>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('Montant Total') }}</div>
+                                    <div class="text-lg font-bold text-gray-900 dark:text-white">{{ $globalStats['commissionsPayments']['totalAmount'] ?? '0 FCFA' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endif
+            @endif
+
+            @if(auth()->user()->role !== 'vendeur')
             <!-- Graphiques principaux -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">
                 <!-- Graphique principal -->
@@ -322,8 +523,125 @@
                     </div>
                 </div>
             </div>
+            @else
+            <!-- Mes dernières factures (pour vendeur) -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg mb-3">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="font-semibold text-gray-800 dark:text-white">
+                        <i class="fas fa-receipt text-indigo-500 mr-1"></i>
+                        {{ __('Mes Dernières Factures') }}
+                    </h3>
+                    <a href="{{ route('bills.index') }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 text-xs font-medium inline-flex items-center">
+                        {{ __('Voir tout') }}
+                        <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead>
+                        <tr>
+                            <th class="px-3 py-2 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Référence</th>
+                            <th class="px-3 py-2 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Client</th>
+                            <th class="px-3 py-2 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                            <th class="px-3 py-2 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Statut</th>
+                            <th class="px-3 py-2 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Montant</th>
+                        </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach($latestBills as $bill)
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                <td class="px-3 py-2 whitespace-nowrap text-xs font-medium">
+                                    <a href="{{ route('bills.show', $bill) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                        {{ $bill->reference }}
+                                    </a>
+                                </td>
+                                <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-gray-300">
+                                    <a href="{{ route('clients.show', $bill->client) }}" class="hover:text-indigo-600 dark:hover:text-indigo-400">
+                                        {{ $bill->client->name }}
+                                    </a>
+                                </td>
+                                <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
+                                    {{ $bill->date->format('d/m/Y') }}
+                                </td>
+                                <td class="px-3 py-2 whitespace-nowrap text-xs">
+                                        <span class="px-1.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full
+                                            {{ $bill->status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                            ($bill->status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                            'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400') }}">
+                                                <i class="fas {{ $bill->status === 'paid' ? 'fa-check-circle' :
+                                                ($bill->status === 'pending' ? 'fa-clock' :
+                                                'fa-times-circle') }} mr-1"></i>
+                                                {{ $bill->status === 'paid' ? 'Payée' : ($bill->status === 'pending' ? 'En attente' : 'Annulée') }}
+                                            </span>
+                                </td>
+                                <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-gray-300">
+                                    {{ number_format($bill->total, 0, ',', ' ') }} FCFA
+                                </td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
 
-            @if(isset($sellerStats) && count($sellerStats) > 0)
+            @if(auth()->user()->isAdmin() || auth()->user()->isManager() && isset($latestCommissionPayments) && $latestCommissionPayments->count() > 0)
+                <!-- Derniers paiements de commissions -->
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg mb-3">
+                    <div class="flex justify-between items-center p-3 border-b border-gray-200 dark:border-gray-700">
+                        <h3 class="font-semibold text-gray-800 dark:text-white">
+                            <i class="fas fa-money-bill-wave text-indigo-500 mr-1"></i>
+                            {{ __('Derniers Paiements de Commissions') }}
+                        </h3>
+                        <a href="{{ route('commission-payments.index') }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 text-xs font-medium inline-flex items-center">
+                            {{ __('Voir tout') }}
+                            <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead>
+                            <tr>
+                                <th class="px-3 py-2 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Référence</th>
+                                <th class="px-3 py-2 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Vendeur</th>
+                                <th class="px-3 py-2 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Boutique</th>
+                                <th class="px-3 py-2 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Montant</th>
+                                <th class="px-3 py-2 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Méthode</th>
+                                <th class="px-3 py-2 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                            </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                @foreach($latestCommissionPayments as $payment)
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                                            <a href="{{ route('commission-payments.show', $payment) }}">{{ $payment->reference }}</a>
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            {{ $payment->user->name }}
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            {{ $payment->shop->name }}
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white font-semibold">
+                                            {{ number_format($payment->amount, 0, ',', ' ') }} FCFA
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
+                                                {{ $payment->payment_method }}
+                                            </span>
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            {{ $payment->paid_at->format('d/m/Y H:i') }}
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+
+            @if(isset($sellerStats) && count($sellerStats) > 0 && auth()->user()->role !== 'vendeur')
                 <!-- Performance des vendeurs -->
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg mb-3">
                     <div class="p-3 border-b border-gray-200 dark:border-gray-700">

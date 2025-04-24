@@ -83,15 +83,17 @@
                                     <form action="{{ route('shops.assign-users', $shop) }}" method="POST">
                                         @csrf
 
-                                        @if($users->except($assignedUsers->pluck('id'))->count() > 0)
+                                        @if($users->count() > 0)
                                             <div class="mb-3">
                                                 <label for="selectedUser" class="form-label">Sélectionner un utilisateur</label>
                                                 <select class="form-select" id="selectedUser" name="selected_user" required>
                                                     <option value="">Choisir un utilisateur...</option>
-                                                    @foreach($users->except($assignedUsers->pluck('id')) as $user)
+                                                    @foreach($users as $user)
+                                                        @if(!$assignedUsers->contains('id', $user->id))
                                                         <option value="{{ $user->id }}">
                                                             {{ $user->name }} ({{ $user->email }})
                                                         </option>
+                                                        @endif
                                                     @endforeach
                                                 </select>
                                             </div>

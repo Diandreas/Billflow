@@ -18,6 +18,7 @@ use App\Http\Controllers\VendorEquipmentController;
 use App\Http\Controllers\ShopDashboardController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CommissionController;
+use App\Http\Controllers\CommissionPaymentController;
 
 Route::get('/', [DashboardController::class, 'index'])
     ->middleware(['auth'])
@@ -65,6 +66,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/inventory/receive', [InventoryController::class, 'receive'])->name('inventory.receive');
     Route::post('/inventory/receive', [InventoryController::class, 'processReceive'])->name('inventory.process-receive');
     Route::get('/api/inventory/product/{productId}/stock', [InventoryController::class, 'getProductStock'])->name('api.inventory.product-stock');
+    Route::patch('/inventory/{product}/adjust', [InventoryController::class, 'adjustSingle'])->name('inventory.adjust-single');
     
     // Routes pour les factures
     Route::resource('bills', BillController::class);
@@ -144,7 +146,12 @@ Route::middleware('auth')->group(function () {
     
     // Routes pour la gestion des utilisateurs
     Route::get('/users', [App\Http\Controllers\UserManagementController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [App\Http\Controllers\UserManagementController::class, 'create'])->name('users.create');
+    Route::post('/users', [App\Http\Controllers\UserManagementController::class, 'store'])->name('users.store');
     Route::get('/users/{user}', [App\Http\Controllers\UserManagementController::class, 'show'])->name('users.show');
+    Route::get('/users/{user}/edit', [App\Http\Controllers\UserManagementController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{user}', [App\Http\Controllers\UserManagementController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [App\Http\Controllers\UserManagementController::class, 'destroy'])->name('users.destroy');
     Route::get('/users/{user}/reset-email', [App\Http\Controllers\UserManagementController::class, 'showResetEmailForm'])->name('users.reset-email.form');
     Route::post('/users/{user}/reset-email', [App\Http\Controllers\UserManagementController::class, 'resetEmail'])->name('users.reset-email');
 
@@ -173,10 +180,20 @@ Route::middleware('auth')->group(function () {
         Route::post('/commissions/{commission}/pay', [CommissionController::class, 'markAsPaid'])->name('commissions.pay');
         Route::post('/commissions/pay-batch', [CommissionController::class, 'payBatch'])->name('commissions.pay-batch');
         Route::get('/vendors/{user}/commissions', [CommissionController::class, 'vendorReport'])->name('commissions.vendor-report');
+        Route::get('/users/{user}/commissions', [CommissionController::class, 'vendorReport'])->name('commissions.history');
+        Route::get('/commissions/vendor/{user}/pending', [CommissionController::class, 'vendorPendingReport'])->name('commissions.pending');
+        Route::get('/commissions/vendor/{user}/history', [CommissionController::class, 'vendorHistoryReport'])->name('commissions.user-history');
+        Route::post('/commissions/vendor/{user}/pay', [CommissionController::class, 'payVendorCommissions'])->name('commissions.vendor-pay');
         Route::get('/shops/{shop}/commissions', [CommissionController::class, 'shopReport'])->name('commissions.shop-report');
         Route::post('/commissions/{commissionId}/pay-individual', [CommissionController::class, 'payCommission'])->name('commissions.pay-individual');
-        Route::post('/vendors/{userId}/pay-all', [CommissionController::class, 'payVendorCommissions'])->name('commissions.pay-vendor');
         Route::get('/commissions/export', [CommissionController::class, 'export'])->name('commissions.export');
+        Route::get('/commissions/export/user/{user_id}', [CommissionController::class, 'export'])->name('commissions.export.user');
+        
+        // Routes pour les paiements de commissions
+        Route::get('/commission-payments', [CommissionPaymentController::class, 'index'])->name('commission-payments.index');
+        Route::get('/commission-payments/{payment}', [CommissionPaymentController::class, 'show'])->name('commission-payments.show');
+        Route::get('/vendors/{user}/payments', [CommissionPaymentController::class, 'vendorHistory'])->name('commission-payments.vendor-history');
+        Route::get('/shops/{shop}/payments', [CommissionPaymentController::class, 'shopHistory'])->name('commission-payments.shop-history');
     });
 
     // Routes pour les trocs
