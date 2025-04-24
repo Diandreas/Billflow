@@ -225,6 +225,49 @@ class InventoryController extends Controller
     }
 
     /**
+     * Ajuste le stock d'un produit spécifique
+     */
+    public function adjustSingle(Request $request, $productId)
+    {
+        $request->validate([
+            'adjustment' => 'required|integer|not_in:0',
+        ]);
+
+        $product = Product::findOrFail($productId);
+        $adjustment = $request->input('adjustment');
+        $stockBefore = $product->stock_quantity;
+
+        if ($adjustment > 0) {
+            // Ajout de stock
+            InventoryMovement::createEntry(
+                $product->id,
+                abs($adjustment),
+                null,
+                'Ajustement manuel',
+                'Ajustement depuis l\'interface d\'inventaire'
+            );
+            $message = 'Ajout de ' . abs($adjustment) . ' unités au stock';
+        } else {
+            // Retrait de stock
+            if ($product->stock_quantity < abs($adjustment)) {
+                return back()->with('error', 'Quantité insuffisante en stock');
+            }
+            
+            InventoryMovement::createExit(
+                $product->id,
+                abs($adjustment),
+                null,
+                'Ajustement manuel',
+                null,
+                'Ajustement depuis l\'interface d\'inventaire'
+            );
+            $message = 'Retrait de ' . abs($adjustment) . ' unités du stock';
+        }
+
+        return redirect()->route('inventory.index')->with('success', $message);
+    }
+
+    /**
      * Obtenir les informations sur le stock d'un produit (API)
      */
     public function getProductStock($productId)
