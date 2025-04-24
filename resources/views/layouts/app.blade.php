@@ -288,6 +288,21 @@
                     </a>
                 </li>
 
+                <!-- Trocs -->
+                <li>
+                    <a class="{{ request()->routeIs('barters.*') ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700' }}
+                          flex items-center p-3 rounded-lg transition-colors duration-200"
+                       href="{{ route('barters.index') }}"
+                       data-intro-id="barters"
+                       data-title="Trocs"
+                       data-intro="Gérez les échanges et trocs avec vos clients.">
+                        <div class="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-white dark:bg-gray-800 shadow-md">
+                            <i class="fas fa-exchange-alt text-lg {{ request()->routeIs('barters.*') ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400' }}"></i>
+                        </div>
+                        <span>{{ __('Trocs') }}</span>
+                    </a>
+                </li>
+
                 <!-- Clients -->
                 <li>
                     <a class="{{ request()->routeIs('clients.*') ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700' }}
@@ -359,6 +374,20 @@
                             <span>{{ __('Toutes les commissions') }}</span>
                         </a>
                     </li>
+                    
+                    <li>
+                        <a class="{{ request()->routeIs('commission-payments.index') || request()->routeIs('commission-payments.show') || (request()->routeIs('commission-payments.shop-history') && !request()->is('*vendor*')) ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700' }}
+                          flex items-center p-3 rounded-lg transition-colors duration-200"
+                           href="{{ route('commission-payments.index') }}"
+                           data-intro-id="commission-payments"
+                           data-title="Paiements de commissions"
+                           data-intro="Consultez l'historique de tous les paiements de commissions effectués.">
+                            <div class="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-white dark:bg-gray-800 shadow-md">
+                                <i class="fas fa-receipt text-lg {{ request()->routeIs('commission-payments.index') || request()->routeIs('commission-payments.show') || (request()->routeIs('commission-payments.shop-history') && !request()->is('*vendor*')) ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400' }}"></i>
+                            </div>
+                            <span>{{ __('Historique des paiements') }}</span>
+                        </a>
+                    </li>
                 @endif
 
                 @if(Auth::user()->role === 'vendeur')
@@ -373,6 +402,20 @@
                                 <i class="fas fa-money-bill-wave text-lg {{ request()->routeIs('commissions.vendor-report') ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400' }}"></i>
                             </div>
                             <span>{{ __('Mes commissions') }}</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="{{ request()->routeIs('commission-payments.vendor-history') ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700' }}
+                          flex items-center p-3 rounded-lg transition-colors duration-200"
+                           href="{{ route('commission-payments.vendor-history', Auth::id()) }}"
+                           data-intro-id="my-payments"
+                           data-title="Mes paiements"
+                           data-intro="Consultez l'historique de tous vos paiements reçus.">
+                            <div class="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-white dark:bg-gray-800 shadow-md">
+                                <i class="fas fa-receipt text-lg {{ request()->routeIs('commission-payments.vendor-history') ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400' }}"></i>
+                            </div>
+                            <span>{{ __('Mes paiements') }}</span>
                         </a>
                     </li>
                 @endif
@@ -460,6 +503,8 @@
                                 {{ __('Tableau de bord') }}
                             @elseif(request()->routeIs('bills.*'))
                                 {{ __('Factures') }}
+                            @elseif(request()->routeIs('barters.*'))
+                                {{ __('Trocs') }}
                             @elseif(request()->routeIs('clients.*'))
                                 {{ __('Clients') }}
                             @elseif(request()->routeIs('products.*'))
@@ -487,6 +532,8 @@
                             {{ __('Tableau de bord') }}
                         @elseif(request()->routeIs('bills.*'))
                             {{ __('Factures') }}
+                        @elseif(request()->routeIs('barters.*'))
+                            {{ __('Trocs') }}
                         @elseif(request()->routeIs('clients.*'))
                             {{ __('Clients') }}
                         @elseif(request()->routeIs('products.*'))
