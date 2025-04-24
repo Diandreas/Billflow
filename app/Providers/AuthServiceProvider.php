@@ -61,7 +61,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-products', function ($user) {
-            return in_array($user->role, ['admin', 'manager']);
+            return in_array($user->role, ['admin', 'manager', 'vendeur']);
         });
 
         Gate::define('create-bill', function ($user) {
@@ -69,38 +69,13 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('edit-bill', function ($user, $bill) {
-            // Les admins peuvent modifier toutes les factures
-            if ($user->role === 'admin') {
-                return true;
-            }
-
-            // Les managers peuvent modifier les factures de leurs boutiques
-            if ($user->role === 'manager' && $bill->shop_id) {
-                return $user->shops()
-                    ->where('shops.id', $bill->shop_id)
-                    ->wherePivot('is_manager', true)
-                    ->exists();
-            }
-
-            // Les utilisateurs peuvent modifier les factures qu'ils ont créées
-            return $user->id === $bill->user_id || $user->id === $bill->seller_id;
+            // Seuls les admins peuvent modifier les factures
+            return $user->role === 'admin';
         });
 
         Gate::define('delete-bill', function ($user, $bill) {
-            // Seuls les admins et les managers peuvent supprimer des factures
-            if ($user->role === 'admin') {
-                return true;
-            }
-
-            // Les managers peuvent supprimer les factures de leurs boutiques
-            if ($user->role === 'manager' && $bill->shop_id) {
-                return $user->shops()
-                    ->where('shops.id', $bill->shop_id)
-                    ->wherePivot('is_manager', true)
-                    ->exists();
-            }
-
-            return false;
+            // Seuls les admins peuvent supprimer des factures
+            return $user->role === 'admin';
         });
         
         // Gates pour les impressions de factures
@@ -131,6 +106,23 @@ class AuthServiceProvider extends ServiceProvider
             }
             
             return $user->id === $commission->user_id;
+        });
+        
+        Gate::define('view-shop-report', function ($user, $shop) {
+            // Les admins ont toujours accès
+            if ($user->role === 'admin') {
+                return true;
+            }
+            
+            // Les managers ont accès si ils gèrent cette boutique
+            if ($user->role === 'manager') {
+                return $user->shops()
+                    ->where('shops.id', $shop->id)
+                    ->wherePivot('is_manager', true)
+                    ->exists();
+            }
+            
+            return false;
         });
         
         Gate::define('pay-commission', function ($user, $commission) {
