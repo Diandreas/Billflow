@@ -16,7 +16,7 @@ class ShopController extends Controller
      */
     public function index()
     {
-        $shops = Shop::with('managers')->get();
+        $shops = Shop::with('managers')->paginate(15);
         return view('shops.index', compact('shops'));
     }
 
@@ -59,7 +59,21 @@ class ShopController extends Controller
      */
     public function show(Shop $shop)
     {
-        $shop->load(['managers', 'vendors']);
+        $shop->load(['managers', 'vendors', 'bills']);
+        
+        // Préparer les statistiques des commissions pour chaque vendeur
+        foreach ($shop->vendors as $vendor) {
+            $vendorCommissions = \App\Models\Commission::where('user_id', $vendor->id)
+                ->where('shop_id', $shop->id)
+                ->get();
+                
+            $vendor->commission_stats = [
+                'total' => $vendorCommissions->sum('amount'),
+                'pending' => $vendorCommissions->where('is_paid', false)->sum('amount'),
+                'paid' => $vendorCommissions->where('is_paid', true)->sum('amount'),
+                'last_commission' => $vendorCommissions->sortByDesc('created_at')->first()
+            ];
+        }
         
         return view('shops.show', compact('shop'));
     }
