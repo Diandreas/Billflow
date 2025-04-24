@@ -95,11 +95,9 @@
                                             {{ $user->email }}
                                         </td>
                                         <td class="px-3 py-1.5 whitespace-nowrap text-xs">
-                                            @foreach($user->roles as $role)
-                                                <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-indigo-100 text-indigo-800">
-                                                    {{ $role->name }}
-                                                </span>
-                                            @endforeach
+                                            <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-indigo-100 text-indigo-800">
+                                                {{ $user->role }}
+                                            </span>
                                         </td>
                                         <td class="px-3 py-1.5 whitespace-nowrap text-xs">
                                             @if($user->is_active)
