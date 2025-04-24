@@ -95,6 +95,47 @@ class Bill extends Model
 
         $this->save();
     }
+    /**
+     * Relation avec le troc associé à cette facture
+     */
+    public function barter()
+    {
+        return $this->belongsTo(Barter::class);
+    }
+
+    /**
+     * Détermine si cette facture est liée à un troc
+     */
+    public function isBarterBill()
+    {
+        return $this->is_barter_bill;
+    }
+
+    /**
+     * Crée une facture pour un troc spécifique
+     */
+    public static function createForBarter(Barter $barter, $additionalPayment = 0)
+    {
+        $bill = new self();
+        $bill->reference = 'FACT-TROC-' . $barter->reference;
+        $bill->client_id = $barter->client_id;
+        $bill->shop_id = $barter->shop_id;
+        $bill->seller_id = $barter->seller_id;
+        $bill->user_id = $barter->user_id ?? auth()->id();
+        $bill->date = now();
+        $bill->due_date = now()->addDays(30);
+        $bill->tax_rate = 0; // Les trocs sont généralement sans TVA
+        $bill->tax_amount = 0;
+        $bill->total = $additionalPayment > 0 ? $additionalPayment : 0;
+        $bill->status = 'paid'; // Considéré comme payé dès la création
+        $bill->payment_method = $barter->payment_method;
+        $bill->description = 'Facture pour le troc ' . $barter->reference;
+        $bill->is_barter_bill = true;
+        $bill->barter_id = $barter->id;
+        $bill->save();
+
+        return $bill;
+    }
     public function formatAmount($amount)
     {
         return number_format($amount, 0, ',', ' ') . ' FCFA';

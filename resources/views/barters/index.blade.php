@@ -140,7 +140,7 @@
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <div class="mt-3">
                         {{ $barters->links() }}
                     </div>
@@ -148,4 +148,4 @@
             </div>
         </div>
     </div>
-</x-app-layout> 
+</x-app-layout>

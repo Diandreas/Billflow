@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BarterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\ProfileController;
@@ -53,11 +54,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/clients/search', [ClientController::class, 'search']);
     Route::get('/products/search', [ProductController::class, 'search']);
     Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
-    
+
     // Routes pour les catégories de produits
     Route::resource('product-categories', ProductCategoryController::class);
     Route::get('/api/product-categories', [ProductCategoryController::class, 'getAll'])->name('api.product-categories');
-    
+
     // Routes pour la gestion de l'inventaire
     Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
     Route::get('/inventory/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
@@ -67,7 +68,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/receive', [InventoryController::class, 'processReceive'])->name('inventory.process-receive');
     Route::get('/api/inventory/product/{productId}/stock', [InventoryController::class, 'getProductStock'])->name('api.inventory.product-stock');
     Route::patch('/inventory/{product}/adjust', [InventoryController::class, 'adjustSingle'])->name('inventory.adjust-single');
-    
+
     // Routes pour les factures
     Route::resource('bills', BillController::class);
     Route::patch('bills/{bill}/status', [BillController::class, 'updateStatus'])->name('bills.update-status');
@@ -89,7 +90,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/shops/{shop}/manage-users', [ShopController::class, 'manageUsers'])->name('shops.manage-users');
         Route::post('/shops/{shop}/assign-users', [ShopController::class, 'assignUsers'])->name('shops.assign-users');
         Route::delete('/shops/{shop}/users/{user}', [ShopController::class, 'removeUser'])->name('shops.remove-user');
-        
+
         // Tableau de bord spécifique par boutique
         Route::get('/shops/{shop}/dashboard', [ShopDashboardController::class, 'show'])->name('shops.dashboard');
     });
@@ -143,7 +144,7 @@ Route::middleware('auth')->group(function () {
 
     // Routes pour les téléphones
     Route::resource('phones', PhoneController::class);
-    
+
     // Routes pour la gestion des utilisateurs
     Route::get('/users', [App\Http\Controllers\UserManagementController::class, 'index'])->name('users.index');
     Route::get('/users/create', [App\Http\Controllers\UserManagementController::class, 'create'])->name('users.create');
@@ -188,7 +189,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/commissions/{commissionId}/pay-individual', [CommissionController::class, 'payCommission'])->name('commissions.pay-individual');
         Route::get('/commissions/export', [CommissionController::class, 'export'])->name('commissions.export');
         Route::get('/commissions/export/user/{user_id}', [CommissionController::class, 'export'])->name('commissions.export.user');
-        
+
         // Routes pour les paiements de commissions
         Route::get('/commission-payments', [CommissionPaymentController::class, 'index'])->name('commission-payments.index');
         Route::get('/commission-payments/{payment}', [CommissionPaymentController::class, 'show'])->name('commission-payments.show');
@@ -197,13 +198,23 @@ Route::middleware('auth')->group(function () {
     });
 
     // Routes pour les trocs
+    Route::resource('barters', BarterController::class);
+
+    // Nouvelles routes pour les trocs
+    Route::get('/barters/{barter}/download-bill', [BarterController::class, 'downloadBill'])->name('barters.download-bill');
+    Route::get('/barters/{barter}/print-bill', [BarterController::class, 'printBill'])->name('barters.print-bill');
+    Route::get('/barters/{barter}/generate-bill', [BarterController::class, 'generateBill'])->name('barters.generate-bill');
+    Route::get('/barter-stats', [BarterController::class, 'barterStats'])->name('barters.stats');
+
+    // Route pour filtrer les trocs par produit
+    Route::get('/barters/product/{product}', [BarterController::class, 'indexByProduct'])->name('barters.by-product');
     Route::resource('barters', App\Http\Controllers\BarterController::class);
     Route::post('barters/{barter}/complete', [App\Http\Controllers\BarterController::class, 'complete'])->name('barters.complete');
     Route::post('barters/{barter}/cancel', [App\Http\Controllers\BarterController::class, 'cancel'])->name('barters.cancel');
     Route::post('barters/{barter}/images', [App\Http\Controllers\BarterController::class, 'addImages'])->name('barters.add-images');
     Route::delete('barters/images/{image}', [App\Http\Controllers\BarterController::class, 'deleteImage'])->name('barters.delete-image');
     Route::get('api/barter/products', [App\Http\Controllers\BarterController::class, 'getBarterableProducts'])->name('api.barter.products');
-    
+
     // Routes pour les livraisons
     Route::resource('deliveries', App\Http\Controllers\DeliveryController::class);
     Route::post('deliveries/{delivery}/update-status', [App\Http\Controllers\DeliveryController::class, 'updateStatus'])->name('deliveries.update-status');
@@ -221,7 +232,7 @@ Route::prefix('qrcodes')->name('qrcodes.')->group(function () {
     Route::get('verify', [App\Http\Controllers\QrCodeController::class, 'showVerifier'])->name('verify');
     Route::post('verify-bill', [App\Http\Controllers\QrCodeController::class, 'verifyBill'])->name('verify-bill');
     Route::get('url/{type}/{id}', [App\Http\Controllers\QrCodeController::class, 'generateUrl'])->name('generate-url');
-    
+
     // Routes authentifiées
     Route::middleware('auth')->group(function () {
         Route::get('generator', [App\Http\Controllers\QrCodeController::class, 'showGenerator'])->name('generator');

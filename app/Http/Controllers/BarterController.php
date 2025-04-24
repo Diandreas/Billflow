@@ -5,16 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Barter;
 use App\Models\BarterImage;
 use App\Models\BarterItem;
+use App\Models\BarterItemImage;
 use App\Models\Client;
 use App\Models\Product;
 use App\Models\Shop;
 use App\Models\User;
+use App\Models\TemporaryUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
-use App\Models\TemporaryUpload;
-use App\Models\BarterItemImage;
 
 class BarterController extends Controller
 {
@@ -52,8 +52,8 @@ class BarterController extends Controller
         $barters = $query->orderBy('created_at', 'desc')->paginate(15);
 
         $clients = Client::orderBy('name')->get();
-        $shops = Gate::allows('admin') 
-            ? Shop::orderBy('name')->get() 
+        $shops = Gate::allows('admin')
+            ? Shop::orderBy('name')->get()
             : Auth::user()->shops;
         $sellers = User::where('role', 'vendeur')->orderBy('name')->get();
 
@@ -64,8 +64,8 @@ class BarterController extends Controller
     {
         $clients = Client::orderBy('name')->get();
         $products = Product::orderBy('name')->get();
-        $shops = Gate::allows('admin') 
-            ? Shop::orderBy('name')->get() 
+        $shops = Gate::allows('admin')
+            ? Shop::orderBy('name')->get()
             : Auth::user()->shops;
         $sellers = User::where('role', 'vendeur')->orderBy('name')->get();
 
@@ -92,6 +92,7 @@ class BarterController extends Controller
             'received_items.*.product_id' => 'nullable|exists:products,id',
             'description' => 'nullable|string',
             'payment_method' => 'nullable|string',
+            'images.*' => 'nullable|image|max:5120', // Ajout de la validation pour les images
         ]);
 
         // Calculer les totaux
@@ -120,7 +121,7 @@ class BarterController extends Controller
             'additional_payment' => $additionalPayment,
             'payment_method' => $validated['payment_method'] ?? null,
             'notes' => $validated['description'] ?? null,
-            // 'status' => 'pending',
+           // 'status' => 'pending',
         ]);
 
         // Ajouter les articles donnés
@@ -171,6 +172,22 @@ class BarterController extends Controller
             }
         }
 
+        // Traitement des images téléchargées
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $key => $image) {
+                // Stocker l'image dans le stockage public
+                $path = $image->store('barter-images', 'public');
+
+                // Créer l'enregistrement d'image
+                BarterImage::create([
+                    'barter_id' => $barter->id,
+                    'path' => $path,
+                    'description' => $request->input('image_descriptions.'.$key, null),
+                    'type' => $request->input('image_types.'.$key, 'given'), // Par défaut 'given'
+                ]);
+            }
+        }
+
         return redirect()->route('barters.show', $barter)
             ->with('success', 'Troc créé avec succès');
     }
@@ -193,8 +210,8 @@ class BarterController extends Controller
 
         $clients = Client::orderBy('name')->get();
         $products = Product::orderBy('name')->get();
-        $shops = Gate::allows('admin') 
-            ? Shop::orderBy('name')->get() 
+        $shops = Gate::allows('admin')
+            ? Shop::orderBy('name')->get()
             : Auth::user()->shops;
         $sellers = User::where('role', 'vendeur')->orderBy('name')->get();
 
@@ -344,16 +361,16 @@ class BarterController extends Controller
                 if ($request->has('item_id') && $request->input('item_id')) {
                     // Récupérer l'item de troc
                     $barterItem = BarterItem::findOrFail($request->input('item_id'));
-                    
+
                     // Vérifier que l'item appartient bien à ce troc
                     if ($barterItem->barter_id != $barter->id) {
                         return redirect()->route('barters.show', $barter)
                             ->with('error', 'L\'item spécifié n\'appartient pas à ce troc');
                     }
-                    
+
                     // Stocker l'image dans le stockage public
                     $path = $image->store('barter-items', 'public');
-                    
+
                     // Créer l'enregistrement d'image d'item
                     $barterItem->images()->create([
                         'path' => $path,
@@ -364,7 +381,7 @@ class BarterController extends Controller
                 } else {
                     // Stocker l'image pour le troc lui-même
                     $path = $image->store('barter-images', 'public');
-                    
+
                     // Créer l'enregistrement d'image de troc
                     BarterImage::create([
                         'barter_id' => $barter->id,
@@ -403,7 +420,7 @@ class BarterController extends Controller
             $images = $request->file($imageField);
             foreach ($images as $key => $image) {
                 $path = $image->store('barter-items', 'public');
-                
+
                 $barterItem->images()->create([
                     'path' => $path,
                     'description' => $request->input('image_descriptions.'.$key, null),
@@ -455,14 +472,14 @@ class BarterController extends Controller
     public function getBarterableProducts(Request $request)
     {
         $products = Product::where('is_barterable', true)
-                          ->where('type', 'physical')
-                          ->where('stock_quantity', '>', 0)
-                          ->when($request->search, function($query, $search) {
-                              return $query->where('name', 'like', "%{$search}%");
-                          })
-                          ->select('id', 'name', 'default_price', 'stock_quantity')
-                          ->get();
-                          
+            ->where('type', 'physical')
+            ->where('stock_quantity', '>', 0)
+            ->when($request->search, function($query, $search) {
+                return $query->where('name', 'like', "%{$search}%");
+            })
+            ->select('id', 'name', 'default_price', 'stock_quantity')
+            ->get();
+
         return response()->json([
             'success' => true,
             'products' => $products
@@ -481,40 +498,40 @@ class BarterController extends Controller
     {
         $barter = Barter::findOrFail($barterId);
         $barterItem = BarterItem::where('barter_id', $barterId)
-                        ->where('id', $itemId)
-                        ->firstOrFail();
-        
+            ->where('id', $itemId)
+            ->firstOrFail();
+
         if (!$request->hasFile('images')) {
             return response()->json([
                 'message' => 'Aucune image fournie'
             ], 400);
         }
-        
+
         $request->validate([
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'descriptions.*' => 'nullable|string|max:255',
         ]);
-        
+
         $uploadedImages = [];
-        
+
         foreach ($request->file('images') as $key => $image) {
-            $path = $image->store('public/barters/' . $barterId . '/items/' . $itemId);
-            
+            $path = $image->store('barters/' . $barterId . '/items/' . $itemId, 'public');
+
             $description = $request->descriptions[$key] ?? null;
-            
+
             $barterItemImage = BarterItemImage::create([
                 'barter_item_id' => $barterItem->id,
                 'path' => $path,
                 'description' => $description,
             ]);
-            
+
             $uploadedImages[] = [
                 'id' => $barterItemImage->id,
-                'url' => $barterItemImage->url,
+                'url' => Storage::url($path),
                 'description' => $barterItemImage->description,
             ];
         }
-        
+
         return response()->json([
             'message' => 'Images ajoutées avec succès',
             'images' => $uploadedImages
@@ -530,13 +547,13 @@ class BarterController extends Controller
     public function deleteItemImage($imageId)
     {
         $image = BarterItemImage::findOrFail($imageId);
-        
+
         // Vérifie les autorisations si nécessaire
-        
+
         $image->delete();
-        
+
         return response()->json([
             'message' => 'Image supprimée avec succès'
         ]);
     }
-} 
+}

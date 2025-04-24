@@ -57,7 +57,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Cartes de statistiques -->
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg lg:col-span-3">
                     <div class="p-4">
@@ -66,13 +66,13 @@
                                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('Total') }}</p>
                                 <p class="font-bold text-xl text-gray-800 dark:text-white">{{ number_format($stats['total_commissions'], 0, ',', ' ') }} FCFA</p>
                             </div>
-                            
+
                             <div class="border-l-2 border-amber-500 pl-3">
                                 <div class="flex items-center justify-between">
                                     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('En attente') }}</p>
                                     @if($stats['pending_commissions'] > 0 && (Auth::user()->isAdmin() || Auth::user()->isManager()))
-                                        <button 
-                                            type="button" 
+                                        <button
+                                            type="button"
                                             onclick="document.getElementById('pay-all-form').submit();"
                                             class="text-xs text-green-600 dark:text-green-500 hover:text-green-800 dark:hover:text-green-400 font-medium flex items-center"
                                         >
@@ -86,7 +86,7 @@
                                 </div>
                                 <p class="font-bold text-xl text-amber-600 dark:text-amber-500">{{ number_format($stats['pending_commissions'], 0, ',', ' ') }} FCFA</p>
                             </div>
-                            
+
                             <div class="border-l-2 border-blue-500 pl-3">
                                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('Payé') }}</p>
                                 <p class="font-bold text-xl text-blue-600 dark:text-blue-500">{{ number_format($stats['paid_commissions'], 0, ',', ' ') }} FCFA</p>
@@ -102,7 +102,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Filtres en accordéon -->
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-4">
                 <div x-data="{ open: false }">
@@ -118,7 +118,7 @@
                         </h3>
                         <i class="bi" :class="open ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
                     </div>
-                    
+
                     <div x-show="open" class="p-4 pt-0 border-t border-gray-200 dark:border-gray-700">
                         <form action="{{ route('commissions.vendor-report', $user) }}" method="GET" class="space-y-3">
                             <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -131,7 +131,7 @@
                                         <option value="paid" {{ request('status') === 'paid' ? 'selected' : '' }}>{{ __('Payée') }}</option>
                                     </select>
                                 </div>
-            
+
                                 <div>
                                     <label for="type" class="block text-xs font-medium text-gray-700 dark:text-gray-300">{{ __('Type') }}</label>
                                     <select id="type" name="type" class="mt-1 block w-full rounded-md text-sm border-gray-300 dark:border-gray-700 shadow-sm focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring focus:ring-indigo-200 dark:focus:ring-indigo-700 focus:ring-opacity-50 dark:bg-gray-700 dark:text-white">
@@ -141,7 +141,7 @@
                                         <option value="surplus" {{ request('type') === 'surplus' ? 'selected' : '' }}>{{ __('Surplus') }}</option>
                                     </select>
                                 </div>
-                                
+
                                 <div>
                                     <label for="shop_id" class="block text-xs font-medium text-gray-700 dark:text-gray-300">{{ __('Boutique') }}</label>
                                     <select id="shop_id" name="shop_id" onchange="updateVendorsList(this.value)" class="mt-1 block w-full rounded-md text-sm border-gray-300 dark:border-gray-700 shadow-sm focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring focus:ring-indigo-200 dark:focus:ring-indigo-700 focus:ring-opacity-50 dark:bg-gray-700 dark:text-white">
@@ -156,13 +156,13 @@
                                     <label for="from_date" class="block text-xs font-medium text-gray-700 dark:text-gray-300">{{ __('Début') }}</label>
                                     <input type="date" id="from_date" name="from_date" value="{{ request('from_date') }}" class="mt-1 block w-full rounded-md text-sm border-gray-300 dark:border-gray-700 shadow-sm focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring focus:ring-indigo-200 dark:focus:ring-indigo-700 focus:ring-opacity-50 dark:bg-gray-700 dark:text-white">
                                 </div>
-                        
+
                                 <div>
                                     <label for="to_date" class="block text-xs font-medium text-gray-700 dark:text-gray-300">{{ __('Fin') }}</label>
                                     <input type="date" id="to_date" name="to_date" value="{{ request('to_date') }}" class="mt-1 block w-full rounded-md text-sm border-gray-300 dark:border-gray-700 shadow-sm focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring focus:ring-indigo-200 dark:focus:ring-indigo-700 focus:ring-opacity-50 dark:bg-gray-700 dark:text-white">
                                 </div>
                             </div>
-                            
+
                             <div class="flex items-center justify-between pt-2">
                                 <div>
                                     @if(request()->anyFilled(['status', 'type', 'shop_id', 'from_date', 'to_date']))
@@ -181,7 +181,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Liste des commissions -->
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="overflow-x-auto">
@@ -232,7 +232,7 @@
                                         {{ $commission->shop->name ?? 'N/A' }}
                                     </td>
                                     <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        <span class="px-2 py-1 text-xs rounded-full 
+                                        <span class="px-2 py-1 text-xs rounded-full
                                             @if($commission->type === 'vente') bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300
                                             @elseif($commission->type === 'troc') bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300
                                             @else bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 @endif">
@@ -243,7 +243,7 @@
                                         {{ number_format($commission->amount, 0, ',', ' ') }} FCFA
                                     </td>
                                     <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        <span class="px-2 py-1 text-xs rounded-full 
+                                        <span class="px-2 py-1 text-xs rounded-full
                                             @if($commission->status === 'pending') bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300
                                             @elseif($commission->status === 'approved') bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300
                                             @else bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 @endif">
@@ -260,13 +260,13 @@
                                             <a href="{{ route('commissions.show', $commission) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
                                                 {{ __('Détails') }}
                                             </a>
-                                            
-                                            @if($commission->status !== 'paid' && !$commission->is_paid)
-                                                <a href="{{ route('commissions.edit', $commission) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
-                                                    {{ __('Modifier') }}
-                                                </a>
-                                            @endif
-                                            
+
+{{--                                            @if($commission->status !== 'paid' && !$commission->is_paid)--}}
+{{--                                                <a href="{{ route('commissions.edit', $commission) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">--}}
+{{--                                                    {{ __('Modifier') }}--}}
+{{--                                                </a>--}}
+{{--                                            @endif--}}
+
                                             @if($commission->status !== 'paid' && auth()->user()->can('pay-commission', $commission))
                                                 <form action="{{ route('commissions.pay', $commission) }}" method="POST" class="inline">
                                                     @csrf
@@ -294,12 +294,12 @@
                         </tbody>
                     </table>
                 </div>
-                
+
                 <!-- Pagination améliorée -->
                 <div class="mt-6">
                     <div class="flex items-center justify-between">
                         <p class="text-sm text-gray-600 dark:text-gray-400">
-                            {{ __('Affichage de') }} {{ $commissions->firstItem() ?? 0 }} {{ __('à') }} {{ $commissions->lastItem() ?? 0 }} 
+                            {{ __('Affichage de') }} {{ $commissions->firstItem() ?? 0 }} {{ __('à') }} {{ $commissions->lastItem() ?? 0 }}
                             {{ __('sur') }} {{ $commissions->total() }} {{ __('commissions') }}
                         </p>
                         {{ $commissions->withQueryString()->links() }}
@@ -314,20 +314,20 @@
 <script>
     function updateVendorsList(shopId) {
         if (!shopId) return;
-        
+
         // Faire une requête AJAX pour obtenir les vendeurs de cette boutique
         fetch(`/api/shops/${shopId}/vendors`)
             .then(response => response.json())
             .then(data => {
                 // Récupérer le select des vendeurs
                 const vendorSelect = document.getElementById('user_id');
-                
+
                 // Sauvegarder la valeur actuelle si elle existe
                 const currentValue = vendorSelect.value;
-                
+
                 // Vider le select
                 vendorSelect.innerHTML = '<option value="">Sélectionner un vendeur</option>';
-                
+
                 // Ajouter les vendeurs à la liste
                 data.forEach(vendor => {
                     const option = document.createElement('option');
@@ -335,7 +335,7 @@
                     option.textContent = vendor.name;
                     vendorSelect.appendChild(option);
                 });
-                
+
                 // Restaurer la valeur précédente si possible
                 if (currentValue && [...vendorSelect.options].find(opt => opt.value === currentValue)) {
                     vendorSelect.value = currentValue;
@@ -343,7 +343,7 @@
             })
             .catch(error => console.error('Erreur lors de la récupération des vendeurs:', error));
     }
-    
+
     // Exécuter au chargement de la page si une boutique est déjà sélectionnée
     document.addEventListener('DOMContentLoaded', function() {
         const shopSelect = document.getElementById('shop_id');
@@ -352,4 +352,4 @@
         }
     });
 </script>
-@endpush 
+@endpush

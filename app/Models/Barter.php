@@ -256,20 +256,20 @@ class Barter extends Model
     public function createCommission()
     {
         $seller = $this->seller;
-        
+
         if (!$seller || $seller->commission_rate <= 0) {
             return null;
         }
-        
+
         // Calculer le montant de la commission basé sur la valeur des articles reçus ou l'équilibrage
         $baseAmount = $this->clientNeedsToPay() ? $this->additional_payment : $this->value_received;
-        
+
         if ($baseAmount <= 0) {
             return null;
         }
-        
+
         $amount = $baseAmount * ($seller->commission_rate / 100);
-        
+
         return Commission::create([
             'user_id' => $seller->id,
             'barter_id' => $this->id,
@@ -298,4 +298,107 @@ class Barter extends Model
     {
         return $this->type === 'same_type';
     }
-} 
+
+    // Génère automatiquement une facture pour ce troc
+    public function generateBill()
+    {
+        // Vérifier si une facture existe déjà
+        if ($this->bill) {
+            return $this->bill;
+        }
+
+        return DB::transaction(function () {
+            // Créer la facture
+            $bill = new Bill();
+            $bill->reference = 'FACT-TROC-' . $this->reference;
+            $bill->client_id = $this->client_id;
+            $bill->shop_id = $this->shop_id;
+            $bill->seller_id = $this->seller_id;
+            $bill->user_id = $this->user_id;
+            $bill->date = now();
+            $bill->due_date = now()->addDays(30);
+            $bill->tax_rate = 0; // Les trocs sont généralement sans TVA
+            $bill->tax_amount = 0;
+            $bill->total = $this->additional_payment > 0 ? $this->additional_payment : 0;
+            $bill->status = 'paid'; // Considéré comme payé dès la création
+            $bill->payment_method = $this->payment_method;
+            $bill->description = 'Facture automatique pour le troc ' . $this->reference;
+            $bill->is_barter_bill = true; // Marquer comme facture de troc
+            $bill->save();
+
+            // Associer la facture au troc
+            $this->bill_id = $bill->id;
+            $this->save();
+
+            // Ajouter les articles à la facture
+            // Pour un troc, nous n'ajoutons que les articles avec payment supplémentaire
+            if ($this->additional_payment > 0) {
+                // Créer un article spécial pour le paiement complémentaire
+                $billItem = new BillItem();
+                $billItem->bill_id = $bill->id;
+                $billItem->product_id = null;
+                $billItem->unit_price = $this->additional_payment;
+                $billItem->quantity = 1;
+                $billItem->total = $this->additional_payment;
+                $billItem->name = 'Paiement complémentaire pour troc ' . $this->reference;
+                $billItem->save();
+            }
+
+            return $bill;
+        });
+    }
+
+    // Recalculer les valeurs du troc
+    public function recalculateValues()
+    {
+        $this->value_given = $this->givenItems->sum(function ($item) {
+            return $item->value * $item->quantity;
+        });
+
+        $this->value_received = $this->receivedItems->sum(function ($item) {
+            return $item->value * $item->quantity;
+        });
+
+        $this->additional_payment = $this->value_received - $this->value_given;
+        $this->save();
+
+        return $this;
+    }
+
+    // Obtenir les statistiques des produits provenant de trocs
+    public static function getProductBarterStats($productId)
+    {
+        $product = Product::findOrFail($productId);
+
+        // Nombre total de trocs où ce produit a été utilisé
+        $totalBarters = BarterItem::where('product_id', $productId)->count();
+
+        // Nombre de trocs où ce produit a été reçu par le client
+        $receivedBarters = BarterItem::where('product_id', $productId)
+            ->where('type', 'received')
+            ->count();
+
+        // Nombre de trocs où ce produit a été donné par le client
+        $givenBarters = BarterItem::where('product_id', $productId)
+            ->where('type', 'given')
+            ->count();
+
+        // Quantité totale échangée
+        $totalQuantity = BarterItem::where('product_id', $productId)->sum('quantity');
+
+        // Valeur totale échangée
+        $totalValue = BarterItem::where('product_id', $productId)
+            ->selectRaw('SUM(value * quantity) as total_value')
+            ->first()
+            ->total_value ?? 0;
+
+        return [
+            'total_barters' => $totalBarters,
+            'received_barters' => $receivedBarters,
+            'given_barters' => $givenBarters,
+            'total_quantity' => $totalQuantity,
+            'total_value' => $totalValue,
+            'average_value' => $totalQuantity > 0 ? $totalValue / $totalQuantity : 0,
+        ];
+    }
+}
