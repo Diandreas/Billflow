@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -100,11 +101,21 @@ class ProductController extends Controller
 
     public function create()
     {
+        // Vérifier que l'utilisateur a le droit de gérer les produits
+        if (Gate::denies('manage-products') && auth()->user()->role !== 'vendeur') {
+            abort(403, 'Action non autorisée.');
+        }
+        
         return view('products.create');
     }
 
     public function store(Request $request)
     {
+        // Vérifier que l'utilisateur a le droit de gérer les produits
+        if (Gate::denies('manage-products') && auth()->user()->role !== 'vendeur') {
+            abort(403, 'Action non autorisée.');
+        }
+        
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
