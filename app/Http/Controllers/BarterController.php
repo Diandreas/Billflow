@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use App\Models\TemporaryUpload;
+use App\Models\BarterItemImage;
 
 class BarterController extends Controller
 {
@@ -334,20 +335,44 @@ class BarterController extends Controller
             'descriptions.*' => 'nullable|string|max:255',
             'types' => 'required|array',
             'types.*' => 'required|in:given,received',
+            'item_id' => 'nullable|exists:barter_items,id', // Paramètre facultatif pour associer l'image à un item spécifique
         ]);
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $key => $image) {
-                // Stocker l'image
-                $path = $image->store('barter-images');
-
-                // Créer l'enregistrement
-                BarterImage::create([
-                    'barter_id' => $barter->id,
-                    'path' => $path,
-                    'description' => $validated['descriptions'][$key] ?? null,
-                    'type' => $validated['types'][$key],
-                ]);
+                // Déterminer si l'image doit être associée à un item spécifique ou au troc lui-même
+                if ($request->has('item_id') && $request->input('item_id')) {
+                    // Récupérer l'item de troc
+                    $barterItem = BarterItem::findOrFail($request->input('item_id'));
+                    
+                    // Vérifier que l'item appartient bien à ce troc
+                    if ($barterItem->barter_id != $barter->id) {
+                        return redirect()->route('barters.show', $barter)
+                            ->with('error', 'L\'item spécifié n\'appartient pas à ce troc');
+                    }
+                    
+                    // Stocker l'image dans le stockage public
+                    $path = $image->store('barter-items', 'public');
+                    
+                    // Créer l'enregistrement d'image d'item
+                    $barterItem->images()->create([
+                        'path' => $path,
+                        'description' => $validated['descriptions'][$key] ?? null,
+                        'type' => $validated['types'][$key],
+                        'order' => $key,
+                    ]);
+                } else {
+                    // Stocker l'image pour le troc lui-même
+                    $path = $image->store('barter-images', 'public');
+                    
+                    // Créer l'enregistrement d'image de troc
+                    BarterImage::create([
+                        'barter_id' => $barter->id,
+                        'path' => $path,
+                        'description' => $validated['descriptions'][$key] ?? null,
+                        'type' => $validated['types'][$key],
+                    ]);
+                }
             }
         }
 
@@ -441,6 +466,77 @@ class BarterController extends Controller
         return response()->json([
             'success' => true,
             'products' => $products
+        ]);
+    }
+
+    /**
+     * Ajouter des images à un article spécifique du troc
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $barterId
+     * @param  int  $itemId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function addItemImages(Request $request, $barterId, $itemId)
+    {
+        $barter = Barter::findOrFail($barterId);
+        $barterItem = BarterItem::where('barter_id', $barterId)
+                        ->where('id', $itemId)
+                        ->firstOrFail();
+        
+        if (!$request->hasFile('images')) {
+            return response()->json([
+                'message' => 'Aucune image fournie'
+            ], 400);
+        }
+        
+        $request->validate([
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'descriptions.*' => 'nullable|string|max:255',
+        ]);
+        
+        $uploadedImages = [];
+        
+        foreach ($request->file('images') as $key => $image) {
+            $path = $image->store('public/barters/' . $barterId . '/items/' . $itemId);
+            
+            $description = $request->descriptions[$key] ?? null;
+            
+            $barterItemImage = BarterItemImage::create([
+                'barter_item_id' => $barterItem->id,
+                'path' => $path,
+                'description' => $description,
+            ]);
+            
+            $uploadedImages[] = [
+                'id' => $barterItemImage->id,
+                'url' => $barterItemImage->url,
+                'description' => $barterItemImage->description,
+            ];
+        }
+        
+        return response()->json([
+            'message' => 'Images ajoutées avec succès',
+            'images' => $uploadedImages
+        ]);
+    }
+
+    /**
+     * Supprimer une image d'un article de troc
+     *
+     * @param  int  $imageId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deleteItemImage($imageId)
+    {
+        $image = BarterItemImage::findOrFail($imageId);
+        
+        // Vérifie les autorisations si nécessaire
+        
+        $image->delete();
+        
+        return response()->json([
+            'message' => 'Image supprimée avec succès'
         ]);
     }
 } 
