@@ -12,6 +12,7 @@ return new class extends Migration
         Schema::create('barters', function (Blueprint $table) {
             $table->id();
             $table->string('reference')->unique();
+            $table->string('payment_method')->nullable();
             $table->foreignId('client_id')->constrained()->onDelete('restrict');
             $table->foreignId('shop_id')->constrained()->onDelete('restrict');
             $table->foreignId('user_id')->constrained()->onDelete('cascade')->comment('Utilisateur qui a enregistré le troc');
@@ -21,7 +22,9 @@ return new class extends Migration
             $table->decimal('received_items_value', 12, 2)->default(0)->comment('Valeur des articles reçus par le client');
             $table->decimal('balance_amount', 12, 2)->default(0)->comment('Montant de l\'équilibrage (positif si le client paie, négatif s\'il reçoit)');
             $table->enum('status', ['en_attente', 'complété', 'annulé'])->default('en_attente');
-            $table->date('date');
+            // $table->date('date');
+            $table->decimal('additional_payment', 12, 2)->default(0)->comment('Montant de l\'équilibrage (positif si le client paie, négatif s\'il reçoit)');
+
             $table->text('notes')->nullable();
             $table->string('signature_path')->nullable()->comment('Chemin du fichier de la signature');
             $table->timestamps();

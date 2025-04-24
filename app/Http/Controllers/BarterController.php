@@ -119,8 +119,8 @@ class BarterController extends Controller
             'value_received' => $receivedValue,
             'additional_payment' => $additionalPayment,
             'payment_method' => $validated['payment_method'] ?? null,
-            'description' => $validated['description'] ?? null,
-            'status' => 'pending',
+            'notes' => $validated['description'] ?? null,
+            // 'status' => 'pending',
         ]);
 
         // Ajouter les articles donnés

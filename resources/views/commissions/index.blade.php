@@ -206,7 +206,7 @@
                             @forelse ($commissions as $commission)
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-3 py-2 whitespace-nowrap text-xs">
-                                        {{ $commission->reference }}
+                                        {{ $commission->reference ?? 'N/A' }}
                                     </td>
                                     <td class="px-3 py-2 whitespace-nowrap text-xs">
                                         <div class="flex items-center">
@@ -231,7 +231,7 @@
                                         <div class="font-medium">{{ $commission->user->name }}</div>
                                     </td>
                                     <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
-                                        {{ $commission->period_month }} {{ $commission->period_year }}
+                                        {{ $commission->period_month ?? 'N/A' }} {{ $commission->period_year ?? '' }}
                                     </td>
                                     <td class="px-3 py-2 whitespace-nowrap text-xs font-medium">
                                         {{ number_format($commission->amount, 2, ',', ' ') }} FCFA
@@ -253,9 +253,6 @@
                                                 <i class="bi bi-eye text-xs"></i>
                                             </a>
                                             @if (!$commission->is_paid)
-                                                <a href="{{ route('commissions.edit', $commission) }}" class="text-blue-600 hover:text-blue-900 bg-blue-50 p-1 rounded" title="{{ __('Modifier') }}">
-                                                    <i class="bi bi-pencil text-xs"></i>
-                                                </a>
                                                 <button type="button" onclick="confirmDelete('{{ $commission->id }}')" class="text-red-600 hover:text-red-900 bg-red-50 p-1 rounded" title="{{ __('Supprimer') }}">
                                                     <i class="bi bi-trash text-xs"></i>
                                                 </button>
@@ -403,4 +400,4 @@
             document.getElementById('payModal').classList.add('hidden');
         }
     </script>
-</x-app-layout> 
+</x-app-layout>
