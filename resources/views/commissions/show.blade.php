@@ -159,6 +159,15 @@
                                                 <p class="font-medium text-gray-800 dark:text-white">{{ $commission->payment_reference }}</p>
                                             </div>
                                             @endif
+                                            
+                                            @if($commission->payment_group_id)
+                                            <div class="mt-3">
+                                                <a href="{{ route('commission-payments.show', $commission->payment_group_id) }}" class="inline-flex items-center px-3 py-1.5 bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-md text-sm hover:bg-indigo-200 dark:hover:bg-indigo-700">
+                                                    <i class="bi bi-receipt mr-2"></i>
+                                                    {{ __('Voir détails du paiement') }}
+                                                </a>
+                                            </div>
+                                            @endif
                                         </div>
                                     @else
                                         @can('pay-commission', $commission)

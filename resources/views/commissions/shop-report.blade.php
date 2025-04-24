@@ -23,15 +23,15 @@
             <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                     <h3 class="font-semibold text-lg mb-2 text-gray-800">{{ __('Total des commissions') }}</h3>
-                    <p class="text-3xl font-bold text-indigo-600">{{ number_format($totalStats['total'], 0, ',', ' ') }} FCFA</p>
+                    <p class="text-3xl font-bold text-indigo-600">{{ number_format($totalStats['total_amount'], 0, ',', ' ') }} FCFA</p>
                 </div>
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                     <h3 class="font-semibold text-lg mb-2 text-gray-800">{{ __('À payer') }}</h3>
-                    <p class="text-3xl font-bold text-amber-600">{{ number_format($totalStats['pending'], 0, ',', ' ') }} FCFA</p>
+                    <p class="text-3xl font-bold text-amber-600">{{ number_format($totalStats['pending_amount'], 0, ',', ' ') }} FCFA</p>
                 </div>
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                     <h3 class="font-semibold text-lg mb-2 text-gray-800">{{ __('Déjà payé') }}</h3>
-                    <p class="text-3xl font-bold text-green-600">{{ number_format($totalStats['paid'], 0, ',', ' ') }} FCFA</p>
+                    <p class="text-3xl font-bold text-green-600">{{ number_format($totalStats['paid_amount'], 0, ',', ' ') }} FCFA</p>
                 </div>
             </div>
 
@@ -52,44 +52,42 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($commissionsByVendor as $vendorId => $data)
+                                @foreach($vendors as $vendor)
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm font-medium text-gray-900">{{ $data['vendor']->name }}</div>
-                                            <div class="text-sm text-gray-500">{{ $data['vendor']->email }}</div>
+                                            <div class="text-sm font-medium text-gray-900">{{ $vendor->name }}</div>
+                                            <div class="text-sm text-gray-500">{{ $vendor->email }}</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm font-medium {{ $data['stats']['pending_amount'] > 0 ? 'text-amber-600' : 'text-gray-400' }}">
-                                                {{ number_format($data['stats']['pending_amount'], 0, ',', ' ') }} FCFA
+                                            <div class="text-sm font-medium {{ $vendorStats[$vendor->id]['pending_amount'] > 0 ? 'text-amber-600' : 'text-gray-400' }}">
+                                                {{ number_format($vendorStats[$vendor->id]['pending_amount'], 0, ',', ' ') }} FCFA
                                             </div>
-                                            <div class="text-xs text-gray-500">{{ $data['stats']['pending_count'] }} commission(s)</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="text-sm font-medium text-green-600">
-                                                {{ number_format($data['stats']['paid_amount'], 0, ',', ' ') }} FCFA
+                                                {{ number_format($vendorStats[$vendor->id]['paid_amount'], 0, ',', ' ') }} FCFA
                                             </div>
-                                            <div class="text-xs text-gray-500">{{ $data['stats']['paid_count'] }} commission(s)</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="text-sm font-medium text-gray-900">
-                                                {{ number_format($data['stats']['total_amount'], 0, ',', ' ') }} FCFA
+                                                {{ number_format($vendorStats[$vendor->id]['total_amount'], 0, ',', ' ') }} FCFA
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="text-sm text-gray-500">
-                                                @if($data['stats']['last_paid'])
-                                                    {{ $data['stats']['last_paid']->paid_at->format('d/m/Y') }}
+                                                @if(isset($vendorStats[$vendor->id]['last_payment']) && $vendorStats[$vendor->id]['last_payment'])
+                                                    {{ $vendorStats[$vendor->id]['last_payment']->paid_at->format('d/m/Y') }}
                                                 @else
                                                     -
                                                 @endif
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="{{ route('commissions.vendor-report', $data['vendor']) }}" class="text-indigo-600 hover:text-indigo-900 mr-2">
+                                            <a href="{{ route('commissions.vendor-report', $vendor) }}" class="text-indigo-600 hover:text-indigo-900 mr-2">
                                                 {{ __('Détails') }}
                                             </a>
-                                            @if($data['stats']['pending_amount'] > 0)
-                                                <a href="#" class="pay-all-btn text-green-600 hover:text-green-900" data-vendor-id="{{ $data['vendor']->id }}" data-vendor-name="{{ $data['vendor']->name }}" data-amount="{{ $data['stats']['pending_amount'] }}">
+                                            @if($vendorStats[$vendor->id]['pending_amount'] > 0)
+                                                <a href="#" class="pay-all-btn text-green-600 hover:text-green-900" data-vendor-id="{{ $vendor->id }}" data-vendor-name="{{ $vendor->name }}" data-amount="{{ $vendorStats[$vendor->id]['pending_amount'] }}">
                                                     {{ __('Payer tout') }}
                                                 </a>
                                             @endif
@@ -215,6 +213,86 @@
                                 @endforeach
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Toutes les commissions (vue compacte) -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mt-6">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="font-semibold text-lg mb-4 text-gray-800">{{ __('Toutes les commissions') }}</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 table-fixed">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="w-1/6 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Référence') }}</th>
+                                    <th scope="col" class="w-1/6 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Vendeur') }}</th>
+                                    <th scope="col" class="w-1/6 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Date') }}</th>
+                                    <th scope="col" class="w-1/6 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Montant') }}</th>
+                                    <th scope="col" class="w-1/6 px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Statut') }}</th>
+                                    <th scope="col" class="w-1/6 px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach($allCommissions as $commission)
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-3 py-2 whitespace-nowrap">
+                                            <div class="text-xs font-medium text-gray-900">{{ $commission->reference }}</div>
+                                            @if($commission->bill)
+                                                <div class="text-xs text-gray-500">
+                                                    <a href="{{ route('bills.show', $commission->bill) }}" class="text-indigo-600 hover:text-indigo-900">
+                                                        Facture: {{ $commission->bill->reference }}
+                                                    </a>
+                                                </div>
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap">
+                                            <div class="text-xs font-medium text-gray-900">{{ $commission->user->name }}</div>
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap">
+                                            <div class="text-xs text-gray-500">{{ $commission->created_at->format('d/m/Y') }}</div>
+                                            @if($commission->is_paid && $commission->paid_at)
+                                                <div class="text-xs text-green-600">Payé: {{ $commission->paid_at->format('d/m/Y') }}</div>
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap">
+                                            <div class="text-xs font-semibold">{{ number_format($commission->amount, 0, ',', ' ') }} FCFA</div>
+                                            <div class="text-xs text-gray-500">{{ $commission->rate }}%</div>
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-center">
+                                            @if($commission->is_paid)
+                                                <span class="px-2 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-green-100 text-green-800">
+                                                    <i class="bi bi-check-circle-fill mr-1"></i>{{ __('Payée') }}
+                                                </span>
+                                            @else
+                                                <span class="px-2 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-yellow-100 text-yellow-800">
+                                                    <i class="bi bi-exclamation-circle-fill mr-1"></i>{{ __('En attente') }}
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-right">
+                                            <div class="flex justify-end space-x-1">
+                                                <a href="{{ route('commissions.show', $commission) }}" class="text-purple-600 hover:text-purple-900 bg-purple-50 p-1 rounded" title="{{ __('Voir') }}">
+                                                    <i class="bi bi-eye text-xs"></i>
+                                                </a>
+                                                @if(!$commission->is_paid)
+                                                    <a href="#" class="pay-commission-btn text-green-600 hover:text-green-900 bg-green-50 p-1 rounded" 
+                                                       data-commission-id="{{ $commission->id }}" 
+                                                       data-amount="{{ $commission->amount }}"
+                                                       data-vendor-name="{{ $commission->user->name }}"
+                                                       title="{{ __('Payer') }}">
+                                                        <i class="bi bi-cash text-xs"></i>
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4">
+                        {{ $allCommissions->links() }}
                     </div>
                 </div>
             </div>

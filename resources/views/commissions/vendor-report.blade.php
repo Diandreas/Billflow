@@ -8,7 +8,7 @@
                 </h2>
             </div>
             <div class="flex items-center space-x-2">
-                <a href="{{ route('commissions.export', ['user_id' => $user->id]) }}" class="inline-flex items-center px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-xs text-gray-700 dark:text-gray-300 uppercase tracking-widest shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                <a href="{{ route('commissions.export.user', ['user_id' => $user->id]) }}" class="inline-flex items-center px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-xs text-gray-700 dark:text-gray-300 uppercase tracking-widest shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
                     <i class="bi bi-download mr-1"></i>
                     {{ __('CSV') }}
                 </a>
@@ -222,6 +222,11 @@
                                         @else
                                             {{ $commission->reference ?? 'N/A' }}
                                         @endif
+                                        @if($commission->period_month && $commission->period_year)
+                                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                Période: {{ $commission->period_month }}/{{ $commission->period_year }}
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {{ $commission->shop->name ?? 'N/A' }}
@@ -255,6 +260,12 @@
                                             <a href="{{ route('commissions.show', $commission) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
                                                 {{ __('Détails') }}
                                             </a>
+                                            
+                                            @if($commission->status !== 'paid' && !$commission->is_paid)
+                                                <a href="{{ route('commissions.edit', $commission) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
+                                                    {{ __('Modifier') }}
+                                                </a>
+                                            @endif
                                             
                                             @if($commission->status !== 'paid' && auth()->user()->can('pay-commission', $commission))
                                                 <form action="{{ route('commissions.pay', $commission) }}" method="POST" class="inline">

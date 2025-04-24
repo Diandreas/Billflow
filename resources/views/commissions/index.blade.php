@@ -37,7 +37,7 @@
                         </div>
                         <div>
                             <div class="text-sm text-gray-500">Total Commissions</div>
-                            <div class="text-lg font-semibold">{{ number_format($stats['total_commissions'], 2, ',', ' ') }} €</div>
+                            <div class="text-lg font-semibold">{{ number_format($stats['total_commissions'], 2, ',', ' ') }} FCFA</div>
                         </div>
                     </div>
                 </div>
@@ -48,7 +48,7 @@
                         </div>
                         <div>
                             <div class="text-sm text-gray-500">Commissions en attente</div>
-                            <div class="text-lg font-semibold">{{ number_format($stats['pending_commissions'], 2, ',', ' ') }} €</div>
+                            <div class="text-lg font-semibold">{{ number_format($stats['pending_commissions'], 2, ',', ' ') }} FCFA</div>
                         </div>
                     </div>
                 </div>
@@ -59,9 +59,79 @@
                         </div>
                         <div>
                             <div class="text-sm text-gray-500">Commissions payées</div>
-                            <div class="text-lg font-semibold">{{ number_format($stats['paid_commissions'], 2, ',', ' ') }} €</div>
+                            <div class="text-lg font-semibold">{{ number_format($stats['paid_commissions'], 2, ',', ' ') }} FCFA</div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Liste des boutiques avec statistiques -->
+            <div class="bg-white overflow-hidden shadow-sm rounded-lg mb-4">
+                <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-sm font-medium text-gray-700">
+                        <i class="bi bi-shop mr-1"></i>
+                        {{ __('Boutiques et leurs commissions') }}
+                    </h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Boutique') }}</th>
+                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Commissions totales') }}</th>
+                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('En attente') }}</th>
+                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Payées') }}</th>
+                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Nb. vendeurs') }}</th>
+                                <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @forelse ($shops as $shop)
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-3 py-2 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-6 w-6 mr-2">
+                                                @if ($shop->logo)
+                                                    <img class="h-6 w-6 rounded-md object-cover" src="{{ asset('storage/'.$shop->logo) }}" alt="{{ $shop->name }}">
+                                                @else
+                                                    <div class="h-6 w-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center">
+                                                        <i class="bi bi-shop text-sm"></i>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div>
+                                                <div class="font-medium text-xs">{{ $shop->name }}</div>
+                                                @if ($shop->shop_id)
+                                                    <div class="text-gray-500 text-xs">ID: {{ $shop->shop_id }}</div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-3 py-2 whitespace-nowrap text-xs font-medium">
+                                        {{ number_format($shop->commission_stats['total'], 2, ',', ' ') }} FCFA
+                                    </td>
+                                    <td class="px-3 py-2 whitespace-nowrap text-xs font-medium text-yellow-600">
+                                        {{ number_format($shop->commission_stats['pending'], 2, ',', ' ') }} FCFA
+                                    </td>
+                                    <td class="px-3 py-2 whitespace-nowrap text-xs font-medium text-green-600">
+                                        {{ number_format($shop->commission_stats['paid'], 2, ',', ' ') }} FCFA
+                                    </td>
+                                    <td class="px-3 py-2 whitespace-nowrap text-xs">
+                                        {{ $shop->vendors_count ?? 0 }}
+                                    </td>
+                                    <td class="px-3 py-2 whitespace-nowrap text-xs text-right">
+                                        <a href="{{ route('commissions.shop-report', $shop->id) }}" class="inline-flex items-center px-2 py-1 bg-indigo-100 border border-transparent rounded text-xs font-medium text-indigo-700 hover:bg-indigo-200 mx-1">
+                                            <i class="bi bi-eye-fill mr-1"></i> Détails
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="px-3 py-3 text-center text-sm text-gray-500">{{ __('Aucune boutique trouvée') }}</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -164,7 +234,7 @@
                                         {{ $commission->period_month }} {{ $commission->period_year }}
                                     </td>
                                     <td class="px-3 py-2 whitespace-nowrap text-xs font-medium">
-                                        {{ number_format($commission->amount, 2, ',', ' ') }} €
+                                        {{ number_format($commission->amount, 2, ',', ' ') }} FCFA
                                     </td>
                                     <td class="px-3 py-2 whitespace-nowrap">
                                         @if ($commission->is_paid)
