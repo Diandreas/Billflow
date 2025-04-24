@@ -67,6 +67,24 @@ class CommissionController extends Controller
             ? Shop::orderBy('name')->get() 
             : Auth::user()->shops;
             
+        // Préparer les statistiques pour chaque boutique
+        foreach ($shops as $shop) {
+            $shopCommissions = Commission::where('shop_id', $shop->id)->get();
+            $shop->commission_stats = [
+                'total' => $shopCommissions->sum('amount'),
+                'pending' => $shopCommissions->where('is_paid', false)->sum('amount'),
+                'paid' => $shopCommissions->where('is_paid', true)->sum('amount'),
+            ];
+            
+            // Obtenir le nombre de vendeurs associés
+            if (!isset($shop->vendors_count)) {
+                $shop->vendors_count = DB::table('shop_user')
+                    ->where('shop_id', $shop->id)
+                    ->where('is_manager', false)
+                    ->count();
+            }
+        }
+            
         // Liste des mois pour le filtre
         $months = [
             '01' => 'Janvier',
@@ -136,6 +154,74 @@ class CommissionController extends Controller
             ->get();
 
         return view('commissions.vendor-report', compact('user', 'commissions', 'stats', 'monthlySales', 'monthlyCommissions'));
+    }
+
+    /**
+     * Display the pending commissions for a specific vendor.
+     *
+     * @param  \App\Models\User  $user
+     * @return \Illuminate\Http\Response
+     */
+    public function vendorPendingReport(User $user)
+    {
+        // Vendor can only view their own commissions
+        if (auth()->user()->role === 'vendeur' && auth()->id() !== $user->id) {
+            abort(403);
+        }
+
+        $pendingCommissions = Commission::with(['bill', 'bill.client', 'shop'])
+            ->where('user_id', $user->id)
+            ->where('is_paid', false)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $totalAmount = $pendingCommissions->sum('amount');
+        
+        // Calculate stats for the view
+        $stats = [
+            'total_commissions' => Commission::where('user_id', $user->id)->sum('amount'),
+            'pending_commissions' => Commission::where('user_id', $user->id)->where('is_paid', false)->sum('amount'),
+            'paid_commissions' => Commission::where('user_id', $user->id)->where('is_paid', true)->sum('amount'),
+        ];
+
+        return view('commissions.vendor-report', [
+            'user' => $user,
+            'commissions' => $pendingCommissions,
+            'stats' => $stats,
+            'status' => 'pending',
+            'title' => 'Pending Commissions'
+        ]);
+    }
+
+    public function vendorHistoryReport(User $user)
+    {
+        // Vendor can only view their own commissions
+        if (auth()->user()->role === 'vendeur' && auth()->id() !== $user->id) {
+            abort(403);
+        }
+
+        $paidCommissions = Commission::with(['bill', 'bill.client', 'shop'])
+            ->where('user_id', $user->id)
+            ->where('is_paid', true)
+            ->orderBy('paid_at', 'desc')
+            ->get();
+
+        $totalAmount = $paidCommissions->sum('amount');
+        
+        // Calculate stats for the view
+        $stats = [
+            'total_commissions' => Commission::where('user_id', $user->id)->sum('amount'),
+            'pending_commissions' => Commission::where('user_id', $user->id)->where('is_paid', false)->sum('amount'),
+            'paid_commissions' => Commission::where('user_id', $user->id)->where('is_paid', true)->sum('amount'),
+        ];
+
+        return view('commissions.vendor-report', [
+            'user' => $user,
+            'commissions' => $paidCommissions,
+            'stats' => $stats,
+            'status' => 'paid',
+            'title' => 'Commission History'
+        ]);
     }
 
     /**
@@ -537,64 +623,67 @@ class CommissionController extends Controller
      */
     public function shopReport($shopId)
     {
-        // Vérifier les autorisations
-        if (!auth()->user()->can('view shop commissions')) {
-            abort(403, 'Accès non autorisé');
-        }
-        
-        // Récupérer la boutique
+        // Vérifier l'existence de la boutique
         $shop = Shop::findOrFail($shopId);
         
-        // Récupérer tous les vendeurs associés à cette boutique
-        $vendors = User::role('vendeur')
-                    ->whereHas('commissions.bill', function($query) use ($shopId) {
-                        $query->where('shop_id', $shopId);
-                    })
-                    ->get();
+        // Vérifier les autorisations
+        if (!Gate::allows('view-shop-report', $shop)) {
+            abort(403, 'Action non autorisée.');
+        }
+
+        // Obtenir les vendeurs associés à cette boutique
+        $vendors = $shop->vendors;
         
-        // Calculer les statistiques pour chaque vendeur
+        // Obtenir toutes les commissions pour chaque vendeur dans cette boutique
         $vendorStats = [];
-        $totalStats = [
-            'total_amount' => 0,
-            'pending_amount' => 0,
-            'paid_amount' => 0
-        ];
+        $totalPendingAmount = 0;
+        $totalPaidAmount = 0;
+        $totalAmount = 0;
         
         foreach ($vendors as $vendor) {
             $stats = $this->getVendorStats($vendor, $shopId);
             $vendorStats[$vendor->id] = $stats;
             
-            // Ajouter aux totaux
-            $totalStats['total_amount'] += $stats['total_amount'];
-            $totalStats['pending_amount'] += $stats['pending_amount'];
-            $totalStats['paid_amount'] += $stats['paid_amount'];
+            $totalPendingAmount += $stats['pending_amount'];
+            $totalPaidAmount += $stats['paid_amount'];
+            $totalAmount += $stats['total_amount'];
         }
         
-        // Récupérer les commissions en attente pour cette boutique
-        $pendingCommissions = Commission::whereHas('bill', function($query) use ($shopId) {
-                                $query->where('shop_id', $shopId);
-                            })
-                            ->whereNull('paid_at')
-                            ->with(['user', 'bill'])
-                            ->orderBy('created_at', 'desc')
-                            ->paginate(10);
+        // Statistiques globales
+        $totalStats = [
+            'pending_amount' => $totalPendingAmount,
+            'paid_amount' => $totalPaidAmount,
+            'total_amount' => $totalAmount,
+        ];
         
-        // Récupérer les paiements récents
-        $recentPayments = CommissionPayment::whereHas('commissions.bill', function($query) use ($shopId) {
-                                $query->where('shop_id', $shopId);
-                            })
-                            ->with(['user'])
-                            ->latest('paid_at')
-                            ->take(5)
-                            ->get();
+        // Commissions en attente
+        $pendingCommissions = Commission::with(['user', 'bill'])
+            ->where('shop_id', $shopId)
+            ->where('is_paid', false)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10, ['*'], 'pending_page');
+            
+        // Toutes les commissions pour la vue compacte
+        $allCommissions = Commission::with(['user', 'bill'])
+            ->where('shop_id', $shopId)
+            ->orderBy('created_at', 'desc')
+            ->paginate(15, ['*'], 'all_page');
         
+        // Paiements récents
+        $recentPayments = CommissionPayment::with(['vendor', 'paid_by_user'])
+            ->where('shop_id', $shopId)
+            ->orderBy('paid_at', 'desc')
+            ->take(10)
+            ->get();
+            
         return view('commissions.shop-report', [
             'shop' => $shop,
             'vendors' => $vendors,
             'vendorStats' => $vendorStats,
             'totalStats' => $totalStats,
             'pendingCommissions' => $pendingCommissions,
-            'recentPayments' => $recentPayments
+            'recentPayments' => $recentPayments,
+            'allCommissions' => $allCommissions
         ]);
     }
 
@@ -619,7 +708,7 @@ class CommissionController extends Controller
                         ->whereHas('bill', function($query) use ($shopId) {
                             $query->where('shop_id', $shopId);
                         })
-                        ->whereNotNull('paid_at')
+                        ->where('is_paid', true)
                         ->sum('amount');
         
         // Calculer le montant des commissions en attente
@@ -627,7 +716,7 @@ class CommissionController extends Controller
                             ->whereHas('bill', function($query) use ($shopId) {
                                 $query->where('shop_id', $shopId);
                             })
-                            ->whereNull('paid_at')
+                            ->where('is_paid', false)
                             ->sum('amount');
         
         // Récupérer la date du dernier paiement
@@ -664,7 +753,7 @@ class CommissionController extends Controller
         $commission = Commission::findOrFail($commissionId);
         
         // Vérifier que la commission n'est pas déjà payée
-        if (!is_null($commission->paid_at)) {
+        if ($commission->is_paid) {
             return redirect()->back()->with('error', 'Cette commission a déjà été payée.');
         }
         
@@ -672,18 +761,28 @@ class CommissionController extends Controller
         
         try {
             // Créer un nouveau paiement
-            $payment = new CommissionPayment();
-            $payment->user_id = $commission->user_id;
-            $payment->paid_by = auth()->id();
-            $payment->amount = $commission->amount;
-            $payment->paid_at = now();
-            $payment->payment_note = "Paiement individuel";
-            $payment->save();
+            $payment = CommissionPayment::create([
+                'reference' => CommissionPayment::generateReference(),
+                'shop_id' => $commission->shop_id,
+                'user_id' => $commission->user_id,
+                'paid_by' => auth()->id(),
+                'amount' => $commission->amount,
+                'payment_method' => 'cash', // Default payment method
+                'payment_reference' => null,
+                'notes' => "Paiement individuel",
+                'paid_at' => now(),
+            ]);
             
             // Mettre à jour la commission
-            $commission->paid_at = now();
-            $commission->commission_payment_id = $payment->id;
-            $commission->save();
+            $commission->update([
+                'is_paid' => true,
+                'paid_at' => now(),
+                'paid_by' => auth()->id(),
+                'payment_method' => 'cash',
+                'payment_reference' => null,
+                'payment_group_id' => $payment->id,
+                'payment_notes' => "Paiement individuel",
+            ]);
             
             DB::commit();
             
@@ -700,50 +799,36 @@ class CommissionController extends Controller
      * @param  int  $userId
      * @return \Illuminate\Http\Response
      */
-    public function payVendorCommissions($userId)
+    public function payVendorCommissions(User $user)
     {
-        // Vérifier les autorisations
-        if (!auth()->user()->can('pay commissions')) {
-            abort(403, 'Accès non autorisé');
+        // Only admin can pay commissions
+        if (auth()->user()->role !== 'admin') {
+            abort(403);
         }
-        
-        // Récupérer toutes les commissions impayées du vendeur
-        $pendingCommissions = Commission::where('user_id', $userId)
-            ->whereNull('paid_at')
+
+        // Get all unpaid commissions for this user
+        $pendingCommissions = Commission::where('user_id', $user->id)
+            ->where('is_paid', false)
             ->get();
-        
+
+        // If no pending commissions, redirect back
         if ($pendingCommissions->isEmpty()) {
-            return redirect()->back()->with('info', 'Aucune commission en attente pour ce vendeur.');
+            return redirect()->route('commissions.pending', $user)
+                ->with('error', 'No pending commissions to pay.');
         }
-        
-        $totalAmount = $pendingCommissions->sum('amount');
-        
-        DB::beginTransaction();
-        
-        try {
-            // Créer un nouveau paiement groupé
-            $payment = new CommissionPayment();
-            $payment->user_id = $userId;
-            $payment->paid_by = auth()->id();
-            $payment->amount = $totalAmount;
-            $payment->paid_at = now();
-            $payment->payment_note = "Paiement groupé des commissions";
-            $payment->save();
-            
-            // Mettre à jour toutes les commissions
-            foreach ($pendingCommissions as $commission) {
-                $commission->paid_at = now();
-                $commission->commission_payment_id = $payment->id;
-                $commission->save();
-            }
-            
-            DB::commit();
-            
-            return redirect()->back()->with('success', 'Toutes les commissions du vendeur ont été payées avec succès. Montant total: ' . $totalAmount);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->with('error', 'Erreur lors du paiement des commissions: ' . $e->getMessage());
+
+        // Mark all as paid
+        $now = now();
+        foreach ($pendingCommissions as $commission) {
+            $commission->update([
+                'is_paid' => true,
+                'paid_at' => $now
+            ]);
         }
+
+        // Redirect with success message
+        return redirect()->route('commissions.pending', $user)
+            ->with('success', 'All pending commissions have been marked as paid.');
     }
 
     /**
@@ -763,7 +848,7 @@ class CommissionController extends Controller
         
         // Récupérer toutes les commissions de la boutique
         $commissions = Commission::where('shop_id', $shopId)
-            ->with(['user', 'sale'])
+            ->with(['user', 'bill'])
             ->orderBy('created_at', 'desc')
             ->get();
         
@@ -775,17 +860,17 @@ class CommissionController extends Controller
                     'user' => $user,
                     'total_commissions' => $userCommissions->count(),
                     'total_amount' => $userCommissions->sum('amount'),
-                    'paid_amount' => $userCommissions->whereNotNull('paid_at')->sum('amount'),
-                    'pending_amount' => $userCommissions->whereNull('paid_at')->sum('amount'),
-                    'last_paid_at' => $userCommissions->whereNotNull('paid_at')->max('paid_at')
+                    'paid_amount' => $userCommissions->where('is_paid', true)->sum('amount'),
+                    'pending_amount' => $userCommissions->where('is_paid', false)->sum('amount'),
+                    'last_paid_at' => $userCommissions->where('is_paid', true)->max('paid_at')
                 ];
             });
         
         $totalStats = [
             'total_commissions' => $commissions->count(),
             'total_amount' => $commissions->sum('amount'),
-            'paid_amount' => $commissions->whereNotNull('paid_at')->sum('amount'),
-            'pending_amount' => $commissions->whereNull('paid_at')->sum('amount')
+            'paid_amount' => $commissions->where('is_paid', true)->sum('amount'),
+            'pending_amount' => $commissions->where('is_paid', false)->sum('amount')
         ];
         
         return view('commissions.shop', compact('shop', 'commissions', 'vendorStats', 'totalStats'));
