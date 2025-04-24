@@ -35,7 +35,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="small">Total des ventes</div>
-                            <div class="fs-4">{{ number_format($salesData['totalSales'], 2, ',', ' ') }} €</div>
+                            <div class="fs-4">{{ number_format($salesData['totalSales'], 2, ',', ' ') }} FCFA</div>
                         </div>
                         <i class="fas fa-shopping-cart fa-2x text-white-50"></i>
                     </div>
@@ -57,7 +57,7 @@
                     </div>
                 </div>
                 <div class="card-footer d-flex align-items-center justify-content-between">
-                    <div class="small text-white">Moyenne : {{ number_format($salesData['averageBillValue'], 2, ',', ' ') }} € / facture</div>
+                    <div class="small text-white">Moyenne : {{ number_format($salesData['averageBillValue'], 2, ',', ' ') }} FCFA / facture</div>
                 </div>
             </div>
         </div>
@@ -154,10 +154,10 @@
                                     @foreach($vendorPerformance as $vendor)
                                         <tr>
                                             <td>{{ $vendor['name'] }}</td>
-                                            <td>{{ number_format($vendor['sales'], 2, ',', ' ') }} €</td>
+                                            <td>{{ number_format($vendor['sales'], 2, ',', ' ') }} FCFA</td>
                                             <td>{{ $vendor['billCount'] }}</td>
                                             <td>{{ $vendor['productCount'] }}</td>
-                                            <td>{{ number_format($vendor['averageBillValue'], 2, ',', ' ') }} €</td>
+                                            <td>{{ number_format($vendor['averageBillValue'], 2, ',', ' ') }} FCFA</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -197,7 +197,7 @@
                                         <tr>
                                             <td>{{ $product->name }}</td>
                                             <td>{{ $product->total_quantity }}</td>
-                                            <td>{{ number_format($product->total_sales, 2, ',', ' ') }} €</td>
+                                            <td>{{ number_format($product->total_sales, 2, ',', ' ') }} FCFA</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
