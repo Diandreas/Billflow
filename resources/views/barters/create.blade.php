@@ -65,7 +65,9 @@
                                     <select name="seller_id" id="seller_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
                                         <option value="">Sélectionner un vendeur</option>
                                         @foreach ($sellers as $seller)
-                                            <option value="{{ $seller->id }}" {{ old('seller_id') == $seller->id ? 'selected' : '' }}>
+                                            <option value="{{ $seller->id }}" 
+                                                {{ old('seller_id') == $seller->id ? 'selected' : '' }}
+                                                {{ (!old('seller_id') && Auth::user()->role == 'vendeur' && Auth::id() == $seller->id) ? 'selected' : '' }}>
                                                 {{ $seller->name }}
                                             </option>
                                         @endforeach
