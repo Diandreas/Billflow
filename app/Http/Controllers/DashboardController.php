@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\Shop;
 use App\Models\User;
 use App\Models\InventoryMovement;
+use App\Models\CommissionPayment;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -228,12 +229,59 @@ class DashboardController extends Controller
             'averageTicket' => number_format($billsQuery->avg('total') ?? 0, 0, ',', ' ') . ' FCFA'
         ];
 
+        // Statistiques des paiements de commissions (pour admin et manager)
+        if (Gate::allows('manager', $user)) {
+            $commissionsPaymentsQuery = CommissionPayment::query();
+            
+            if ($shopId) {
+                $commissionsPaymentsQuery->where('shop_id', $shopId);
+            }
+            
+            $currentMonthPayments = (clone $commissionsPaymentsQuery)
+                ->whereYear('paid_at', $thisYear)
+                ->whereMonth('paid_at', $thisMonth)
+                ->count();
+                
+            $lastMonthPayments = (clone $commissionsPaymentsQuery)
+                ->whereYear('paid_at', $lastYear)
+                ->whereMonth('paid_at', $lastMonth)
+                ->count();
+            
+            $monthlyPaymentsPercentChange = 0;
+            if ($lastMonthPayments > 0) {
+                $monthlyPaymentsPercentChange = round((($currentMonthPayments - $lastMonthPayments) / $lastMonthPayments) * 100, 1);
+            }
+            
+            $globalStats['commissionsPayments'] = [
+                'totalPayments' => $commissionsPaymentsQuery->count(),
+                'totalAmount' => number_format($commissionsPaymentsQuery->sum('amount'), 0, ',', ' ') . ' FCFA',
+                'monthlyPayments' => $currentMonthPayments,
+                'monthlyPaymentsPercentChange' => $monthlyPaymentsPercentChange,
+            ];
+        }
+
         // Dernières factures
         $latestBills = (clone $billsQuery)
             ->with('client')
             ->latest()
             ->take(5)
             ->get();
+
+        // Derniers paiements de commissions (pour admin et manager)
+        $latestCommissionPayments = null;
+        if (Gate::allows('manager', $user)) {
+            $commissionPaymentsQuery = \App\Models\CommissionPayment::query();
+            
+            if ($shopId) {
+                $commissionPaymentsQuery->where('shop_id', $shopId);
+            }
+            
+            $latestCommissionPayments = $commissionPaymentsQuery
+                ->with(['user', 'shop'])
+                ->latest('paid_at')
+                ->take(5)
+                ->get();
+        }
 
         // Requête de base pour les tops clients
         $topClientsQuery = DB::table('bills')
@@ -326,6 +374,89 @@ class DashboardController extends Controller
         // Données pour le graphique des méthodes de paiement
         $paymentMethodsData = $this->getPaymentMethodsData($shopId);
 
+        // Si c'est un vendeur, on récupère ses statistiques de commissions et de paiements
+        if (Gate::allows('vendeur', $user)) {
+            // Statistiques de commissions
+            $vendorCommissions = \App\Models\Commission::where('user_id', $user->id);
+            
+            if ($shopId) {
+                $vendorCommissions->where('shop_id', $shopId);
+            }
+            
+            // Statistiques des ventes du vendeur
+            $vendorSales = Bill::where('user_id', $user->id);
+            
+            if ($shopId) {
+                $vendorSales->where('shop_id', $shopId);
+            }
+            
+            $totalSales = $vendorSales->count();
+            $totalSalesAmount = $vendorSales->sum('total');
+            
+            // Nombre de ventes ce mois-ci
+            $currentMonthSales = (clone $vendorSales)
+                ->whereYear('created_at', $thisYear)
+                ->whereMonth('created_at', $thisMonth)
+                ->count();
+                
+            // Nombre de ventes le mois dernier
+            $lastMonthSales = (clone $vendorSales)
+                ->whereYear('created_at', $lastYear)
+                ->whereMonth('created_at', $lastMonth)
+                ->count();
+            
+            // Calcul du pourcentage de changement
+            $salesPercentChange = 0;
+            if ($lastMonthSales > 0) {
+                $salesPercentChange = round((($currentMonthSales - $lastMonthSales) / $lastMonthSales) * 100, 1);
+            }
+            
+            // Les dernières factures du vendeur
+            $latestBills = (clone $vendorSales)->with('client')->latest()->take(5)->get();
+            
+            $vendorStats = [
+                'total_sales' => $totalSales,
+                'total_sales_amount' => number_format($totalSalesAmount, 0, ',', ' ') . ' FCFA',
+                'monthly_sales' => $currentMonthSales,
+                'monthly_sales_percent_change' => $salesPercentChange,
+                'commission_rate' => $user->commission_rate . '%',
+                'total_commissions' => $vendorCommissions->count(),
+                'total_amount' => number_format($vendorCommissions->sum('amount'), 0, ',', ' ') . ' FCFA',
+                'paid_commissions' => $vendorCommissions->where('is_paid', true)->count(),
+                'pending_commissions' => $vendorCommissions->where('is_paid', false)->count(),
+            ];
+            
+            // Statistiques de paiements reçus
+            $vendorPayments = \App\Models\CommissionPayment::where('user_id', $user->id);
+            
+            if ($shopId) {
+                $vendorPayments->where('shop_id', $shopId);
+            }
+            
+            $vendorPaymentsStats = [
+                'total_payments' => $vendorPayments->count(),
+                'total_received' => number_format($vendorPayments->sum('amount'), 0, ',', ' ') . ' FCFA',
+                'last_payment' => $vendorPayments->latest('paid_at')->first(),
+            ];
+            
+            // Les 5 derniers paiements reçus
+            $vendorLatestPayments = $vendorPayments->with(['shop'])
+                ->latest('paid_at')
+                ->take(5)
+                ->get();
+            
+            return view('dashboard', compact(
+                'selectedShop',
+                'shops',
+                'globalStats',
+                'latestBills',
+                'salesPercentChange',
+                'vendorStats',
+                'vendorPaymentsStats',
+                'vendorLatestPayments'
+            ));
+        }
+
         return view('dashboard', compact(
             'shops', 
             'selectedShop', 
@@ -336,7 +467,8 @@ class DashboardController extends Controller
             'sellerStats',
             'salesChartData',
             'billStatusData',
-            'paymentMethodsData'
+            'paymentMethodsData',
+            'latestCommissionPayments'
         ));
     }
 
