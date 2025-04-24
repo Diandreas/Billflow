@@ -55,8 +55,16 @@ class UserManagementController extends Controller
 
         // Liste des boutiques pour le filtre
         $shops = Shop::orderBy('name')->get();
+        
+        // Définir les rôles disponibles pour le filtre
+        $roles = [
+            (object)['name' => 'admin'],
+            (object)['name' => 'manager'],
+            (object)['name' => 'vendeur'],
+            (object)['name' => 'utilisateur']
+        ];
 
-        return view('users.index', compact('users', 'shops', 'shopId', 'role', 'search'));
+        return view('users.index', compact('users', 'shops', 'shopId', 'role', 'search', 'roles'));
     }
 
     /**
@@ -156,5 +164,209 @@ class UserManagementController extends Controller
         $userShops = $user->shops;
 
         return view('users.show', compact('user', 'userShops'));
+    }
+
+    /**
+     * Affiche le formulaire de création d'un utilisateur
+     */
+    public function create()
+    {
+        // Vérifier que l'utilisateur est admin
+        if (!auth()->user()->isAdmin()) {
+            return redirect()->route('dashboard')
+                ->with('error', 'Vous n\'avez pas les permissions nécessaires.');
+        }
+
+        // Récupérer toutes les boutiques pour assignation
+        $shops = Shop::orderBy('name')->get();
+        
+        return view('users.create', compact('shops'));
+    }
+
+    /**
+     * Affiche le formulaire d'édition d'un utilisateur
+     */
+    public function edit(User $user)
+    {
+        // Vérifier que l'utilisateur est admin
+        if (!auth()->user()->isAdmin()) {
+            return redirect()->route('dashboard')
+                ->with('error', 'Vous n\'avez pas les permissions nécessaires.');
+        }
+        
+        // Récupérer toutes les boutiques pour assignation
+        $shops = Shop::orderBy('name')->get();
+        
+        // Récupérer les boutiques de l'utilisateur
+        $userShops = $user->shops;
+        
+        return view('users.edit', compact('user', 'shops', 'userShops'));
+    }
+
+    /**
+     * Supprime un utilisateur du système
+     */
+    public function destroy(User $user)
+    {
+        // Vérifier que l'utilisateur est admin
+        if (!auth()->user()->isAdmin()) {
+            return redirect()->route('dashboard')
+                ->with('error', 'Vous n\'avez pas les permissions nécessaires.');
+        }
+
+        // Empêcher la suppression de son propre compte via cette méthode
+        if (auth()->id() === $user->id) {
+            return redirect()->route('users.index')
+                ->with('error', 'Vous ne pouvez pas supprimer votre propre compte via cette méthode.');
+        }
+
+        // Détacher l'utilisateur de toutes ses boutiques
+        $user->shops()->detach();
+        
+        // Supprimer l'utilisateur
+        $user->delete();
+
+        return redirect()->route('users.index')
+            ->with('success', 'L\'utilisateur a été supprimé avec succès.');
+    }
+
+    /**
+     * Enregistre un nouvel utilisateur
+     */
+    public function store(Request $request)
+    {
+        // Vérifier que l'utilisateur est admin
+        if (!auth()->user()->isAdmin()) {
+            return redirect()->route('dashboard')
+                ->with('error', 'Vous n\'avez pas les permissions nécessaires.');
+        }
+        
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'phone' => 'nullable|string|max:255',
+            'password' => 'required|string|min:8|confirmed',
+            'role' => ['required', 'string', Rule::in(['admin', 'manager', 'vendeur', 'utilisateur'])],
+            'commission_rate' => 'nullable|required_if:role,vendeur|numeric|min:0|max:100',
+            'is_active' => 'boolean',
+            'shops' => 'nullable|array',
+            'shops.*' => 'exists:shops,id',
+            'manager_shops' => 'nullable|array',
+            'manager_shops.*' => 'exists:shops,id',
+        ]);
+
+        // Créer l'utilisateur
+        $userData = [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'password' => Hash::make($validated['password']),
+            'role' => $validated['role'],
+            'is_active' => $request->has('is_active'),
+        ];
+        
+        // Ajouter le taux de commission pour les vendeurs
+        if ($validated['role'] === 'vendeur' && isset($validated['commission_rate'])) {
+            $userData['commission_rate'] = $validated['commission_rate'];
+        }
+        
+        $user = User::create($userData);
+        
+        // Associer les boutiques à l'utilisateur si ce n'est pas un admin
+        if ($validated['role'] !== 'admin' && !empty($validated['shops'])) {
+            $shopData = [];
+            
+            foreach ($validated['shops'] as $shopId) {
+                $isManager = !empty($validated['manager_shops']) && in_array($shopId, $validated['manager_shops']);
+                
+                $shopData[$shopId] = [
+                    'is_manager' => $isManager,
+                    'assigned_at' => now(),
+                ];
+            }
+            
+            if (!empty($shopData)) {
+                $user->shops()->attach($shopData);
+            }
+        }
+        
+        return redirect()->route('users.index')
+            ->with('success', 'L\'utilisateur a été créé avec succès.');
+    }
+
+    /**
+     * Met à jour les informations d'un utilisateur
+     */
+    public function update(Request $request, User $user)
+    {
+        // Vérifier que l'utilisateur est admin
+        if (!auth()->user()->isAdmin()) {
+            return redirect()->route('dashboard')
+                ->with('error', 'Vous n\'avez pas les permissions nécessaires.');
+        }
+        
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore($user->id),
+            ],
+            'phone' => 'nullable|string|max:255',
+            'password' => 'nullable|string|min:8|confirmed',
+            'role' => ['required', 'string', Rule::in(['admin', 'manager', 'vendeur', 'utilisateur'])],
+            'commission_rate' => 'nullable|required_if:role,vendeur|numeric|min:0|max:100',
+            'is_active' => 'boolean',
+            'shops' => 'nullable|array',
+            'shops.*' => 'exists:shops,id',
+            'manager_shops' => 'nullable|array',
+            'manager_shops.*' => 'exists:shops,id',
+        ]);
+        
+        // Mettre à jour les données de l'utilisateur
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        $user->phone = $validated['phone'];
+        $user->role = $validated['role'];
+        $user->is_active = $request->has('is_active');
+        
+        // Mettre à jour le mot de passe si fourni
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+        
+        // Mettre à jour le taux de commission pour les vendeurs
+        if ($validated['role'] === 'vendeur' && isset($validated['commission_rate'])) {
+            $user->commission_rate = $validated['commission_rate'];
+        }
+        
+        $user->save();
+        
+        // Gérer les associations aux boutiques
+        if ($validated['role'] !== 'admin') {
+            $shopData = [];
+            
+            if (!empty($validated['shops'])) {
+                foreach ($validated['shops'] as $shopId) {
+                    $isManager = !empty($validated['manager_shops']) && in_array($shopId, $validated['manager_shops']);
+                    
+                    $shopData[$shopId] = [
+                        'is_manager' => $isManager,
+                        'assigned_at' => now(),
+                    ];
+                }
+            }
+            
+            // Mettre à jour les associations
+            $user->shops()->sync($shopData);
+        } else {
+            // Si l'utilisateur devient admin, supprimer toutes les associations
+            $user->shops()->detach();
+        }
+        
+        return redirect()->route('users.show', $user)
+            ->with('success', 'L\'utilisateur a été mis à jour avec succès.');
     }
 } 
