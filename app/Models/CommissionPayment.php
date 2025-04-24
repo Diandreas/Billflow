@@ -51,6 +51,14 @@ class CommissionPayment extends Model
     }
 
     /**
+     * Alias de la relation vendor pour une meilleure cohérence
+     */
+    public function user()
+    {
+        return $this->vendor();
+    }
+
+    /**
      * Relation avec l'utilisateur qui a effectué le paiement
      */
     public function paidByUser()
