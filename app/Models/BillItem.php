@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class BillItem extends Model
 {
     use HasFactory;
-    
+
     protected $table = 'bill_items';
-    
+
     protected $fillable = [
         'bill_id',
         'product_id',
@@ -19,7 +19,7 @@ class BillItem extends Model
         'price',
         'total',
     ];
-    
+
     /**
      * Relation avec la facture associée
      */
@@ -27,7 +27,7 @@ class BillItem extends Model
     {
         return $this->belongsTo(Bill::class);
     }
-    
+
     /**
      * Relation avec le produit associé
      */

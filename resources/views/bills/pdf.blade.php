@@ -82,7 +82,7 @@
             display: table;
             clear: both;
         }
-        
+
         .footer-container {
             clear: both;
             position: relative;
@@ -102,14 +102,14 @@
             margin-bottom: 20px;
             object-fit: contain;
         }
-        
+
         .print-info {
             font-size: 8px;
             text-align: right;
             margin-top: 10px;
             color: #999;
         }
-        
+
         .reprint-mark {
             position: absolute;
             top: 40%;
@@ -119,11 +119,57 @@
             color: rgba(231, 76, 60, 0.15);
             z-index: -1;
         }
+
+        .barter-info {
+            clear: both;
+            margin-top: 10px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #f3e8ff;
+            border: 1px solid #d8b4fe;
+            border-radius: 5px;
+        }
+
+        .barter-info h3 {
+            color: #7e22ce;
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .barter-info p {
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .barter-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+
+        .barter-table td {
+            padding: 5px;
+            border: none;
+        }
+
+        .barter-table tr:last-child td {
+            font-weight: bold;
+        }
+
+        .green-text {
+            color: #16a34a;
+        }
+
+        .red-text {
+            color: #dc2626;
+        }
     </style>
 </head>
 <body>
 @if(isset($bill->reprint_count) && $bill->reprint_count > 1)
-<div class="reprint-mark">DUPLICATA</div>
+    <div class="reprint-mark">DUPLICATA</div>
 @endif
 
 <div class="container">
@@ -148,7 +194,7 @@
                 N° : {{ $bill->reference }}<br>
                 Date : {{ $bill->date->format('d/m/Y') }}<br>
                 @if($bill->due_date)
-                Échéance : {{ $bill->due_date->format('d/m/Y') }}<br>
+                    Échéance : {{ $bill->due_date->format('d/m/Y') }}<br>
                 @endif
                 Boutique : {{ $bill->shop->name }}<br>
                 Vendeur : {{ $bill->seller->name }}<br>
@@ -156,6 +202,35 @@
             </p>
         </div>
     </div>
+
+    <!-- Section spéciale pour les factures de troc -->
+    @if($bill->is_barter_bill && $bill->barter)
+        <div class="barter-info">
+            <h3>Facture liée à un Troc</h3>
+            <p>
+                Cette facture a été générée automatiquement suite au troc <strong>{{ $bill->barter->reference }}</strong> du {{ $bill->barter->created_at->format('d/m/Y') }}.
+                Elle représente le paiement complémentaire résultant de la différence de valeur entre les articles échangés.
+            </p>
+
+            <table class="barter-table">
+                <tr>
+                    <td style="width: 50%;"><strong>Valeur donnée par le client:</strong></td>
+                    <td style="text-align: right;">{{ number_format($bill->barter->value_given, 0, ',', ' ') }} FCFA</td>
+                </tr>
+                <tr>
+                    <td><strong>Valeur reçue par le client:</strong></td>
+                    <td style="text-align: right;">{{ number_format($bill->barter->value_received, 0, ',', ' ') }} FCFA</td>
+                </tr>
+                <tr>
+                    <td><strong>Différence:</strong></td>
+                    <td style="text-align: right; {{ $bill->barter->additional_payment > 0 ? 'color: #16a34a;' : 'color: #dc2626;' }}">
+                        {{ number_format(abs($bill->barter->additional_payment), 0, ',', ' ') }} FCFA
+                        ({{ $bill->barter->additional_payment > 0 ? 'Client vers boutique' : 'Boutique vers client' }})
+                    </td>
+                </tr>
+            </table>
+        </div>
+    @endif
 
     <!-- Informations client -->
     <div class="client-info">
@@ -171,55 +246,91 @@
     </div>
 
     <!-- Tableau des produits -->
-    <table>
-        <thead>
-        <tr>
-            <th>Description</th>
-            <th style="text-align: right">Prix unitaire</th>
-            <th style="text-align: right">Quantité</th>
-            <th style="text-align: right">Total HT</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach($bill->items as $item)
+    @if($bill->is_barter_bill)
+        <table>
+            <thead>
             <tr>
-                <td>{{ $item->product->name }}</td>
-                <td style="text-align: right">{{ number_format($item->unit_price, 0, ',', ' ') }} FCFA</td>
-                <td style="text-align: right">{{ $item->quantity }}</td>
-                <td style="text-align: right">{{ number_format($item->total, 0, ',', ' ') }} FCFA</td>
+                <th>Description</th>
+                <th style="text-align: right">Montant</th>
+                <th style="text-align: right">Type</th>
             </tr>
-        @endforeach
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+            @foreach($bill->items as $item)
+                <tr>
+                    <td>{{ $item->name }}</td>
+                    <td style="text-align: right">{{ number_format($item->total, 0, ',', ' ') }} FCFA</td>
+                    <td style="text-align: right">
+                        @if(isset($item->is_barter_item) && $item->is_barter_item)
+                            Produit échangé
+                        @else
+                            Paiement complémentaire
+                        @endif
+                    </td>
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
+    @else
+        <table>
+            <thead>
+            <tr>
+                <th>Description</th>
+                <th style="text-align: right">Prix unitaire</th>
+                <th style="text-align: right">Quantité</th>
+                <th style="text-align: right">Total HT</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach($bill->items as $item)
+                <tr>
+                    <td>{{ $item->product ? $item->product->name : ($item->name ?? 'Paiement complémentaire') }}</td>
+                    <td style="text-align: right">{{ number_format($item->unit_price, 0, ',', ' ') }} FCFA</td>
+                    <td style="text-align: right">{{ $item->quantity }}</td>
+                    <td style="text-align: right">{{ number_format($item->total, 0, ',', ' ') }} FCFA</td>
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
+    @endif
 
     <!-- Totaux -->
     <div class="amounts clearfix">
-        <table>
-            <tr>
-                <td>Total HT:</td>
-                <td>{{ number_format($bill->total - $bill->tax_amount, 0, ',', ' ') }} FCFA</td>
-            </tr>
-            <tr>
-                <td>TVA ({{ $bill->tax_rate }}%):</td>
-                <td>{{ number_format($bill->tax_amount, 0, ',', ' ') }} FCFA</td>
-            </tr>
-            <tr class="total">
-                <td>Total TTC:</td>
-                <td>{{ number_format($bill->total, 0, ',', ' ') }} FCFA</td>
-            </tr>
-        </table>
+        @if($bill->is_barter_bill)
+            <table>
+                <tr class="total">
+                    <td>{{ $bill->barter && $bill->barter->additional_payment > 0 ? 'Paiement complémentaire:' : 'Remboursement:' }}</td>
+                    <td>{{ number_format($bill->total, 0, ',', ' ') }} FCFA</td>
+                </tr>
+            </table>
+        @else
+            <table>
+                <tr>
+                    <td>Total HT:</td>
+                    <td>{{ number_format($bill->total - $bill->tax_amount, 0, ',', ' ') }} FCFA</td>
+                </tr>
+                <tr>
+                    <td>TVA ({{ $bill->tax_rate }}%):</td>
+                    <td>{{ number_format($bill->tax_amount, 0, ',', ' ') }} FCFA</td>
+                </tr>
+                <tr class="total">
+                    <td>Total TTC:</td>
+                    <td>{{ number_format($bill->total, 0, ',', ' ') }} FCFA</td>
+                </tr>
+            </table>
+        @endif
     </div>
 
     <!-- QR Code -->
     @if(isset($qrCode) && $qrCode)
-    <div style="position: absolute; top: 90px; right: 30px; text-align: center;">
-        <img src="data:image/png;base64,{{ $qrCode }}" alt="QR Code" style="width: 100px; height: 100px; max-width: 100px; max-height: 100px;">
-        <p style="font-size: 9px; margin-top: 5px;">Scanner pour vérifier l'authenticité</p>
-    </div>
+        <div style="position: absolute; top: 90px; right: 30px; text-align: center;">
+            <img src="data:image/png;base64,{{ $qrCode }}" alt="QR Code" style="width: 100px; height: 100px; max-width: 100px; max-height: 100px;">
+            <p style="font-size: 9px; margin-top: 5px;">Scanner pour vérifier l'authenticité</p>
+        </div>
     @else
-    <div style="position: absolute; top: 90px; right: 30px; text-align: center; width: 100px; height: 100px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center;">
-        <p style="font-size: 9px; color: #999;">QR code non disponible</p>
-    </div>
+        <div style="position: absolute; top: 90px; right: 30px; text-align: center; width: 100px; height: 100px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center;">
+            <p style="font-size: 9px; color: #999;">QR code non disponible</p>
+        </div>
     @endif
 
     <!-- Pied de page -->
@@ -231,11 +342,11 @@
             <p>Nous vous remercions pour votre confiance.</p>
             <p>Cette facture constitue une preuve d'achat et peut être exigée pour tout service après-vente.</p>
         </div>
-        
+
         <div class="print-info">
-            Imprimé le {{ now()->format('d/m/Y H:i') }} 
+            Imprimé le {{ now()->format('d/m/Y H:i') }}
             @if(isset($bill->reprint_count) && $bill->reprint_count > 1)
-            (Réimpression #{{ $bill->reprint_count - 1 }})
+                (Réimpression #{{ $bill->reprint_count - 1 }})
             @endif
         </div>
     </div>

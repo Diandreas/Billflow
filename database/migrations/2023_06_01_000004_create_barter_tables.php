@@ -23,7 +23,7 @@ return new class extends Migration
             $table->decimal('given_items_value', 12, 2)->default(0)->comment('Valeur estimée des articles donnés par le client');
             $table->decimal('received_items_value', 12, 2)->default(0)->comment('Valeur des articles reçus par le client');
             $table->decimal('balance_amount', 12, 2)->default(0)->comment('Montant de l\'équilibrage (positif si le client paie, négatif s\'il reçoit)');
-            $table->enum('status', ['en_attente', 'complété', 'annulé' ,'pending'])->default('en_attente');
+            $table->enum('status', ['en_attente', 'completed', 'annulé' ,'pending'])->default('en_attente');
             // $table->date('date');
             $table->decimal('additional_payment', 12, 2)->default(0)->comment('Montant de l\'équilibrage (positif si le client paie, négatif s\'il reçoit)');
 

@@ -43,13 +43,21 @@
                                     <p class="text-sm">
                                         <strong>Référence:</strong> {{ $barter->bill->reference }}
                                         <span class="mx-2">|</span>
-                                        <strong>Montant:</strong> {{ number_format($barter->bill->total, 2) }} €
+                                        <strong>Montant:</strong> {{ number_format(abs($barter->additional_payment), 0, ',', ' ') }} FCFA
                                         <span class="mx-2">|</span>
                                         <strong>Statut:</strong>
                                         <span class="px-2 py-0.5 text-xs rounded-full {{ $barter->bill->status == 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                        {{ $barter->bill->status == 'paid' ? 'Payée' : 'En attente' }}
-                                    </span>
+                                            {{ $barter->bill->status == 'paid' ? 'Payée' : 'En attente' }}
+                                        </span>
                                     </p>
+                                    @if($barter->additional_payment != 0)
+                                        <p class="text-sm mt-1">
+                                            <strong>Direction du paiement:</strong>
+                                            <span class="{{ $barter->additional_payment > 0 ? 'text-green-700' : 'text-red-700' }}">
+                                                {{ $barter->additional_payment > 0 ? 'Client vers boutique' : 'Boutique vers client' }}
+                                            </span>
+                                        </p>
+                                    @endif
                                 </div>
                                 <div class="flex space-x-2">
                                     <a href="{{ route('bills.show', $barter->bill) }}"
@@ -83,8 +91,9 @@
                             <div class="flex justify-between items-center">
                                 <p class="text-sm text-yellow-800">
                                     Aucune facture n'a encore été générée pour ce troc.
-                                    @if($barter->additional_payment > 0)
-                                        Une facture doit être générée pour le paiement complémentaire de {{ number_format($barter->additional_payment, 2) }} €.
+                                    @if($barter->additional_payment != 0)
+                                        Une facture doit être générée pour le paiement complémentaire de {{ number_format(abs($barter->additional_payment), 0, ',', ' ') }} FCFA
+                                        ({{ $barter->additional_payment > 0 ? 'Client vers boutique' : 'Boutique vers client' }}).
                                     @endif
                                 </p>
                                 <a href="{{ route('barters.generate-bill', $barter) }}"
@@ -147,9 +156,9 @@
                                 @foreach($barter->givenItems as $item)
                                     <tr>
                                         <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ $item->name }}</td>
-                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ number_format($item->value, 2) }} €</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ number_format($item->value, 0, ',', ' ') }} FCFA</td>
                                         <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ $item->quantity }}</td>
-                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ number_format($item->value * $item->quantity, 2) }} €</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ number_format($item->value * $item->quantity, 0, ',', ' ') }} FCFA</td>
                                         <td class="px-3 py-2 text-sm text-gray-700">{{ $item->description }}</td>
                                     </tr>
                                 @endforeach
@@ -158,7 +167,7 @@
                                 <tr>
                                     <td colspan="3" class="px-3 py-2 text-sm font-medium text-blue-700 text-right">Total:</td>
                                     <td class="px-3 py-2 text-sm font-medium text-blue-700">
-                                        {{ number_format($barter->givenItems->sum(function($item) { return $item->value * $item->quantity; }), 2) }} €
+                                        {{ number_format($barter->givenItems->sum(function($item) { return $item->value * $item->quantity; }), 0, ',', ' ') }} FCFA
                                     </td>
                                     <td></td>
                                 </tr>
@@ -186,9 +195,9 @@
                                 @foreach($barter->receivedItems as $item)
                                     <tr>
                                         <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ $item->name }}</td>
-                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ number_format($item->value, 2) }} €</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ number_format($item->value, 0, ',', ' ') }} FCFA</td>
                                         <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ $item->quantity }}</td>
-                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ number_format($item->value * $item->quantity, 2) }} €</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ number_format($item->value * $item->quantity, 0, ',', ' ') }} FCFA</td>
                                         <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ $item->product ? $item->product->name : '-' }}</td>
                                         <td class="px-3 py-2 text-sm text-gray-700">{{ $item->description }}</td>
                                     </tr>
@@ -198,7 +207,7 @@
                                 <tr>
                                     <td colspan="3" class="px-3 py-2 text-sm font-medium text-green-700 text-right">Total:</td>
                                     <td class="px-3 py-2 text-sm font-medium text-green-700">
-                                        {{ number_format($barter->receivedItems->sum(function($item) { return $item->value * $item->quantity; }), 2) }} €
+                                        {{ number_format($barter->receivedItems->sum(function($item) { return $item->value * $item->quantity; }), 0, ',', ' ') }} FCFA
                                     </td>
                                     <td colspan="2"></td>
                                 </tr>
@@ -214,7 +223,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <p class="text-sm font-medium text-yellow-700">Montant</p>
-                                    <p class="text-sm">{{ number_format(abs($barter->additional_payment), 2) }} €</p>
+                                    <p class="text-sm">{{ number_format(abs($barter->additional_payment), 0, ',', ' ') }} FCFA</p>
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-yellow-700">Méthode de paiement</p>
@@ -222,7 +231,9 @@
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-yellow-700">Direction</p>
-                                    <p class="text-sm">{{ $barter->additional_payment > 0 ? 'Client vers boutique' : 'Boutique vers client' }}</p>
+                                    <p class="text-sm {{ $barter->additional_payment > 0 ? 'text-green-700' : 'text-red-700' }}">
+                                        {{ $barter->additional_payment > 0 ? 'Client vers boutique' : 'Boutique vers client' }}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -250,20 +261,23 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <p class="text-sm font-medium text-indigo-700">Valeur totale donnée</p>
-                                <p class="text-sm">{{ number_format($barter->givenItems->sum(function($item) { return $item->value * $item->quantity; }), 2) }} €</p>
+                                <p class="text-sm">{{ number_format($barter->givenItems->sum(function($item) { return $item->value * $item->quantity; }), 0, ',', ' ') }} FCFA</p>
                             </div>
                             <div>
                                 <p class="text-sm font-medium text-indigo-700">Valeur totale reçue</p>
-                                <p class="text-sm">{{ number_format($barter->receivedItems->sum(function($item) { return $item->value * $item->quantity; }), 2) }} €</p>
+                                <p class="text-sm">{{ number_format($barter->receivedItems->sum(function($item) { return $item->value * $item->quantity; }), 0, ',', ' ') }} FCFA</p>
                             </div>
                             <div>
                                 <p class="text-sm font-medium text-indigo-700">Différence</p>
-                                <p class="text-sm">
+                                <p class="text-sm {{ $barter->additional_payment != 0 ? ($barter->additional_payment > 0 ? 'text-green-700' : 'text-red-700') : '' }}">
                                     {{ number_format(
                                         $barter->receivedItems->sum(function($item) { return $item->value * $item->quantity; }) -
                                         $barter->givenItems->sum(function($item) { return $item->value * $item->quantity; }),
-                                        2)
-                                    }} €
+                                        0, ',', ' ')
+                                    }} FCFA
+                                    @if($barter->additional_payment != 0)
+                                        ({{ $barter->additional_payment > 0 ? 'Client vers boutique' : 'Boutique vers client' }})
+                                    @endif
                                 </p>
                             </div>
                         </div>

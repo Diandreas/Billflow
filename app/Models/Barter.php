@@ -121,11 +121,15 @@ class Barter extends Model
             $bill->due_date = now()->addDays(30);
             $bill->tax_rate = 0; // Les trocs sont généralement sans TVA
             $bill->tax_amount = 0;
-            $bill->total = $this->additional_payment > 0 ? $this->additional_payment : 0;
+
+            // Utiliser la valeur absolue du paiement complémentaire pour le total
+            $bill->total = abs($this->additional_payment);
+
             $bill->status = 'paid'; // Considéré comme payé dès la création
             $bill->payment_method = $this->payment_method;
             $bill->description = 'Facture automatique pour le troc ' . $this->reference;
             $bill->is_barter_bill = true; // Marquer comme facture de troc
+            $bill->barter_id = $this->id;
             $bill->save();
 
             // Associer la facture au troc
@@ -139,10 +143,11 @@ class Barter extends Model
                 $billItem = new BillItem();
                 $billItem->bill_id = $bill->id;
                 $billItem->product_id = null;
-                $billItem->unit_price = $this->additional_payment;
+                $billItem->unit_price = abs($this->additional_payment);
                 $billItem->quantity = 1;
-                $billItem->total = $this->additional_payment;
+                $billItem->total = abs($this->additional_payment);
                 $billItem->name = 'Paiement complémentaire pour troc ' . $this->reference;
+                // Ajouter une indication de la direction du paiement
                 $billItem->save();
             }
 
@@ -164,7 +169,6 @@ class Barter extends Model
             return $bill;
         });
     }
-
     // Recalculer les valeurs du troc
     public function recalculateValues()
     {
