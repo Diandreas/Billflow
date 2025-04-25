@@ -32,7 +32,7 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-3">
                     <!-- Facture associée au troc (si elle existe) -->
-                    @if($barter->bill)
+                    @if($barter->bill_id)
                         <div class="mb-4 p-3 bg-green-50 rounded-lg border border-green-100">
                             <h3 class="text-md font-medium text-green-700 mb-2">Facture générée</h3>
                             <div class="flex justify-between items-center">

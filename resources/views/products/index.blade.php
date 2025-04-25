@@ -31,7 +31,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                     <div class="flex items-center">
                         <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
@@ -43,7 +43,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                     <div class="flex items-center">
                         <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
@@ -55,7 +55,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                     <div class="flex items-center">
                         <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
@@ -67,7 +67,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                     <div class="flex items-center">
                         <div class="p-3 rounded-full bg-amber-100 text-amber-600 mr-4">
@@ -85,11 +85,11 @@
             <div class="mb-4">
                 <form action="{{ route('products.index') }}" method="GET" class="flex flex-wrap gap-2">
                     <div class="flex-1 min-w-[200px]">
-                        <input type="text" name="search" value="{{ request('search') }}" 
-                               placeholder="{{ __('Rechercher un produit...') }}" 
+                        <input type="text" name="search" value="{{ request('search') }}"
+                               placeholder="{{ __('Rechercher un produit...') }}"
                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     </div>
-                    
+
                     <div class="w-full sm:w-auto">
                         <select name="type" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             <option value="">{{ __('Tous les types') }}</option>
@@ -97,7 +97,7 @@
                             <option value="service" {{ request('type') == 'service' ? 'selected' : '' }}>{{ __('Services') }}</option>
                         </select>
                     </div>
-                    
+
                     <div class="w-full sm:w-auto">
                         <select name="stock" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             <option value="">{{ __('Tous les stocks') }}</option>
@@ -106,7 +106,7 @@
                             <option value="out" {{ request('stock') == 'out' ? 'selected' : '' }}>{{ __('Épuisé') }}</option>
                         </select>
                     </div>
-                    
+
                     <div class="w-full sm:w-auto">
                         <select name="sort" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             <option value="name" {{ request('sort') == 'name' ? 'selected' : '' }}>{{ __('Nom') }}</option>
@@ -117,22 +117,22 @@
                             <option value="total_sales" {{ request('sort') == 'total_sales' ? 'selected' : '' }}>{{ __('Ventes') }}</option>
                         </select>
                     </div>
-                    
+
                     <div class="w-full sm:w-auto">
                         <select name="direction" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>{{ __('Croissant') }}</option>
                             <option value="desc" {{ request('direction', 'desc') == 'desc' ? 'selected' : '' }}>{{ __('Décroissant') }}</option>
                         </select>
                     </div>
-                    
+
                     <button type="submit" class="px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
                         {{ __('Filtrer') }}
                     </button>
-                    
+
                     <a href="{{ route('products.index', ['type' => 'physical', 'stock' => 'low']) }}" class="px-4 py-2 bg-amber-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-amber-700">
                         {{ __('Produits à réapprovisionner') }}
                     </a>
-                    
+
                     @if(request()->anyFilled(['search', 'type', 'stock', 'sort', 'direction']))
                         <a href="{{ route('products.index') }}" class="px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
                             {{ __('Réinitialiser') }}
@@ -146,7 +146,7 @@
                     <!-- Products Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         @foreach($products as $product)
-                            <div class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer product-card" 
+                            <div class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer product-card"
                                  onclick="window.location.href='{{ route('products.show', $product) }}'">
                                 <div class="bg-indigo-50 p-4 border-b relative">
                                     <div class="absolute top-2 right-2 flex space-x-2">
@@ -162,7 +162,7 @@
                                             </button>
                                         </form>
                                     </div>
-                                    
+
                                     <div class="flex items-center mb-2">
                                         <h3 class="text-lg font-semibold text-indigo-900 mr-2">{{ $product->name }}</h3>
                                         @if($product->type === 'physical')
@@ -181,15 +181,7 @@
                                 </div>
                                 <div class="p-4">
                                     <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ $product->description ?: 'Pas de description' }}</p>
-                                    <div class="flex justify-between items-center text-sm">
-                                        <div class="text-gray-500 flex items-center">
-                                            <i class="bi bi-receipt mr-1"></i>
-                                            {{ $product->bills_count }} factures
-                                        </div>
-                                        <div class="text-indigo-600 font-medium">
-                                            {{ number_format($product->total_sales ?? 0, 0, ',', ' ') }} FCFA
-                                        </div>
-                                    </div>
+
                                     @if($product->type === 'physical')
                                     <div class="mt-2 flex justify-between items-center text-sm border-t pt-2">
                                         <div class="text-gray-500">
@@ -275,12 +267,12 @@
                 -webkit-box-orient: vertical;
                 overflow: hidden;
             }
-            
+
             .product-card {
                 cursor: pointer;
                 transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
             }
-            
+
             .product-card:hover {
                 transform: translateY(-2px);
                 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -296,7 +288,7 @@
         function toggleModal(modalId) {
             const modal = document.getElementById(modalId);
             const modalContent = document.getElementById('modalContent');
-            
+
             if (modal.classList.contains('hidden')) {
                 // Afficher le modal
                 modal.classList.remove('hidden');
@@ -326,16 +318,16 @@
         if (newProductForm) {
             newProductForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                
+
                 // S'assurer que default_price a une valeur
                 const defaultPriceInput = document.getElementById('default_price');
                 if (!defaultPriceInput.value || defaultPriceInput.value === '') {
                     defaultPriceInput.value = '0';
                 }
-                
+
                 // Récupération des données du formulaire
                 const formData = new FormData(this);
-                
+
                 // Conversion en objet JSON avec gestion spécifique de default_price
                 const jsonData = {};
                 formData.forEach((value, key) => {
@@ -345,12 +337,12 @@
                         jsonData[key] = value;
                     }
                 });
-                
+
                 // Définir explicitement un type s'il n'est pas présent
                 if (!jsonData.type) {
                     jsonData.type = 'service';
                 }
-                
+
                 // Envoi de la requête
                 fetch(this.action, {
                     method: 'POST',
@@ -375,7 +367,7 @@
                     if (data.success) {
                         // Fermer le modal
                         toggleModal('newProductModal');
-                        
+
                         // Afficher un message de succès
                         Swal.fire({
                             icon: 'success',
@@ -392,7 +384,7 @@
                                 popup: 'colored-toast'
                             }
                         });
-                        
+
                         // Recharger la page après un court délai
                         setTimeout(() => {
                             window.location.reload();
@@ -443,7 +435,7 @@
                 document.querySelectorAll('.grid > div').forEach(product => {
                     const name = product.querySelector('h3').textContent.toLowerCase();
                     const description = product.querySelector('p').textContent.toLowerCase();
-                    
+
                     if (name.includes(searchTerm) || description.includes(searchTerm)) {
                         product.style.display = '';
                     } else {
@@ -459,7 +451,7 @@
             if (deleteButton && deleteButton.closest('form[action*="products"]') && deleteButton.closest('form[method="POST"]')) {
                 e.preventDefault();
                 const form = deleteButton.closest('form');
-                
+
                 Swal.fire({
                     title: 'Êtes-vous sûr?',
                     text: "Vous ne pourrez pas revenir en arrière!",
@@ -478,7 +470,7 @@
                         // Soumettre le formulaire via AJAX pour éviter le rechargement de la page
                         const url = form.getAttribute('action');
                         const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                        
+
                         fetch(url, {
                             method: 'POST',
                             headers: {
@@ -510,7 +502,7 @@
                                     background: '#fff',
                                     iconColor: '#4F46E5'
                                 });
-                                
+
                                 // Supprimer la carte du produit du DOM
                                 const productCard = deleteButton.closest('.product-card');
                                 if (productCard) {
@@ -552,13 +544,13 @@
             font-weight: 500 !important;
             border-radius: 0.5rem !important;
         }
-        
+
         .swal2-cancel-button {
             padding: 0.5rem 1.5rem !important;
             font-weight: 500 !important;
             border-radius: 0.5rem !important;
         }
-        
+
         /* Animation pour le modal */
         #modalContent {
             transition: all 0.3s ease-out;

@@ -17,6 +17,7 @@ class Bill extends Model
         'user_id',
         'client_id',
         'status',
+        'barter_id',
         'shop_id'
     ];
 
