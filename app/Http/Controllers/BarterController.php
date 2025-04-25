@@ -6,6 +6,8 @@ use App\Models\Barter;
 use App\Models\BarterImage;
 use App\Models\BarterItem;
 use App\Models\BarterItemImage;
+use App\Models\Bill;
+use App\Models\BillItem;
 use App\Models\Client;
 use App\Models\Product;
 use App\Models\Shop;
@@ -15,12 +17,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class BarterController extends Controller
 {
+    /**
+     * Affiche la liste des trocs
+     */
     public function index(Request $request)
     {
-        $query = Barter::with(['client', 'seller', 'shop', 'items']);
+        $query = Barter::with(['client', 'seller', 'shop', 'items', 'bill']);
 
         // Filtres
         if ($request->has('client_id')) {
@@ -43,6 +50,13 @@ class BarterController extends Controller
             $query->where('type', $request->input('type'));
         }
 
+        // Filtre par produit
+        if ($request->has('product_id')) {
+            $query->whereHas('items', function($q) use ($request) {
+                $q->where('product_id', $request->input('product_id'));
+            });
+        }
+
         // Non-admins ne voient que les trocs de leurs boutiques
         if (!Gate::allows('admin')) {
             $shopIds = Auth::user()->shops->pluck('id')->toArray();
@@ -57,9 +71,18 @@ class BarterController extends Controller
             : Auth::user()->shops;
         $sellers = User::where('role', 'vendeur')->orderBy('name')->get();
 
-        return view('barters.index', compact('barters', 'clients', 'shops', 'sellers'));
+        // Optionnellement passer un produit si le filtre par produit est activé
+        $product = null;
+        if ($request->has('product_id')) {
+            $product = Product::find($request->input('product_id'));
+        }
+
+        return view('barters.index', compact('barters', 'clients', 'shops', 'sellers', 'product'));
     }
 
+    /**
+     * Affiche le formulaire pour créer un nouveau troc
+     */
     public function create()
     {
         $clients = Client::orderBy('name')->get();
@@ -72,6 +95,9 @@ class BarterController extends Controller
         return view('barters.create', compact('clients', 'products', 'shops', 'sellers'));
     }
 
+    /**
+     * Enregistre un nouveau troc
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -121,7 +147,7 @@ class BarterController extends Controller
             'additional_payment' => $additionalPayment,
             'payment_method' => $validated['payment_method'] ?? null,
             'notes' => $validated['description'] ?? null,
-           // 'status' => 'pending',
+            // 'status' => 'pending',
         ]);
 
         // Ajouter les articles donnés
@@ -188,17 +214,26 @@ class BarterController extends Controller
             }
         }
 
+        // Générer automatiquement une facture pour le troc
+        $bill = $barter->generateBill();
+
         return redirect()->route('barters.show', $barter)
-            ->with('success', 'Troc créé avec succès');
+            ->with('success', 'Troc créé avec succès' . ($bill ? ' et facture générée automatiquement' : ''));
     }
 
+    /**
+     * Affiche les détails d'un troc
+     */
     public function show(Barter $barter)
     {
-        $barter->load(['client', 'seller', 'user', 'shop', 'items', 'images']);
+        $barter->load(['client', 'seller', 'user', 'shop', 'items', 'images', 'bill']);
 
         return view('barters.show', compact('barter'));
     }
 
+    /**
+     * Affiche le formulaire pour modifier un troc
+     */
     public function edit(Barter $barter)
     {
         if ($barter->status !== 'pending') {
@@ -218,6 +253,9 @@ class BarterController extends Controller
         return view('barters.edit', compact('barter', 'clients', 'products', 'shops', 'sellers'));
     }
 
+    /**
+     * Met à jour un troc
+     */
     public function update(Request $request, Barter $barter)
     {
         if ($barter->status !== 'pending') {
@@ -247,6 +285,9 @@ class BarterController extends Controller
             ->with('success', 'Troc mis à jour avec succès');
     }
 
+    /**
+     * Supprime un troc
+     */
     public function destroy(Barter $barter)
     {
         if ($barter->status !== 'pending') {
@@ -283,12 +324,20 @@ class BarterController extends Controller
             Storage::delete($image->path);
         }
 
+        // Supprimer la facture associée au troc s'il y en a une
+        if ($barter->bill) {
+            $barter->bill->delete();
+        }
+
         $barter->delete();
 
         return redirect()->route('barters.index')
             ->with('success', 'Troc supprimé avec succès');
     }
 
+    /**
+     * Marque un troc comme complété
+     */
     public function complete(Request $request, Barter $barter)
     {
         if ($barter->status !== 'pending') {
@@ -300,10 +349,16 @@ class BarterController extends Controller
             'status' => 'completed',
         ]);
 
+        // Générer une facture si elle n'existe pas encore
+        $bill = $barter->bill ?? $barter->generateBill();
+
         return redirect()->route('barters.show', $barter)
-            ->with('success', 'Troc marqué comme complété');
+            ->with('success', 'Troc marqué comme complété' . ($bill ? ' et facture générée' : ''));
     }
 
+    /**
+     * Annule un troc
+     */
     public function cancel(Request $request, Barter $barter)
     {
         if ($barter->status !== 'pending') {
@@ -343,6 +398,9 @@ class BarterController extends Controller
             ->with('success', 'Troc annulé avec succès');
     }
 
+    /**
+     * Ajoute des images à un troc
+     */
     public function addImages(Request $request, Barter $barter)
     {
         $validated = $request->validate([
@@ -397,6 +455,9 @@ class BarterController extends Controller
             ->with('success', 'Images ajoutées avec succès');
     }
 
+    /**
+     * Supprime une image d'un troc
+     */
     public function deleteImage(BarterImage $image)
     {
         $barterId = $image->barter_id;
@@ -488,11 +549,6 @@ class BarterController extends Controller
 
     /**
      * Ajouter des images à un article spécifique du troc
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $barterId
-     * @param  int  $itemId
-     * @return \Illuminate\Http\JsonResponse
      */
     public function addItemImages(Request $request, $barterId, $itemId)
     {
@@ -540,9 +596,6 @@ class BarterController extends Controller
 
     /**
      * Supprimer une image d'un article de troc
-     *
-     * @param  int  $imageId
-     * @return \Illuminate\Http\JsonResponse
      */
     public function deleteItemImage($imageId)
     {
@@ -555,5 +608,160 @@ class BarterController extends Controller
         return response()->json([
             'message' => 'Image supprimée avec succès'
         ]);
+    }
+
+    /**
+     * Génère une facture pour un troc spécifique
+     */
+    public function generateBill(Barter $barter)
+    {
+        // Vérifier si une facture existe déjà
+        if ($barter->bill) {
+            return redirect()->route('barters.show', $barter)
+                ->with('error', 'Une facture existe déjà pour ce troc');
+        }
+
+        // Générer la facture
+        $bill = $barter->generateBill();
+
+        if (!$bill) {
+            return redirect()->route('barters.show', $barter)
+                ->with('error', 'Impossible de générer une facture pour ce troc');
+        }
+
+        return redirect()->route('barters.show', $barter)
+            ->with('success', 'Facture générée avec succès');
+    }
+
+    /**
+     * Télécharge la facture d'un troc
+     */
+    public function downloadBill(Barter $barter)
+    {
+        // Vérifier si une facture existe déjà
+        $bill = $barter->bill;
+
+        if (!$bill) {
+            // Générer une facture à la volée
+            $bill = $barter->generateBill();
+
+            if (!$bill) {
+                return redirect()->route('barters.show', $barter)
+                    ->with('error', 'Impossible de générer une facture pour ce troc');
+            }
+        }
+
+        // Rediriger vers le téléchargement de la facture
+        return redirect()->route('bills.download', $bill);
+    }
+
+    /**
+     * Imprime la facture d'un troc
+     */
+    public function printBill(Barter $barter)
+    {
+        // Vérifier si une facture existe déjà
+        $bill = $barter->bill;
+
+        if (!$bill) {
+            // Générer une facture à la volée
+            $bill = $barter->generateBill();
+
+            if (!$bill) {
+                return redirect()->route('barters.show', $barter)
+                    ->with('error', 'Impossible de générer une facture pour ce troc');
+            }
+        }
+
+        // Rediriger vers l'impression de la facture
+        return redirect()->route('bills.print', $bill);
+    }
+
+    /**
+     * Affiche les statistiques des trocs
+     */
+    public function barterStats()
+    {
+        // Comptage des trocs par statut
+        $statusCounts = Barter::selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        // Valeur totale des trocs
+        $totalGivenValue = Barter::sum('value_given');
+        $totalReceivedValue = Barter::sum('value_received');
+
+        // Produits les plus échangés
+        $topProducts = BarterItem::selectRaw('product_id, sum(quantity) as total_quantity')
+            ->whereNotNull('product_id')
+            ->groupBy('product_id')
+            ->orderByDesc('total_quantity')
+            ->limit(5)
+            ->with('product')
+            ->get();
+
+        // Trocs récents
+        $recentBarters = Barter::with(['client', 'shop'])
+            ->latest()
+            ->limit(5)
+            ->get();
+
+        return view('barters.stats', compact(
+            'statusCounts',
+            'totalGivenValue',
+            'totalReceivedValue',
+            'topProducts',
+            'recentBarters'
+        ));
+    }
+
+    /**
+     * Affiche les trocs filtrés par produit
+     */
+    public function indexByProduct(Request $request, Product $product)
+    {
+        $query = Barter::with(['client', 'seller', 'shop', 'items'])
+            ->whereHas('items', function ($query) use ($product) {
+                $query->where('product_id', $product->id);
+            });
+
+        // Filtres existants
+        if ($request->has('client_id')) {
+            $query->where('client_id', $request->input('client_id'));
+        }
+
+        if ($request->has('shop_id')) {
+            $query->where('shop_id', $request->input('shop_id'));
+        }
+
+        if ($request->has('seller_id')) {
+            $query->where('seller_id', $request->input('seller_id'));
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->has('type')) {
+            $query->where('type', $request->input('type'));
+        }
+
+        // Non-admins ne voient que les trocs de leurs boutiques
+        if (!Gate::allows('admin')) {
+            $shopIds = Auth::user()->shops->pluck('id')->toArray();
+            $query->whereIn('shop_id', $shopIds);
+        }
+
+        $barters = $query->orderBy('created_at', 'desc')->paginate(15);
+
+        $clients = Client::orderBy('name')->get();
+        $shops = Gate::allows('admin')
+            ? Shop::orderBy('name')->get()
+            : Auth::user()->shops;
+        $sellers = User::where('role', 'vendeur')->orderBy('name')->get();
+
+        // Passer le produit à la vue
+        return view('barters.index', compact('barters', 'clients', 'shops', 'sellers', 'product'));
     }
 }

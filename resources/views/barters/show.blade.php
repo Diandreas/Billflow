@@ -1,20 +1,18 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 py-3 px-3 rounded-lg shadow-sm">
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 py-3 px-3 rounded-lg shadow-sm mb-4">
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-semibold text-white">
-                    Troc: {{ $barter->reference }}
+                    Détails du Troc #{{ $barter->id }}
                 </h2>
                 <div class="flex space-x-2">
-                    @if($barter->status === 'pending')
-                        <a href="{{ route('barters.edit', $barter) }}"
-                           class="inline-flex items-center px-3 py-1 text-xs bg-white text-indigo-700 rounded-md hover:bg-indigo-50">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                            </svg>
-                            Modifier
-                        </a>
-                    @endif
+                    <a href="{{ route('barters.edit', $barter) }}"
+                       class="inline-flex items-center px-3 py-1 text-xs bg-white text-indigo-700 rounded-md hover:bg-indigo-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                        Modifier
+                    </a>
                     <a href="{{ route('barters.index') }}"
                        class="inline-flex items-center px-3 py-1 text-xs bg-white text-indigo-700 rounded-md hover:bg-indigo-50">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -31,306 +29,309 @@
 
     <div class="py-3">
         <div class="max-w-7xl mx-auto sm:px-4 lg:px-6">
-            <!-- Statut et actions -->
-            <div class="bg-white rounded-lg shadow overflow-hidden mb-4">
-                <div class="p-3 flex justify-between items-center border-b border-gray-200">
-                    <div class="flex items-center space-x-3">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full
-                            {{ $barter->status == 'completed' ? 'bg-green-100 text-green-800' :
-                               ($barter->status == 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                               'bg-red-100 text-red-800') }}">
-                            {{ $barter->status == 'completed' ? 'Complété' :
-                               ($barter->status == 'pending' ? 'En attente' : 'Annulé') }}
-                        </span>
-                        <span class="text-xs text-gray-500">Créé le {{ $barter->created_at->format('d/m/Y H:i') }}</span>
-                    </div>
-
-                    @if($barter->status === 'pending')
-                        <div class="flex space-x-2">
-                            <form action="{{ route('barters.complete', $barter) }}" method="POST" class="inline">
-                                @csrf
-                                <button type="submit" class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-3">
+                    <!-- Facture associée au troc (si elle existe) -->
+                    @if($barter->bill)
+                        <div class="mb-4 p-3 bg-green-50 rounded-lg border border-green-100">
+                            <h3 class="text-md font-medium text-green-700 mb-2">Facture générée</h3>
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="text-sm text-green-800">
+                                        Une facture a été générée automatiquement pour ce troc.
+                                    </p>
+                                    <p class="text-sm">
+                                        <strong>Référence:</strong> {{ $barter->bill->reference }}
+                                        <span class="mx-2">|</span>
+                                        <strong>Montant:</strong> {{ number_format($barter->bill->total, 2) }} €
+                                        <span class="mx-2">|</span>
+                                        <strong>Statut:</strong>
+                                        <span class="px-2 py-0.5 text-xs rounded-full {{ $barter->bill->status == 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                        {{ $barter->bill->status == 'paid' ? 'Payée' : 'En attente' }}
+                                    </span>
+                                    </p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <a href="{{ route('bills.show', $barter->bill) }}"
+                                       class="inline-flex items-center px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" clip-rule="evenodd" />
+                                        </svg>
+                                        Voir la facture
+                                    </a>
+                                    <a href="{{ route('barters.print-bill', $barter) }}"
+                                       class="inline-flex items-center px-3 py-1 text-xs bg-green-100 text-green-700 rounded-md hover:bg-green-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" />
+                                        </svg>
+                                        Imprimer
+                                    </a>
+                                    <a href="{{ route('barters.download-bill', $barter) }}"
+                                       class="inline-flex items-center px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                        Télécharger PDF
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                            <h3 class="text-md font-medium text-yellow-700 mb-2">Facture</h3>
+                            <div class="flex justify-between items-center">
+                                <p class="text-sm text-yellow-800">
+                                    Aucune facture n'a encore été générée pour ce troc.
+                                    @if($barter->additional_payment > 0)
+                                        Une facture doit être générée pour le paiement complémentaire de {{ number_format($barter->additional_payment, 2) }} €.
+                                    @endif
+                                </p>
+                                <a href="{{ route('barters.generate-bill', $barter) }}"
+                                   class="inline-flex items-center px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
                                     </svg>
-                                    Compléter
-                                </button>
-                            </form>
-
-                            <form action="{{ route('barters.cancel', $barter) }}" method="POST" class="inline" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler ce troc?');">
-                                @csrf
-                                <button type="submit" class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                    Annuler
-                                </button>
-                            </form>
-
-                            <form action="{{ route('barters.destroy', $barter) }}" method="POST" class="inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce troc?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
-                                    Supprimer
-                                </button>
-                            </form>
+                                    Générer une facture
+                                </a>
+                            </div>
                         </div>
                     @endif
-                </div>
 
-                <!-- Informations générales -->
-                <div class="p-3 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                    <div>
-                        <p class="font-medium text-gray-700">Client</p>
-                        <p class="text-gray-800">
-                            <a href="{{ route('clients.show', $barter->client) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
-                                {{ $barter->client->name }}
-                            </a>
-                        </p>
+                    <!-- Informations de base -->
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <h3 class="text-md font-medium text-gray-700 mb-2">Informations de base</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">Client</p>
+                                <p class="text-sm">{{ $barter->client->name }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">Boutique</p>
+                                <p class="text-sm">{{ $barter->shop->name }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">Vendeur</p>
+                                <p class="text-sm">{{ $barter->seller->name }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">Type de troc</p>
+                                <p class="text-sm">
+                                    {{ $barter->type == 'same_type' ? 'Même type' : 'Types différents' }}
+                                </p>
+                            </div>
+                        </div>
+                        @if($barter->description)
+                            <div class="mt-3">
+                                <p class="text-sm font-medium text-gray-700">Description</p>
+                                <p class="text-sm">{{ $barter->description }}</p>
+                            </div>
+                        @endif
                     </div>
-                    <div>
-                        <p class="font-medium text-gray-700">Boutique</p>
-                        <p class="text-gray-800">{{ $barter->shop->name }}</p>
-                    </div>
-                    <div>
-                        <p class="font-medium text-gray-700">Vendeur</p>
-                        <p class="text-gray-800">{{ $barter->seller->name }}</p>
-                    </div>
-                    <div>
-                        <p class="font-medium text-gray-700">Type de troc</p>
-                        <p class="text-gray-800">
-                            <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full {{ $barter->type == 'same_type' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
-                                {{ $barter->type == 'same_type' ? 'Même type' : 'Types différents' }}
-                            </span>
-                        </p>
-                    </div>
-                    <div>
-                        <p class="font-medium text-gray-700">Référence</p>
-                        <p class="text-gray-800">{{ $barter->reference }}</p>
-                    </div>
-                    <div>
-                        <p class="font-medium text-gray-700">Date du troc</p>
-                        <p class="text-gray-800">{{ $barter->created_at->format('d/m/Y') }}</p>
-                    </div>
-                </div>
 
-                @if($barter->description)
-                    <div class="px-3 pb-3 text-xs">
-                        <p class="font-medium text-gray-700">Description</p>
-                        <p class="text-gray-800">{{ $barter->description }}</p>
-                    </div>
-                @endif
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Articles donnés par le client -->
-                <div class="bg-white rounded-lg shadow overflow-hidden mb-4">
-                    <div class="bg-blue-50 px-3 py-2 border-b border-blue-100">
-                        <h3 class="text-sm font-medium text-blue-700">Articles donnés par le client</h3>
-                    </div>
-                    <div class="p-3">
+                    <!-- Articles donnés par le client -->
+                    <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <h3 class="text-md font-medium text-blue-700 mb-2">Articles donnés par le client</h3>
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-blue-200 text-xs">
-                                <thead class="bg-blue-50">
+                            <table class="min-w-full divide-y divide-blue-200">
+                                <thead class="bg-blue-100">
                                 <tr>
-                                    <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Nom</th>
-                                    <th scope="col" class="px-2 py-1.5 text-right text-xs font-medium text-blue-700 uppercase tracking-wider">Prix</th>
-                                    <th scope="col" class="px-2 py-1.5 text-right text-xs font-medium text-blue-700 uppercase tracking-wider">Qté</th>
-                                    <th scope="col" class="px-2 py-1.5 text-right text-xs font-medium text-blue-700 uppercase tracking-wider">Total</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Nom</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Valeur unitaire</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Quantité</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Valeur totale</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Description</th>
                                 </tr>
                                 </thead>
-                                <tbody class="divide-y divide-blue-100">
+                                <tbody class="bg-white divide-y divide-blue-200">
                                 @foreach($barter->givenItems as $item)
-                                    <tr class="hover:bg-blue-50">
-                                        <td class="px-2 py-1.5 whitespace-nowrap text-gray-800">
-                                            {{ $item->name }}
-                                            @if($item->description)
-                                                <p class="text-gray-500 text-xs italic">{{ Str::limit($item->description, 30) }}</p>
-                                            @endif
-                                        </td>
-                                        <td class="px-2 py-1.5 text-right whitespace-nowrap text-gray-800">{{ number_format($item->value, 0, ',', ' ') }} FCFA</td>
-                                        <td class="px-2 py-1.5 text-right whitespace-nowrap text-gray-800">{{ $item->quantity }}</td>
-                                        <td class="px-2 py-1.5 text-right whitespace-nowrap font-medium text-gray-800">{{ number_format($item->value * $item->quantity, 0, ',', ' ') }} FCFA</td>
+                                    <tr>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ $item->name }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ number_format($item->value, 2) }} €</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ $item->quantity }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ number_format($item->value * $item->quantity, 2) }} €</td>
+                                        <td class="px-3 py-2 text-sm text-gray-700">{{ $item->description }}</td>
                                     </tr>
                                 @endforeach
                                 </tbody>
                                 <tfoot class="bg-blue-50">
                                 <tr>
-                                    <td colspan="3" class="px-2 py-1.5 text-right font-medium text-blue-700">Total:</td>
-                                    <td class="px-2 py-1.5 text-right font-medium text-blue-700">
-                                        {{ number_format($barter->value_given, 0, ',', ' ') }} FCFA
+                                    <td colspan="3" class="px-3 py-2 text-sm font-medium text-blue-700 text-right">Total:</td>
+                                    <td class="px-3 py-2 text-sm font-medium text-blue-700">
+                                        {{ number_format($barter->givenItems->sum(function($item) { return $item->value * $item->quantity; }), 2) }} €
                                     </td>
+                                    <td></td>
                                 </tr>
                                 </tfoot>
                             </table>
                         </div>
                     </div>
-                </div>
 
-                <!-- Articles reçus par le client -->
-                <div class="bg-white rounded-lg shadow overflow-hidden mb-4">
-                    <div class="bg-green-50 px-3 py-2 border-b border-green-100">
-                        <h3 class="text-sm font-medium text-green-700">Articles reçus par le client</h3>
-                    </div>
-                    <div class="p-3">
+                    <!-- Articles reçus par le client -->
+                    <div class="mb-4 p-3 bg-green-50 rounded-lg border border-green-100">
+                        <h3 class="text-md font-medium text-green-700 mb-2">Articles reçus par le client</h3>
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-green-200 text-xs">
-                                <thead class="bg-green-50">
+                            <table class="min-w-full divide-y divide-green-200">
+                                <thead class="bg-green-100">
                                 <tr>
-                                    <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-green-700 uppercase tracking-wider">Nom</th>
-                                    <th scope="col" class="px-2 py-1.5 text-right text-xs font-medium text-green-700 uppercase tracking-wider">Prix</th>
-                                    <th scope="col" class="px-2 py-1.5 text-right text-xs font-medium text-green-700 uppercase tracking-wider">Qté</th>
-                                    <th scope="col" class="px-2 py-1.5 text-right text-xs font-medium text-green-700 uppercase tracking-wider">Total</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-green-700 uppercase tracking-wider">Nom</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-green-700 uppercase tracking-wider">Valeur unitaire</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-green-700 uppercase tracking-wider">Quantité</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-green-700 uppercase tracking-wider">Valeur totale</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-green-700 uppercase tracking-wider">Produit</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-green-700 uppercase tracking-wider">Description</th>
                                 </tr>
                                 </thead>
-                                <tbody class="divide-y divide-green-100">
+                                <tbody class="bg-white divide-y divide-green-200">
                                 @foreach($barter->receivedItems as $item)
-                                    <tr class="hover:bg-green-50">
-                                        <td class="px-2 py-1.5 whitespace-nowrap text-gray-800">
-                                            @if($item->product_id)
-                                                <a href="{{ route('products.show', $item->product_id) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
-                                                    {{ $item->name }}
-                                                </a>
-                                            @else
-                                                {{ $item->name }}
-                                            @endif
-                                            @if($item->description)
-                                                <p class="text-gray-500 text-xs italic">{{ Str::limit($item->description, 30) }}</p>
-                                            @endif
-                                        </td>
-                                        <td class="px-2 py-1.5 text-right whitespace-nowrap text-gray-800">{{ number_format($item->value, 0, ',', ' ') }} FCFA</td>
-                                        <td class="px-2 py-1.5 text-right whitespace-nowrap text-gray-800">{{ $item->quantity }}</td>
-                                        <td class="px-2 py-1.5 text-right whitespace-nowrap font-medium text-gray-800">{{ number_format($item->value * $item->quantity, 0, ',', ' ') }} FCFA</td>
+                                    <tr>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ $item->name }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ number_format($item->value, 2) }} €</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ $item->quantity }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ number_format($item->value * $item->quantity, 2) }} €</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{{ $item->product ? $item->product->name : '-' }}</td>
+                                        <td class="px-3 py-2 text-sm text-gray-700">{{ $item->description }}</td>
                                     </tr>
                                 @endforeach
                                 </tbody>
                                 <tfoot class="bg-green-50">
                                 <tr>
-                                    <td colspan="3" class="px-2 py-1.5 text-right font-medium text-green-700">Total:</td>
-                                    <td class="px-2 py-1.5 text-right font-medium text-green-700">
-                                        {{ number_format($barter->value_received, 0, ',', ' ') }} FCFA
+                                    <td colspan="3" class="px-3 py-2 text-sm font-medium text-green-700 text-right">Total:</td>
+                                    <td class="px-3 py-2 text-sm font-medium text-green-700">
+                                        {{ number_format($barter->receivedItems->sum(function($item) { return $item->value * $item->quantity; }), 2) }} €
                                     </td>
+                                    <td colspan="2"></td>
                                 </tr>
                                 </tfoot>
                             </table>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Résumé et paiement -->
-            <div class="bg-white rounded-lg shadow overflow-hidden mb-4">
-                <div class="bg-indigo-50 px-3 py-2 border-b border-indigo-100">
-                    <h3 class="text-sm font-medium text-indigo-700">Résumé et paiement</h3>
-                </div>
-                <div class="p-3">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                        <div class="bg-blue-50 p-2 rounded border border-blue-100">
-                            <p class="font-medium text-blue-700">Total donné par le client</p>
-                            <p class="text-xl font-bold text-blue-800">{{ number_format($barter->value_given, 0, ',', ' ') }} FCFA</p>
-                        </div>
-
-                        <div class="bg-green-50 p-2 rounded border border-green-100">
-                            <p class="font-medium text-green-700">Total reçu par le client</p>
-                            <p class="text-xl font-bold text-green-800">{{ number_format($barter->value_received, 0, ',', ' ') }} FCFA</p>
-                        </div>
-
-                        <div class="bg-{{ $barter->additional_payment > 0 ? 'yellow' : 'gray' }}-50 p-2 rounded border border-{{ $barter->additional_payment > 0 ? 'yellow' : 'gray' }}-100">
-                            <p class="font-medium text-{{ $barter->additional_payment > 0 ? 'yellow' : 'gray' }}-700">
-                                {{ $barter->additional_payment > 0 ? 'Paiement complémentaire client' : 'Équilibrage' }}
-                            </p>
-                            <p class="text-xl font-bold text-{{ $barter->additional_payment > 0 ? 'yellow' : 'gray' }}-800">
-                                {{ number_format(abs($barter->additional_payment), 0, ',', ' ') }} FCFA
-                            </p>
-                            @if($barter->payment_method && $barter->additional_payment > 0)
-                                <p class="text-xs mt-1 text-gray-600">Mode: {{ $barter->payment_method }}</p>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Images du troc -->
-            @if(isset($barter->images) && $barter->images->count() > 0)
-                <div class="bg-white rounded-lg shadow overflow-hidden mb-4">
-                    <div class="bg-purple-50 px-3 py-2 border-b border-purple-100">
-                        <h3 class="text-sm font-medium text-purple-700">Images du troc</h3>
-                    </div>
-                    <div class="p-3">
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                            @foreach($barter->images as $image)
-                                <div class="relative group">
-                                    <a href="{{ asset('storage/' . $image->path) }}" target="_blank" class="block">
-                                        <img src="{{ asset('storage/' . $image->path) }}" alt="Image du troc" class="w-full h-28 object-cover rounded shadow hover:shadow-md transition">
-                                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center opacity-0 group-hover:opacity-100">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                            </svg>
-                                        </div>
-                                    </a>
-                                    @if($barter->status === 'pending')
-                                        <form action="{{ route('barters.deleteImage', $image) }}" method="POST" class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white rounded-full p-1" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette image?');">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                                </svg>
-                                            </button>
-                                        </form>
-                                    @endif
-                                    <div class="text-xs mt-1">
-                                <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full {{ $image->type == 'given' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }}">
-                                    {{ $image->type == 'given' ? 'Donné' : 'Reçu' }}
-                                </span>
-                                        @if($image->description)
-                                            <p class="truncate mt-0.5">{{ $image->description }}</p>
-                                        @endif
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            <!-- Ajouter des images -->
-            @if($barter->status === 'pending')
-                <div class="bg-white rounded-lg shadow overflow-hidden mb-4">
-                    <div class="bg-gray-50 px-3 py-2 border-b border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-700">Ajouter des images</h3>
-                    </div>
-                    <div class="p-3">
-                        <form action="{{ route('barters.addImages', $barter) }}" method="POST" enctype="multipart/form-data" class="space-y-3">
-                            @csrf
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Paiement complémentaire -->
+                    @if($barter->additional_payment != 0)
+                        <div class="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                            <h3 class="text-md font-medium text-yellow-700 mb-2">Paiement complémentaire</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-700 mb-1">Sélectionner des images</label>
-                                    <input type="file" name="images[]" multiple accept="image/*"
-                                           class="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100">
-                                    <p class="text-xs text-gray-500 mt-1">Formats acceptés: JPEG, PNG, GIF. Max 5MB par image.</p>
+                                    <p class="text-sm font-medium text-yellow-700">Montant</p>
+                                    <p class="text-sm">{{ number_format(abs($barter->additional_payment), 2) }} €</p>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-700 mb-1">Type d'images</label>
-                                    <select name="types[]" class="block w-full text-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                                        <option value="given">Articles donnés par le client</option>
-                                        <option value="received">Articles reçus par le client</option>
-                                    </select>
+                                    <p class="text-sm font-medium text-yellow-700">Méthode de paiement</p>
+                                    <p class="text-sm">{{ $barter->payment_method ?? 'Non spécifiée' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-yellow-700">Direction</p>
+                                    <p class="text-sm">{{ $barter->additional_payment > 0 ? 'Client vers boutique' : 'Boutique vers client' }}</p>
                                 </div>
                             </div>
-                            <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        </div>
+                    @endif
+
+                    <!-- Images du troc -->
+                    @if($barter->images->count() > 0)
+                        <div class="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                            <h3 class="text-md font-medium text-purple-700 mb-2">Images du troc</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                @foreach($barter->images as $image)
+                                    <div class="relative group">
+                                        <a href="{{ asset('storage/' . $image->path) }}" target="_blank">
+                                            <img src="{{ asset('storage/' . $image->path) }}" alt="Image du troc" class="w-full h-40 object-cover rounded-lg shadow-sm hover:shadow-md transition">
+                                        </a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Résumé des valeurs -->
+                    <div class="mb-4 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                        <h3 class="text-md font-medium text-indigo-700 mb-2">Résumé des valeurs</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <p class="text-sm font-medium text-indigo-700">Valeur totale donnée</p>
+                                <p class="text-sm">{{ number_format($barter->givenItems->sum(function($item) { return $item->value * $item->quantity; }), 2) }} €</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-indigo-700">Valeur totale reçue</p>
+                                <p class="text-sm">{{ number_format($barter->receivedItems->sum(function($item) { return $item->value * $item->quantity; }), 2) }} €</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-indigo-700">Différence</p>
+                                <p class="text-sm">
+                                    {{ number_format(
+                                        $barter->receivedItems->sum(function($item) { return $item->value * $item->quantity; }) -
+                                        $barter->givenItems->sum(function($item) { return $item->value * $item->quantity; }),
+                                        2)
+                                    }} €
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date et statut -->
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">Créé le</p>
+                                <p class="text-sm">{{ $barter->created_at->format('d/m/Y H:i') }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">Dernière mise à jour</p>
+                                <p class="text-sm">{{ $barter->updated_at->format('d/m/Y H:i') }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">Statut</p>
+                                <p class="text-sm">
+                                    <span class="px-2 py-1 text-xs leading-5 font-semibold rounded-full
+                                        {{ $barter->status == 'completed' ? 'bg-green-100 text-green-800' :
+                                           ($barter->status == 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                           'bg-red-100 text-red-800') }}">
+                                        {{ $barter->status == 'completed' ? 'Complété' :
+                                           ($barter->status == 'pending' ? 'En attente' : 'Annulé') }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex justify-end space-x-2">
+                        @if($barter->status === 'pending')
+                            <form action="{{ route('barters.complete', $barter) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    {{ __('Marquer comme complété') }}
+                                </button>
+                            </form>
+                            <form action="{{ route('barters.cancel', $barter) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" onclick="return confirm('Êtes-vous sûr de vouloir annuler ce troc ? Cette action restaurera le stock des produits.')"
+                                        class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 disabled:opacity-25 transition ease-in-out duration-150">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                    {{ __('Annuler') }}
+                                </button>
+                            </form>
+                        @endif
+                        <form action="{{ route('barters.destroy', $barter) }}" method="POST" class="inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce troc ? Cette action est irréversible.')"
+                                    class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                                 </svg>
-                                Ajouter les images
+                                {{ __('Supprimer') }}
                             </button>
                         </form>
                     </div>
                 </div>
-            @endif
+            </div>
         </div>
     </div>
 </x-app-layout>

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Bill;
+use Illuminate\Support\Facades\DB;
 
 class Barter extends Model
 {
@@ -12,291 +14,91 @@ class Barter extends Model
     protected $fillable = [
         'reference',
         'client_id',
+        'shop_id',
         'user_id',
         'seller_id',
-        'shop_id',
         'type',
         'value_given',
         'value_received',
         'additional_payment',
         'payment_method',
+        'notes',
+        'status',
         'description',
-        'status'
+        'bill_id',
     ];
 
     protected $casts = [
-        'value_given' => 'decimal:2',
-        'value_received' => 'decimal:2',
-        'additional_payment' => 'decimal:2',
+        'value_given' => 'float',
+        'value_received' => 'float',
+        'additional_payment' => 'float',
     ];
 
-    /**
-     * Génère une référence unique pour le troc
-     */
-    public static function generateReference()
-    {
-        $prefix = 'TROC-';
-        $year = date('Y');
-        $lastBarter = self::whereYear('created_at', $year)
-            ->orderBy('id', 'desc')
-            ->first();
+    protected $attributes = [
+        'status' => 'pending',
+    ];
 
-        $number = $lastBarter ? intval(substr($lastBarter->reference, -5)) + 1 : 1;
-
-        return $prefix . $year . '-' . str_pad($number, 5, '0', STR_PAD_LEFT);
-    }
-
-    /**
-     * Relation avec le client
-     */
+    // Relation vers le client
     public function client()
     {
         return $this->belongsTo(Client::class);
     }
 
-    /**
-     * Relation avec la boutique
-     */
-    public function shop()
-    {
-        return $this->belongsTo(Shop::class);
-    }
-
-    /**
-     * Relation avec l'utilisateur qui a enregistré le troc
-     */
+    // Relation vers l'utilisateur qui a créé le troc
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Relation avec le vendeur qui a effectué le troc
-     */
+    // Relation vers le vendeur
     public function seller()
     {
         return $this->belongsTo(User::class, 'seller_id');
     }
 
-    /**
-     * Relation avec les images liées à ce troc
-     */
-    public function images()
+    // Relation vers la boutique
+    public function shop()
     {
-        return $this->hasMany(BarterImage::class);
+        return $this->belongsTo(Shop::class);
     }
 
-    /**
-     * Relation avec les articles liées à ce troc
-     */
+    // Relation vers les articles
     public function items()
     {
         return $this->hasMany(BarterItem::class);
     }
 
-    /**
-     * Relation avec les articles donnés par le client
-     */
+    // Relation vers les images
+    public function images()
+    {
+        return $this->hasMany(BarterImage::class);
+    }
+
+    // Relation vers la facture générée pour ce troc
+    public function bill()
+    {
+        return $this->hasOne(Bill::class);
+    }
+
+    // Articles donnés par le client
     public function givenItems()
     {
-        return $this->items()->where('type', 'given');
+        return $this->hasMany(BarterItem::class)->where('type', 'given');
     }
 
-    /**
-     * Relation avec les articles reçus par le client
-     */
+    // Articles reçus par le client
     public function receivedItems()
     {
-        return $this->items()->where('type', 'received');
+        return $this->hasMany(BarterItem::class)->where('type', 'received');
     }
 
-    /**
-     * Relation avec les images données par le client
-     */
-    public function givenImages()
+    // Génère une référence unique pour le troc
+    public static function generateReference()
     {
-        return $this->images()->where('type', 'given');
-    }
-
-    /**
-     * Relation avec les images reçues par le client
-     */
-    public function receivedImages()
-    {
-        return $this->images()->where('type', 'received');
-    }
-
-    /**
-     * Relation avec la commission liée à ce troc
-     */
-    public function commission()
-    {
-        return $this->hasOne(Commission::class);
-    }
-
-    /**
-     * Relation avec la livraison liée à ce troc (si applicable)
-     */
-    public function delivery()
-    {
-        return $this->hasOne(Delivery::class);
-    }
-
-    /**
-     * Scope pour les trocs en attente
-     */
-    public function scopePending($query)
-    {
-        return $query->where('status', 'pending');
-    }
-
-    /**
-     * Scope pour les trocs complétés
-     */
-    public function scopeCompleted($query)
-    {
-        return $query->where('status', 'completed');
-    }
-
-    /**
-     * Scope pour les trocs annulés
-     */
-    public function scopeCancelled($query)
-    {
-        return $query->where('status', 'cancelled');
-    }
-
-    /**
-     * Scope pour les trocs d'une boutique spécifique
-     */
-    public function scopeForShop($query, $shopId)
-    {
-        return $query->where('shop_id', $shopId);
-    }
-
-    /**
-     * Scope pour les trocs d'un vendeur spécifique
-     */
-    public function scopeForUser($query, $userId)
-    {
-        return $query->where(function($q) use ($userId) {
-            $q->where('user_id', $userId)
-              ->orWhere('seller_id', $userId);
-        });
-    }
-
-    /**
-     * Calcule le total des articles donnés par le client
-     */
-    public function calculateGivenItemsValue()
-    {
-        $total = $this->givenItems()->sum(\DB::raw('estimated_value * quantity'));
-        $this->update(['value_given' => $total]);
-        return $total;
-    }
-
-    /**
-     * Calcule le total des articles reçus par le client
-     */
-    public function calculateReceivedItemsValue()
-    {
-        $total = $this->receivedItems()->sum('total_price');
-        $this->update(['value_received' => $total]);
-        return $total;
-    }
-
-    /**
-     * Calcule le montant d'équilibrage du troc
-     * Positif si le client doit payer, négatif si le client doit recevoir
-     */
-    public function calculateBalanceAmount()
-    {
-        $balance = $this->value_received - $this->value_given;
-        $this->update(['additional_payment' => $balance]);
-        return $balance;
-    }
-
-    /**
-     * Vérifie si le client doit payer un équilibrage
-     */
-    public function clientNeedsToPay()
-    {
-        return $this->additional_payment > 0;
-    }
-
-    /**
-     * Vérifie si le client doit recevoir un équilibrage
-     */
-    public function clientNeedsToReceive()
-    {
-        return $this->additional_payment < 0;
-    }
-
-    /**
-     * Marque le troc comme complété
-     */
-    public function markAsCompleted()
-    {
-        $this->update(['status' => 'completed']);
-        return $this;
-    }
-
-    /**
-     * Marque le troc comme annulé
-     */
-    public function markAsCancelled()
-    {
-        $this->update(['status' => 'cancelled']);
-        return $this;
-    }
-
-    /**
-     * Crée une commission pour le vendeur basée sur ce troc
-     */
-    public function createCommission()
-    {
-        $seller = $this->seller;
-
-        if (!$seller || $seller->commission_rate <= 0) {
-            return null;
-        }
-
-        // Calculer le montant de la commission basé sur la valeur des articles reçus ou l'équilibrage
-        $baseAmount = $this->clientNeedsToPay() ? $this->additional_payment : $this->value_received;
-
-        if ($baseAmount <= 0) {
-            return null;
-        }
-
-        $amount = $baseAmount * ($seller->commission_rate / 100);
-
-        return Commission::create([
-            'user_id' => $seller->id,
-            'barter_id' => $this->id,
-            'shop_id' => $this->shop_id,
-            'amount' => $amount,
-            'rate' => $seller->commission_rate,
-            'base_amount' => $baseAmount,
-            'type' => 'troc',
-            'description' => 'Commission sur le troc ' . $this->reference,
-            'is_paid' => false,
-        ]);
-    }
-
-    /**
-     * Getter pour le montant d'équilibrage
-     */
-    public function getBalanceAttribute()
-    {
-        return $this->value_received - $this->value_given;
-    }
-
-    /**
-     * Getter pour vérifier si le troc est du même type
-     */
-    public function getIsSameTypeAttribute()
-    {
-        return $this->type === 'same_type';
+        $lastBarter = self::latest()->first();
+        $lastId = $lastBarter ? $lastBarter->id : 0;
+        $nextId = $lastId + 1;
+        return 'TROC-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
     }
 
     // Génère automatiquement une facture pour ce troc
@@ -344,6 +146,21 @@ class Barter extends Model
                 $billItem->save();
             }
 
+            // Ajouter également les produits échangés dans la facture pour référence
+            foreach ($this->receivedItems as $item) {
+                if ($item->product_id) {
+                    $billItem = new BillItem();
+                    $billItem->bill_id = $bill->id;
+                    $billItem->product_id = $item->product_id;
+                    $billItem->unit_price = 0; // Prix à 0 car déjà comptabilisé dans le troc
+                    $billItem->quantity = $item->quantity;
+                    $billItem->total = 0;
+                    $billItem->name = 'Produit échangé: ' . $item->name;
+                    $billItem->is_barter_item = true;
+                    $billItem->save();
+                }
+            }
+
             return $bill;
         });
     }
@@ -363,6 +180,49 @@ class Barter extends Model
         $this->save();
 
         return $this;
+    }
+
+    // Obtenir les statistiques générales des trocs
+    public static function getGlobalStats()
+    {
+        // Total des trocs
+        $totalCount = self::count();
+
+        // Valeur totale échangée
+        $totalGivenValue = self::sum('value_given');
+        $totalReceivedValue = self::sum('value_received');
+
+        // Regroupement par statut
+        $statusCounts = self::selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        // Trocs par mois
+        $bartersByMonth = self::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, COUNT(*) as count')
+            ->groupBy('month')
+            ->orderBy('month', 'desc')
+            ->limit(12)
+            ->get();
+
+        // Produits les plus échangés
+        $topProducts = BarterItem::selectRaw('product_id, COUNT(*) as usage_count, SUM(quantity) as total_quantity')
+            ->whereNotNull('product_id')
+            ->groupBy('product_id')
+            ->orderByDesc('usage_count')
+            ->limit(10)
+            ->with('product')
+            ->get();
+
+        return [
+            'total_count' => $totalCount,
+            'total_given_value' => $totalGivenValue,
+            'total_received_value' => $totalReceivedValue,
+            'additional_payments' => self::where('additional_payment', '>', 0)->sum('additional_payment'),
+            'status_counts' => $statusCounts,
+            'by_month' => $bartersByMonth,
+            'top_products' => $topProducts
+        ];
     }
 
     // Obtenir les statistiques des produits provenant de trocs

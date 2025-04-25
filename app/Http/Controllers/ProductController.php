@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\Barter;
+use App\Models\BarterItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -54,16 +56,16 @@ class ProductController extends Controller
             switch ($request->stock) {
                 case 'available':
                     $query->where('type', '!=', 'service')
-                          ->where('stock_quantity', '>', 0);
+                        ->where('stock_quantity', '>', 0);
                     break;
                 case 'low':
                     $query->where('type', '!=', 'service')
-                          ->whereColumn('stock_quantity', '<=', 'stock_alert_threshold')
-                          ->where('stock_alert_threshold', '>', 0);
+                        ->whereColumn('stock_quantity', '<=', 'stock_alert_threshold')
+                        ->where('stock_alert_threshold', '>', 0);
                     break;
                 case 'out':
                     $query->where('type', '!=', 'service')
-                          ->where('stock_quantity', '<=', 0);
+                        ->where('stock_quantity', '<=', 0);
                     break;
             }
         }
@@ -105,7 +107,7 @@ class ProductController extends Controller
         if (Gate::denies('manage-products') && auth()->user()->role !== 'vendeur') {
             abort(403, 'Action non autorisée.');
         }
-        
+
         return view('products.create');
     }
 
@@ -115,7 +117,7 @@ class ProductController extends Controller
         if (Gate::denies('manage-products') && auth()->user()->role !== 'vendeur') {
             abort(403, 'Action non autorisée.');
         }
-        
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -212,7 +214,18 @@ class ProductController extends Controller
         // Obtenir les trocs associés
         $barterItems = $product->barterItems()->with('barter')->latest()->take(5)->get();
 
-        return view('products.show', compact('product', 'stats', 'monthlyStats', 'priceHistory', 'invoices', 'barterItems'));
+        // Obtenir les statistiques de troc pour ce produit
+        $barterStats = $this->getProductBarterStats($product->id);
+
+        return view('products.show', compact(
+            'product',
+            'stats',
+            'monthlyStats',
+            'priceHistory',
+            'invoices',
+            'barterItems',
+            'barterStats'
+        ));
     }
 
     public function edit(Product $product)
@@ -338,5 +351,42 @@ class ProductController extends Controller
             'product' => $product,
             'message' => 'Produit créé avec succès'
         ]);
+    }
+
+    /**
+     * Récupère les statistiques des trocs pour un produit
+     */
+    private function getProductBarterStats($productId)
+    {
+        // Total des trocs où ce produit est utilisé
+        $totalBarters = BarterItem::where('product_id', $productId)->count();
+
+        // Nombre de trocs où ce produit a été reçu par le client (sorti du stock)
+        $receivedBarters = BarterItem::where('product_id', $productId)
+            ->where('type', 'received')
+            ->count();
+
+        // Nombre de trocs où ce produit a été donné par le client (entré en stock)
+        $givenBarters = BarterItem::where('product_id', $productId)
+            ->where('type', 'given')
+            ->count();
+
+        // Quantité totale échangée
+        $totalQuantity = BarterItem::where('product_id', $productId)->sum('quantity');
+
+        // Valeur totale échangée
+        $totalValue = BarterItem::where('product_id', $productId)
+            ->selectRaw('SUM(value * quantity) as total_value')
+            ->first()
+            ->total_value ?? 0;
+
+        return [
+            'total_barters' => $totalBarters,
+            'received_barters' => $receivedBarters,
+            'given_barters' => $givenBarters,
+            'total_quantity' => $totalQuantity,
+            'total_value' => $totalValue,
+            'average_value' => $totalQuantity > 0 ? $totalValue / $totalQuantity : 0,
+        ];
     }
 }

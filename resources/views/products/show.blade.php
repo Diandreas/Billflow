@@ -34,10 +34,10 @@
                             </div>
 
                             @if($product->description)
-                            <div>
-                                <p class="text-sm text-gray-500">{{ __('Description') }}</p>
-                                <p>{{ $product->description }}</p>
-                            </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">{{ __('Description') }}</p>
+                                    <p>{{ $product->description }}</p>
+                                </div>
                             @endif
 
                             <div class="grid grid-cols-2 gap-4">
@@ -50,18 +50,18 @@
                                     <p>{{ $product->category ? $product->category->name : __('Non catégorisé') }}</p>
                                 </div>
                             </div>
-                            
+
                             @if($product->type === 'physical')
-                            <div class="mt-4 pt-4 border-t border-gray-200">
-                                <p class="text-sm text-gray-500">{{ __('Disponible pour le troc') }}</p>
-                                <div class="flex items-center mt-1">
-                                    @if($product->is_barterable)
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">{{ __('Oui') }}</span>
-                                    @else
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{{ __('Non') }}</span>
-                                    @endif
+                                <div class="mt-4 pt-4 border-t border-gray-200">
+                                    <p class="text-sm text-gray-500">{{ __('Disponible pour le troc') }}</p>
+                                    <div class="flex items-center mt-1">
+                                        @if($product->is_barterable)
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">{{ __('Oui') }}</span>
+                                        @else
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{{ __('Non') }}</span>
+                                        @endif
+                                    </div>
                                 </div>
-                            </div>
                             @endif
                         </div>
 
@@ -119,18 +119,18 @@
                                 </div>
 
                                 @if($product->cost_price)
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p class="text-sm text-gray-500">{{ __('Prix d\'achat') }}</p>
-                                        <p>{{ number_format($product->cost_price, 0, ',', ' ') }} FCFA</p>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p class="text-sm text-gray-500">{{ __('Prix d\'achat') }}</p>
+                                            <p>{{ number_format($product->cost_price, 0, ',', ' ') }} FCFA</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-500">{{ __('Marge') }}</p>
+                                            <p class="{{ $product->getProfitMargin() > 20 ? 'text-green-600' : 'text-amber-600' }}">
+                                                {{ number_format($product->getProfitMargin(), 1) }}%
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p class="text-sm text-gray-500">{{ __('Marge') }}</p>
-                                        <p class="{{ $product->getProfitMargin() > 20 ? 'text-green-600' : 'text-amber-600' }}">
-                                            {{ number_format($product->getProfitMargin(), 1) }}%
-                                        </p>
-                                    </div>
-                                </div>
                                 @endif
 
                                 <div class="mt-2">
@@ -150,6 +150,82 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Section des statistiques de troc -->
+            @if($product->type === 'physical')
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                    <div class="p-5">
+                        <h3 class="font-medium text-gray-900 text-xl mb-4">{{ __('Statistiques des trocs') }}</h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- Nombre total de trocs -->
+                            <div class="bg-purple-50 rounded-lg p-4 border border-purple-100 flex flex-col">
+                                <p class="text-sm text-purple-700">Total des trocs</p>
+                                <p class="text-2xl font-bold text-purple-800">{{ $barterStats['total_barters'] }}</p>
+                                <div class="mt-2 flex items-center text-sm">
+                                <span class="flex items-center text-purple-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414zM9 4a1 1 0 112 0v5.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L9 9.586V4z" />
+                                    </svg>
+                                    {{ __('Échanges') }}
+                                </span>
+                                </div>
+                            </div>
+
+                            <!-- Entrées vs Sorties -->
+                            <div class="bg-blue-50 rounded-lg p-4 border border-blue-100 flex flex-col">
+                                <p class="text-sm text-blue-700">Distribution des échanges</p>
+                                <div class="grid grid-cols-2 gap-2 mt-2">
+                                    <div>
+                                        <p class="text-sm text-blue-600">{{ __('Entrées') }}</p>
+                                        <p class="text-xl font-bold text-blue-800">{{ $barterStats['given_barters'] }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-blue-600">{{ __('Sorties') }}</p>
+                                        <p class="text-xl font-bold text-blue-800">{{ $barterStats['received_barters'] }}</p>
+                                    </div>
+                                </div>
+                                <div class="mt-2 relative pt-1">
+                                    <div class="overflow-hidden h-2 text-xs flex rounded bg-blue-200">
+                                        @if($barterStats['total_barters'] > 0)
+                                            <div style="width:{{ ($barterStats['given_barters'] / $barterStats['total_barters']) * 100 }}%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600"></div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quantité totale échangée -->
+                            <div class="bg-green-50 rounded-lg p-4 border border-green-100 flex flex-col">
+                                <p class="text-sm text-green-700">Quantité échangée</p>
+                                <p class="text-2xl font-bold text-green-800">{{ $barterStats['total_quantity'] }}</p>
+                                <div class="mt-2 text-sm text-green-600">
+                                    <p>{{ __('Valeur moyenne:') }} {{ number_format($barterStats['average_value'], 0, ',', ' ') }} FCFA</p>
+                                </div>
+                            </div>
+
+                            <!-- Valeur totale échangée -->
+                            <div class="bg-amber-50 rounded-lg p-4 border border-amber-100 flex flex-col">
+                                <p class="text-sm text-amber-700">Valeur totale échangée</p>
+                                <p class="text-2xl font-bold text-amber-800">{{ number_format($barterStats['total_value'], 0, ',', ' ') }} FCFA</p>
+                                <div class="mt-2 text-sm text-amber-600">
+                                    <p>{{ __('Représente') }} {{ $product->sales > 0 ? number_format(($barterStats['total_value'] / ($product->sales + $barterStats['total_value'])) * 100, 1) : '0' }}% {{ __('des revenus') }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if($barterStats['total_barters'] > 0)
+                            <div class="mt-4">
+                                <a href="{{ route('barters.index', ['product_id' => $product->id]) }}" class="text-indigo-600 hover:text-indigo-800 text-sm inline-flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                                    </svg>
+                                    {{ __('Voir tous les trocs avec ce produit') }}
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
 
             <!-- Onglets pour alterner entre les deux sections -->
             <div class="mb-6">
@@ -172,63 +248,63 @@
                         <h3 class="font-medium text-gray-900 text-lg">{{ __('Historique des prix utilisés') }}</h3>
 
                         @if(count($priceHistory) > 0)
-                        <div class="flex items-center space-x-2 text-sm">
-                            <span class="text-gray-500">{{ __('Prix par défaut') }}: <span class="font-medium">{{ number_format($product->default_price, 0, ',', ' ') }} FCFA</span></span>
-                        </div>
+                            <div class="flex items-center space-x-2 text-sm">
+                                <span class="text-gray-500">{{ __('Prix par défaut') }}: <span class="font-medium">{{ number_format($product->default_price, 0, ',', ' ') }} FCFA</span></span>
+                            </div>
                         @endif
                     </div>
 
                     @if(count($priceHistory) > 0)
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             @foreach($priceHistory as $price)
-                            @php
-                                $defaultPrice = $product->default_price ?: 1;
-                                $priceDiff = $price->price - $product->default_price;
-                                $pricePercent = ($priceDiff / $defaultPrice) * 100;
-                                $isDefaultPrice = $price->price == $product->default_price;
-                                $usageCount = property_exists($price, 'usage_count') ? $price->usage_count : 1;
-                            @endphp
-                            <div class="price-card border rounded-md {{ $isDefaultPrice ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200' }}" data-price="{{ $price->price }}">
-                                <div class="p-4">
-                                    <div class="flex justify-between">
-                                        <div>
-                                            <div class="text-lg font-bold text-gray-900">
-                                                {{ number_format($price->price, 0, ',', ' ') }} FCFA
-                                            </div>
-                                            <div class="mt-1 flex items-center">
-                                                <span class="text-sm text-gray-500">{{ $usageCount }} facture(s)</span>
+                                @php
+                                    $defaultPrice = $product->default_price ?: 1;
+                                    $priceDiff = $price->price - $product->default_price;
+                                    $pricePercent = ($priceDiff / $defaultPrice) * 100;
+                                    $isDefaultPrice = $price->price == $product->default_price;
+                                    $usageCount = property_exists($price, 'usage_count') ? $price->usage_count : 1;
+                                @endphp
+                                <div class="price-card border rounded-md {{ $isDefaultPrice ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200' }}" data-price="{{ $price->price }}">
+                                    <div class="p-4">
+                                        <div class="flex justify-between">
+                                            <div>
+                                                <div class="text-lg font-bold text-gray-900">
+                                                    {{ number_format($price->price, 0, ',', ' ') }} FCFA
+                                                </div>
+                                                <div class="mt-1 flex items-center">
+                                                    <span class="text-sm text-gray-500">{{ $usageCount }} facture(s)</span>
 
-                                                @if($priceDiff != 0)
-                                                <span class="ml-2 text-sm {{ $priceDiff > 0 ? 'text-green-600' : 'text-red-600' }}">
+                                                    @if($priceDiff != 0)
+                                                        <span class="ml-2 text-sm {{ $priceDiff > 0 ? 'text-green-600' : 'text-red-600' }}">
                                                     {{ $priceDiff > 0 ? '+' : '' }}{{ number_format($pricePercent, 1) }}%
                                                 </span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <div>
+                                                @if($isDefaultPrice)
+                                                    <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-md">Par défaut</span>
                                                 @endif
                                             </div>
                                         </div>
-                                        <div>
-                                            @if($isDefaultPrice)
-                                                <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-md">Par défaut</span>
-                                            @endif
-                                        </div>
+                                    </div>
+                                    <div class="px-4 py-2 bg-gray-50 border-t border-gray-200 flex justify-between">
+                                        <button
+                                            onclick="showInvoicesByPrice('{{ $price->price }}')"
+                                            class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center"
+                                            title="Voir les factures utilisant ce prix">
+                                            <i class="bi bi-filter mr-1"></i> Voir factures
+                                        </button>
+
+                                        @if(!$isDefaultPrice)
+                                            <a href="{{ route('products.edit', $product) }}?set_price={{ $price->price }}"
+                                               class="text-xs text-gray-600 hover:text-gray-800"
+                                               title="Définir comme prix par défaut">
+                                                Définir par défaut
+                                            </a>
+                                        @endif
                                     </div>
                                 </div>
-                                <div class="px-4 py-2 bg-gray-50 border-t border-gray-200 flex justify-between">
-                                    <button
-                                        onclick="showInvoicesByPrice('{{ $price->price }}')"
-                                        class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center"
-                                        title="Voir les factures utilisant ce prix">
-                                        <i class="bi bi-filter mr-1"></i> Voir factures
-                                    </button>
-
-                                    @if(!$isDefaultPrice)
-                                    <a href="{{ route('products.edit', $product) }}?set_price={{ $price->price }}"
-                                        class="text-xs text-gray-600 hover:text-gray-800"
-                                        title="Définir comme prix par défaut">
-                                        Définir par défaut
-                                    </a>
-                                    @endif
-                                </div>
-                            </div>
                             @endforeach
                         </div>
                     @else
@@ -254,17 +330,17 @@
 
                         <div class="flex items-center space-x-3">
                             @if($priceHistory && $priceHistory->count() > 0)
-                            <div class="flex items-center">
-                                <select id="priceFilter" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                                    <option value="">Tous les prix</option>
-                                    @foreach($priceHistory as $price)
-                                        <option value="{{ $price->price }}">
-                                            {{ number_format($price->price, 0, ',', ' ') }} FCFA
-                                            ({{ $usageCount }})
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
+                                <div class="flex items-center">
+                                    <select id="priceFilter" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                        <option value="">Tous les prix</option>
+                                        @foreach($priceHistory as $price)
+                                            <option value="{{ $price->price }}">
+                                                {{ number_format($price->price, 0, ',', ' ') }} FCFA
+                                                ({{ $usageCount }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             @endif
 
                             <div class="flex items-center">
@@ -290,70 +366,70 @@
                         <div class="overflow-x-auto">
                             <table class="min-w-full leading-normal">
                                 <thead>
-                                    <tr>
-                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="reference">
-                                            {{ __('Référence') }} <i class="bi bi-arrow-down-up ml-1"></i>
-                                        </th>
-                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="client">
-                                            {{ __('Client') }} <i class="bi bi-arrow-down-up ml-1"></i>
-                                        </th>
-                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="date">
-                                            {{ __('Date') }} <i class="bi bi-arrow-down-up ml-1"></i>
-                                        </th>
-                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="quantity">
-                                            {{ __('Qté') }} <i class="bi bi-arrow-down-up ml-1"></i>
-                                        </th>
-                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="price">
-                                            {{ __('Prix unitaire') }} <i class="bi bi-arrow-down-up ml-1"></i>
-                                        </th>
-                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="status">
-                                            {{ __('Statut') }} <i class="bi bi-arrow-down-up ml-1"></i>
-                                        </th>
-                                        <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-xs font-semibold text-gray-600 uppercase tracking-wider text-right">
-                                            {{ __('Actions') }}
-                                        </th>
-                                    </tr>
+                                <tr>
+                                    <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="reference">
+                                        {{ __('Référence') }} <i class="bi bi-arrow-down-up ml-1"></i>
+                                    </th>
+                                    <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="client">
+                                        {{ __('Client') }} <i class="bi bi-arrow-down-up ml-1"></i>
+                                    </th>
+                                    <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="date">
+                                        {{ __('Date') }} <i class="bi bi-arrow-down-up ml-1"></i>
+                                    </th>
+                                    <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="quantity">
+                                        {{ __('Qté') }} <i class="bi bi-arrow-down-up ml-1"></i>
+                                    </th>
+                                    <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="price">
+                                        {{ __('Prix unitaire') }} <i class="bi bi-arrow-down-up ml-1"></i>
+                                    </th>
+                                    <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" data-sort="status">
+                                        {{ __('Statut') }} <i class="bi bi-arrow-down-up ml-1"></i>
+                                    </th>
+                                    <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-50 text-xs font-semibold text-gray-600 uppercase tracking-wider text-right">
+                                        {{ __('Actions') }}
+                                    </th>
+                                </tr>
                                 </thead>
                                 <tbody id="invoicesTableBody">
-                                    @foreach($invoices as $invoice)
-                                        <tr class="invoice-row hover:bg-gray-50"
-                                            data-reference="{{ strtolower($invoice->reference) }}"
-                                            data-client="{{ strtolower($invoice->client->name) }}"
-                                            data-date="{{ $invoice->date->format('d/m/Y') }}"
-                                            data-date-sort="{{ $invoice->date->format('Y-m-d') }}"
-                                            data-price="{{ $invoice->pivot->price }}"
-                                            data-quantity="{{ $invoice->pivot->quantity }}"
-                                            data-total="{{ $invoice->pivot->total }}"
-                                            data-status="{{ strtolower($invoice->status) }}">
-                                            <td class="px-4 py-3 border-b border-gray-200">
-                                                <a href="{{ route('bills.show', $invoice) }}" class="text-indigo-600 hover:text-indigo-900 font-medium">{{ $invoice->reference }}</a>
-                                            </td>
-                                            <td class="px-4 py-3 border-b border-gray-200 text-sm">
-                                                {{ $invoice->client->name }}
-                                            </td>
-                                            <td class="px-4 py-3 border-b border-gray-200 text-sm">
-                                                {{ $invoice->date->format('d/m/Y') }}
-                                            </td>
-                                            <td class="px-4 py-3 border-b border-gray-200 text-sm">
-                                                {{ $invoice->pivot->quantity }}
-                                            </td>
-                                            <td class="px-4 py-3 border-b border-gray-200 text-sm font-medium">
-                                                {{ number_format($invoice->pivot->price, 0, ',', ' ') }} FCFA
-                                            </td>
-                                            <td class="px-4 py-3 border-b border-gray-200 text-sm">
+                                @foreach($invoices as $invoice)
+                                    <tr class="invoice-row hover:bg-gray-50"
+                                        data-reference="{{ strtolower($invoice->reference) }}"
+                                        data-client="{{ strtolower($invoice->client->name) }}"
+                                        data-date="{{ $invoice->date->format('d/m/Y') }}"
+                                        data-date-sort="{{ $invoice->date->format('Y-m-d') }}"
+                                        data-price="{{ $invoice->pivot->price }}"
+                                        data-quantity="{{ $invoice->pivot->quantity }}"
+                                        data-total="{{ $invoice->pivot->total }}"
+                                        data-status="{{ strtolower($invoice->status) }}">
+                                        <td class="px-4 py-3 border-b border-gray-200">
+                                            <a href="{{ route('bills.show', $invoice) }}" class="text-indigo-600 hover:text-indigo-900 font-medium">{{ $invoice->reference }}</a>
+                                        </td>
+                                        <td class="px-4 py-3 border-b border-gray-200 text-sm">
+                                            {{ $invoice->client->name }}
+                                        </td>
+                                        <td class="px-4 py-3 border-b border-gray-200 text-sm">
+                                            {{ $invoice->date->format('d/m/Y') }}
+                                        </td>
+                                        <td class="px-4 py-3 border-b border-gray-200 text-sm">
+                                            {{ $invoice->pivot->quantity }}
+                                        </td>
+                                        <td class="px-4 py-3 border-b border-gray-200 text-sm font-medium">
+                                            {{ number_format($invoice->pivot->price, 0, ',', ' ') }} FCFA
+                                        </td>
+                                        <td class="px-4 py-3 border-b border-gray-200 text-sm">
                                                 <span class="px-2 py-1 text-xs rounded-full {{
                                                     $invoice->status == 'paid' ? 'bg-green-100 text-green-800' :
                                                     ($invoice->status == 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                                     'bg-red-100 text-red-800')
                                                 }}">{{ $invoice->status }}</span>
-                                            </td>
-                                            <td class="px-4 py-3 border-b border-gray-200 text-sm text-right">
-                                                <a href="{{ route('bills.show', $invoice) }}" class="text-indigo-600 hover:text-indigo-900">
-                                                    {{ __('Voir') }}
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    @endforeach
+                                        </td>
+                                        <td class="px-4 py-3 border-b border-gray-200 text-sm text-right">
+                                            <a href="{{ route('bills.show', $invoice) }}" class="text-indigo-600 hover:text-indigo-900">
+                                                {{ __('Voir') }}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
                                 </tbody>
                             </table>
                         </div>
@@ -383,13 +459,13 @@
 
             <!-- Section des trocs associés -->
             @if($product->type === 'physical' && isset($barterItems) && $barterItems->count() > 0)
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-5">
-                    <h3 class="font-medium text-gray-900 text-xl mb-4">{{ __('Trocs associés') }}</h3>
-                    
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                    <div class="p-5">
+                        <h3 class="font-medium text-gray-900 text-xl mb-4">{{ __('Trocs associés') }}</h3>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Référence') }}</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Date') }}</th>
@@ -399,53 +475,53 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Statut') }}</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Actions') }}</th>
                                 </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach($barterItems as $item)
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        <a href="{{ route('barters.show', $item->barter) }}" class="text-indigo-600 hover:text-indigo-900">
-                                            {{ $item->barter->reference }}
-                                        </a>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {{ $item->barter->created_at->format('d/m/Y') }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {{ $item->barter->client->name }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {{ $item->quantity }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        @if($item->type === 'given')
-                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">{{ __('Donné par client') }}</span>
-                                        @else
-                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">{{ __('Reçu par client') }}</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        @php
-                                            $statusClass = [
-                                                'pending' => 'bg-yellow-100 text-yellow-800',
-                                                'completed' => 'bg-green-100 text-green-800',
-                                                'cancelled' => 'bg-red-100 text-red-800',
-                                            ][$item->barter->status] ?? 'bg-gray-100 text-gray-800';
-                                        @endphp
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full {{ $statusClass }}">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            <a href="{{ route('barters.show', $item->barter) }}" class="text-indigo-600 hover:text-indigo-900">
+                                                {{ $item->barter->reference }}
+                                            </a>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {{ $item->barter->created_at->format('d/m/Y') }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {{ $item->barter->client->name }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {{ $item->quantity }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            @if($item->type === 'given')
+                                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">{{ __('Donné par client') }}</span>
+                                            @else
+                                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">{{ __('Reçu par client') }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            @php
+                                                $statusClass = [
+                                                    'pending' => 'bg-yellow-100 text-yellow-800',
+                                                    'completed' => 'bg-green-100 text-green-800',
+                                                    'cancelled' => 'bg-red-100 text-red-800',
+                                                ][$item->barter->status] ?? 'bg-gray-100 text-gray-800';
+                                            @endphp
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full {{ $statusClass }}">
                                             {{ __($item->barter->status) }}
                                         </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <a href="{{ route('barters.show', $item->barter) }}" class="text-indigo-600 hover:text-indigo-900">{{ __('Voir') }}</a>
-                                    </td>
-                                </tr>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <a href="{{ route('barters.show', $item->barter) }}" class="text-indigo-600 hover:text-indigo-900">{{ __('Voir') }}</a>
+                                        </td>
+                                    </tr>
                                 @endforeach
-                            </tbody>
-                        </table>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
             @endif
         </div>
     </div>

@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class BarterItem extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'barter_id',
         'product_id',
@@ -13,16 +16,16 @@ class BarterItem extends Model
         'description',
         'type',
         'value',
-        'quantity'
+        'quantity',
     ];
 
     protected $casts = [
-        'value' => 'decimal:2',
-        'quantity' => 'integer'
+        'value' => 'float',
+        'quantity' => 'integer',
     ];
 
     /**
-     * Relation avec le troc auquel cet article est lié
+     * Relation avec le troc
      */
     public function barter()
     {
@@ -30,7 +33,7 @@ class BarterItem extends Model
     }
 
     /**
-     * Relation avec le produit (si applicable)
+     * Relation avec le produit (si associé)
      */
     public function product()
     {
@@ -38,7 +41,7 @@ class BarterItem extends Model
     }
 
     /**
-     * Relation avec les images de cet article
+     * Relation avec les images de l'article
      */
     public function images()
     {
@@ -46,47 +49,59 @@ class BarterItem extends Model
     }
 
     /**
-     * Calcule la valeur totale de l'article
+     * Vérifie si cet article est un article donné par le client
      */
-    public function getTotalValueAttribute()
-    {
-        return $this->value * $this->quantity;
-    }
-
-    /**
-     * Détermine si cet article est donné par le client
-     */
-    public function isGiven()
+    public function isGivenItem()
     {
         return $this->type === 'given';
     }
 
     /**
-     * Détermine si cet article est reçu par le client
+     * Vérifie si cet article est un article reçu par le client
      */
-    public function isReceived()
+    public function isReceivedItem()
     {
         return $this->type === 'received';
     }
 
     /**
-     * Retourne l'URL de la première image ou une image par défaut
+     * Calcule la valeur totale de cet article
      */
-    public function getMainImageUrlAttribute()
+    public function getTotalValue()
     {
-        $firstImage = $this->images()->orderBy('order')->first();
-        
-        if ($firstImage) {
-            return $firstImage->url;
-        }
-        
-        // Si c'est un produit, essayer d'utiliser son image
-        if ($this->product_id) {
-            // Cette partie dépend de comment vous gérez les images de produits
-            // Adaptez selon votre logique d'images de produits
-            return asset('images/products/default.png');
-        }
-        
-        return asset('images/no-image.png');
+        return $this->value * $this->quantity;
     }
-} 
+
+    /**
+     * Obtient les statistiques de tous les articles de troc
+     */
+    public static function getGlobalStats()
+    {
+        // Nombre total d'articles
+        $totalItems = self::count();
+
+        // Valeur totale des articles
+        $totalValue = self::selectRaw('SUM(value * quantity) as total_value')->first()->total_value;
+
+        // Répartition par type
+        $typeDistribution = self::selectRaw('type, count(*) as count, SUM(value * quantity) as total_value')
+            ->groupBy('type')
+            ->get()
+            ->keyBy('type')
+            ->toArray();
+
+        // Articles avec produits associés
+        $withProducts = self::whereNotNull('product_id')->count();
+
+        // Articles sans produits associés
+        $withoutProducts = self::whereNull('product_id')->count();
+
+        return [
+            'total_items' => $totalItems,
+            'total_value' => $totalValue,
+            'type_distribution' => $typeDistribution,
+            'with_products' => $withProducts,
+            'without_products' => $withoutProducts,
+        ];
+    }
+}
