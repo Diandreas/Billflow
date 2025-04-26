@@ -25,9 +25,32 @@ class BarterController extends Controller
     /**
      * Affiche la liste des trocs
      */
+    /**
+     * Affiche la liste des trocs
+     */
     public function index(Request $request)
     {
         $query = Barter::with(['client', 'seller', 'shop', 'items', 'bill']);
+
+        // Recherche textuelle
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('reference', 'like', "%{$search}%")
+                    ->orWhereHas('client', function($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('seller', function($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('shop', function($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('items', function($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
 
         // Filtres
         if ($request->has('client_id')) {
@@ -79,7 +102,6 @@ class BarterController extends Controller
 
         return view('barters.index', compact('barters', 'clients', 'shops', 'sellers', 'product'));
     }
-
     /**
      * Affiche le formulaire pour créer un nouveau troc
      */

@@ -32,86 +32,115 @@ class BillController extends Controller
             // Le vendeur ne voit que les factures de sa boutique actuelle
             $shopIds = Auth::user()->shops->pluck('id')->toArray();
             $query->whereIn('shop_id', $shopIds);
-            
+
             // Si l'utilisateur est associé à plusieurs boutiques et qu'une boutique spécifique est sélectionnée
-            if ($request->has('shop_id') && in_array($request->input('shop_id'), $shopIds)) {
+            if ($request->filled('shop_id') && in_array($request->input('shop_id'), $shopIds)) {
                 $query->where('shop_id', $request->input('shop_id'));
             }
         } elseif (Auth::user()->role === 'manager') {
             // Le manager voit les factures des boutiques qu'il gère
             $shopIds = Auth::user()->shops->pluck('id')->toArray();
             $query->whereIn('shop_id', $shopIds);
-            
+
             // Si une boutique spécifique est sélectionnée
-            if ($request->has('shop_id') && in_array($request->input('shop_id'), $shopIds)) {
+            if ($request->filled('shop_id') && in_array($request->input('shop_id'), $shopIds)) {
                 $query->where('shop_id', $request->input('shop_id'));
             }
         } else {
             // L'admin voit tout
-            if ($request->has('shop_id')) {
+            if ($request->filled('shop_id')) {
                 $query->where('shop_id', $request->input('shop_id'));
             }
         }
 
         // Filtrer par vendeur si demandé
-        if ($request->has('seller_id')) {
+        if ($request->filled('seller_id')) {
             $query->where('seller_id', $request->input('seller_id'));
         }
 
         // Filtrer par client si demandé
-        if ($request->has('client_id')) {
+        if ($request->filled('client_id')) {
             $query->where('client_id', $request->input('client_id'));
         }
 
         // Filtrer par recherche textuelle
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function($q) use ($search) {
                 $q->where('reference', 'like', "%{$search}%")
-                  ->orWhereHas('client', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhereHas('phones', function($phoneQuery) use ($search) {
-                            $phoneQuery->where('number', 'like', "%{$search}%");
-                        });
-                  })
-                  ->orWhereHas('shop', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('seller', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('client', function($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhereHas('phones', function($phoneQuery) use ($search) {
+                                $phoneQuery->where('number', 'like', "%{$search}%");
+                            });
+                    })
+                    ->orWhereHas('shop', function($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('seller', function($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
+        // Filtrer par statut
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        // Filtrer par période
+        if ($request->filled('period')) {
+            $period = $request->input('period');
+
+            switch ($period) {
+                case 'today':
+                    $query->whereDate('date', now()->toDateString());
+                    break;
+                case 'week':
+                    $query->whereBetween('date', [now()->startOfWeek()->toDateString(), now()->endOfWeek()->toDateString()]);
+                    break;
+                case 'month':
+                    $query->whereBetween('date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()]);
+                    break;
+                case 'quarter':
+                    $query->whereBetween('date', [now()->startOfQuarter()->toDateString(), now()->endOfQuarter()->toDateString()]);
+                    break;
+                case 'year':
+                    $query->whereBetween('date', [now()->startOfYear()->toDateString(), now()->endOfYear()->toDateString()]);
+                    break;
+                // La période personnalisée est gérée par les champs date_from et date_to
+            }
+        }
+
+        // Filtrer par date spécifique
+        if ($request->filled('date_from')) {
+            $query->whereDate('date', '>=', $request->input('date_from'));
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('date', '<=', $request->input('date_to'));
+        }
+
         // Filtrer par prix spécifique
-        if ($request->has('unit_price')) {
+        if ($request->filled('unit_price')) {
             $query->whereHas('items', function($q) use ($request) {
                 $q->where('unit_price', $request->input('unit_price'));
             });
         }
 
-        // Filtrer par date
-        if ($request->has('date_from')) {
-            $query->whereDate('date', '>=', $request->input('date_from'));
-        }
-        if ($request->has('date_to')) {
-            $query->whereDate('date', '<=', $request->input('date_to'));
-        }
-
         // Filtrer par factures nécessitant une approbation
-        if ($request->has('approval') && $request->input('approval') === 'needed') {
+        if ($request->filled('approval') && $request->input('approval') === 'needed') {
             $query->where('needs_approval', true)
-                  ->where('approved', false);
+                ->where('approved', false);
         }
 
-        $bills = $query->orderBy('date', 'desc')->paginate(15);
+        $bills = $query->orderBy('date', 'desc')->paginate(15)->withQueryString();
 
         // Récupérer les boutiques selon le rôle de l'utilisateur
-        $shops = Auth::user()->role === 'admin' 
-            ? Shop::all() 
+        $shops = Auth::user()->role === 'admin'
+            ? Shop::all()
             : Auth::user()->shops;
-            
+
         // Récupérer les vendeurs selon le rôle et les boutiques
         if (Auth::user()->role === 'admin') {
             $sellers = User::where('role', 'vendeur')->get();
@@ -124,7 +153,7 @@ class BillController extends Controller
             // Vendeur: seulement lui-même
             $sellers = User::where('id', Auth::id())->get();
         }
-        
+
         // Récupérer les clients selon le rôle et les boutiques
         if (Auth::user()->role === 'admin') {
             $clients = Client::all();
@@ -143,7 +172,6 @@ class BillController extends Controller
 
         return view('bills.index', compact('bills', 'shops', 'sellers', 'clients', 'uniquePrices'));
     }
-
     public function create()
     {
         // Vérifier les autorisations en utilisant Gate
@@ -153,7 +181,7 @@ class BillController extends Controller
 
         // Récupérer l'utilisateur connecté
         $user = Auth::user();
-        
+
         // Déterminer la boutique selon le rôle de l'utilisateur
         if ($user->role === 'admin') {
             // Pour admin, on récupère toutes les boutiques
@@ -174,7 +202,7 @@ class BillController extends Controller
             $shops = $user->shops;
             $defaultShopId = $shops->first()->id;
         }
-        
+
         // Déterminer le vendeur
         if ($user->role === 'vendeur') {
             // Si l'utilisateur est un vendeur, c'est automatiquement lui le vendeur
@@ -192,7 +220,7 @@ class BillController extends Controller
             $sellers = User::where('role', 'vendeur')->get();
             $defaultSellerId = null;
         }
-        
+
         // Récupérer les clients selon le rôle
         if ($user->role === 'admin') {
             $clients = Client::all();
@@ -215,7 +243,7 @@ class BillController extends Controller
                       ->where('stock_quantity', '>', 0);
             })->orderBy('name')->get();
         }
-        
+
         // Obtenir les vendeurs par boutique
         $shopVendors = [];
         foreach ($shops as $shop) {
@@ -289,12 +317,12 @@ class BillController extends Controller
         // Ajouter les produits à la facture
         foreach ($validated['products'] as $product) {
             $productItem = Product::find($product['id']);
-            
+
             // Vérifier le stock uniquement pour les produits physiques
             if ($productItem->type === 'physical' && $productItem->stock_quantity < $product['quantity']) {
                 return back()->with('error', "Stock insuffisant pour {$productItem->name}");
             }
-            
+
             // Ajouter le produit à la facture
             BillItem::create([
                 'bill_id' => $bill->id,
@@ -304,12 +332,12 @@ class BillController extends Controller
                 'price' => $product['price'],
                 'total' => $product['price'] * $product['quantity'],
             ]);
-            
+
             // Mettre à jour le stock uniquement pour les produits physiques
             if ($productItem->type === 'physical') {
                 $productItem->stock_quantity -= $product['quantity'];
                 $productItem->save();
-                
+
                 // Créer un mouvement d'inventaire
                 $productItem->inventoryMovements()->create([
                     'type' => 'vente',
@@ -329,7 +357,7 @@ class BillController extends Controller
         $seller = User::find($validated['seller_id']);
         if ($seller && $seller->commission_rate > 0) {
             $commissionAmount = $totalWithTax * ($seller->commission_rate / 100);
-            
+
             Commission::create([
                 'user_id' => $seller->id,
                 'bill_id' => $bill->id,
@@ -390,7 +418,7 @@ class BillController extends Controller
         $oldProducts = $bill->products->mapWithKeys(function ($product) {
             return [$product->id => $product->pivot->quantity];
         })->toArray();
-        
+
         // Mettre à jour la facture
         $bill->update([
             'client_id' => $validated['client_id'],
@@ -403,7 +431,7 @@ class BillController extends Controller
 
         // Mettre à jour les produits
         $bill->products()->detach();
-        
+
         $products = $request->input('products', []);
         $quantities = $request->input('quantities', []);
         $prices = $request->input('prices', []);
@@ -413,22 +441,22 @@ class BillController extends Controller
                 $productId = $products[$i];
                 $quantity = $quantities[$i];
                 $price = $prices[$i];
-                
+
                 $bill->products()->attach($productId, [
                     'quantity' => $quantity,
                     'unit_price' => $price,
                     'total' => $quantity * $price
                 ]);
-                
+
                 // Gestion du stock pour les produits modifiés
                 $product = Product::find($productId);
                 if ($product && $product->type === 'physical') {
                     $oldQuantity = $oldProducts[$productId] ?? 0;
-                    
+
                     // Si le produit était déjà dans la facture, on ajuste la différence
                     if (array_key_exists($productId, $oldProducts)) {
                         $quantityDiff = $quantity - $oldQuantity;
-                        
+
                         if ($quantityDiff > 0) {
                             // Retirer la différence supplémentaire du stock
                             InventoryMovement::createExit(
@@ -449,7 +477,7 @@ class BillController extends Controller
                                 'Ajustement après modification de facture'
                             );
                         }
-                        
+
                         // Supprimer de la liste des anciens produits
                         unset($oldProducts[$productId]);
                     } else {
@@ -466,7 +494,7 @@ class BillController extends Controller
                 }
             }
         }
-        
+
         // Remettre en stock les produits qui ont été supprimés de la facture
         foreach ($oldProducts as $productId => $quantity) {
             $product = Product::find($productId);
@@ -480,7 +508,7 @@ class BillController extends Controller
                 );
             }
         }
-        
+
         // Recalculer les totaux
         $bill->calculateTotals();
 
@@ -508,10 +536,10 @@ class BillController extends Controller
 
         $oldStatus = $bill->status;
         $newStatus = $request->status;
-        
+
         // Mettre à jour le statut
         $bill->update(['status' => $newStatus]);
-        
+
         // Messages personnalisés selon le changement de statut
         if ($oldStatus !== $newStatus) {
             if ($newStatus === 'paid') {
@@ -524,11 +552,11 @@ class BillController extends Controller
         } else {
             $message = 'Le statut de la facture a été mis à jour.';
         }
-        
+
         if ($request->ajax()) {
             return response()->json(['success' => true, 'message' => $message]);
         }
-        
+
         return redirect()
             ->route('bills.show', $bill)
             ->with('success', $message);
@@ -539,19 +567,19 @@ class BillController extends Controller
         // Incrémenter le compteur de réimpressions
         $bill->reprint_count = ($bill->reprint_count ?? 0) + 1;
         $bill->save();
-        
+
         // Récupérer les paramètres de l'entreprise
         $settings = Setting::first() ?? new \stdClass();
-        
+
         // Charger les relations nécessaires
         $bill->load(['client', 'items.product', 'shop', 'seller']);
-        
+
         // Conversion du chemin Storage en chemin réel pour l'accès du PDF
         if ($settings && $settings->logo_path) {
             $logoRealPath = storage_path('app/public/' . $settings->logo_path);
             $settings->logo_real_path = $logoRealPath;
         }
-        
+
         // Générer le QR code
         try {
             $qrCode = $this->generateQrCode($bill);
@@ -562,28 +590,28 @@ class BillController extends Controller
             Log::error('Erreur lors de la génération du QR code pour PDF: ' . $e->getMessage());
             $qrCode = null;
         }
-        
+
         $pdf = PDF::loadView('bills.pdf', compact('bill', 'settings', 'qrCode'));
-        
+
         // Configurer dompdf pour permettre les images base64 et SVG
         $dompdf = $pdf->getDomPDF();
         $options = $dompdf->getOptions();
         $options->set('isRemoteEnabled', true);
         $options->set('isHtml5ParserEnabled', true);
         $dompdf->setOptions($options);
-        
+
         return $pdf->download('facture_' . $bill->reference . '.pdf');
     }
 
     /**
      * Exporter les factures au format CSV
-     * 
+     *
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function export()
     {
         $bills = Bill::with(['client', 'products'])->get();
-        
+
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename=factures-export.csv',
@@ -591,10 +619,10 @@ class BillController extends Controller
             'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             'Expires' => '0'
         ];
-        
+
         $callback = function() use ($bills) {
             $file = fopen('php://output', 'w');
-            
+
             // En-têtes CSV
             fputcsv($file, [
                 'ID',
@@ -610,13 +638,13 @@ class BillController extends Controller
                 'Notes',
                 'Date de création'
             ]);
-            
+
             // Données
             foreach ($bills as $bill) {
                 $products = $bill->products->map(function($product) {
                     return $product->name . ' (' . $product->pivot->quantity . ' x ' . number_format($product->pivot->price, 2) . ')';
                 })->implode('; ');
-                
+
                 fputcsv($file, [
                     $bill->id,
                     $bill->reference,
@@ -632,10 +660,10 @@ class BillController extends Controller
                     $bill->created_at->format('Y-m-d H:i:s')
                 ]);
             }
-            
+
             fclose($file);
         };
-        
+
         return response()->stream($callback, 200, $headers);
     }
 
@@ -647,16 +675,16 @@ class BillController extends Controller
         // Incrémenter le compteur de réimpressions
         $bill->reprint_count = ($bill->reprint_count ?? 0) + 1;
         $bill->save();
-        
+
         // Charger les relations nécessaires
         $bill->load(['client', 'items.product', 'shop', 'seller']);
-        
+
         // Récupérer les paramètres de l'entreprise
         $settings = Setting::first() ?? new \stdClass();
         $company = $settings->company_name ?? config('app.name');
         $address = $settings->address ?? '';
         $phone = $settings->phone ?? '';
-        
+
         // Générer le QR code
         try {
             $qrCode = $this->generateQrCode($bill);
@@ -667,10 +695,10 @@ class BillController extends Controller
             Log::error('Erreur lors de la génération du QR code pour impression: ' . $e->getMessage());
             $qrCode = null;
         }
-        
+
         // Logo
         $logo = $settings->logo_path ? asset('storage/' . $settings->logo_path) : null;
-        
+
         return view('bills.print', compact('bill', 'company', 'address', 'phone', 'qrCode', 'logo'));
     }
 
@@ -683,26 +711,26 @@ class BillController extends Controller
         if (!Gate::allows('edit-bill', $bill)) {
             abort(403, 'Action non autorisée.');
         }
-        
+
         $validated = $request->validate([
             'signature' => 'required|string',
         ]);
-        
+
         // Décoder l'image base64
         $image = $request->get('signature');
         $image = str_replace('data:image/png;base64,', '', $image);
         $image = str_replace(' ', '+', $image);
-        
+
         // Générer un nom de fichier unique
         $filename = 'signatures/' . uniqid() . '.png';
-        
+
         // Sauvegarder l'image
         Storage::disk('public')->put($filename, base64_decode($image));
-        
+
         // Mettre à jour la facture
         $bill->signature_path = $filename;
         $bill->save();
-        
+
         return response()->json(['success' => true]);
     }
 
@@ -714,33 +742,33 @@ class BillController extends Controller
         $validated = $request->validate([
             'data' => 'required|json',
         ]);
-        
+
         $data = json_decode($request->data, true);
-        
+
         if (!isset($data['reference'])) {
             return response()->json([
                 'valid' => false,
                 'message' => 'QR code invalide ou données manquantes'
             ]);
         }
-        
+
         $bill = Bill::where('reference', $data['reference'])->first();
-        
+
         if (!$bill) {
             return response()->json([
                 'valid' => false,
                 'message' => 'Facture non trouvée'
             ]);
         }
-        
+
         // Vérifier si les données du QR code correspondent aux données de la facture
-        $isValid = 
+        $isValid =
             $data['date'] == $bill->date->format('Y-m-d H:i:s') &&
             $data['total'] == $bill->total &&
             $data['client'] == $bill->client->name &&
             $data['shop'] == $bill->shop->name &&
             $data['seller'] == $bill->seller->name;
-        
+
         return response()->json([
             'valid' => $isValid,
             'message' => $isValid ? 'Facture authentique' : 'Donnée de facture non concordantes',
@@ -773,12 +801,12 @@ class BillController extends Controller
 
         $bills = $query->orderBy('date', 'desc')->paginate(15);
 
-        $shops = Gate::allows('admin') 
-            ? Shop::all() 
+        $shops = Gate::allows('admin')
+            ? Shop::all()
             : Auth::user()->shops;
-            
+
         $sellers = User::where('role', 'vendeur')->get();
-        
+
         // Si l'utilisateur est un vendeur, ne montrer que les clients de sa boutique
         if (Auth::user()->role === 'vendeur') {
             $shopIds = Auth::user()->shops->pluck('id')->toArray();
@@ -841,7 +869,7 @@ class BillController extends Controller
             if (!$bill->relationLoaded('client') || !$bill->relationLoaded('shop') || !$bill->relationLoaded('seller')) {
                 $bill->load(['client', 'shop', 'seller']);
             }
-            
+
             // Générer les données pour le QR code
             $data = json_encode([
                 'reference' => $bill->reference,
@@ -851,7 +879,7 @@ class BillController extends Controller
                 'shop' => $bill->shop->name,
                 'seller' => $bill->seller->name
             ]);
-            
+
             // Options pour le QR code
             $options = new QROptions([
                 'outputType' => QRCode::OUTPUT_IMAGE_PNG,
@@ -859,14 +887,14 @@ class BillController extends Controller
                 'scale' => 5,
                 'imageBase64' => true,
             ]);
-            
+
             // Générer le QR code
             $qrcode = (new QRCode($options))->render($data);
-            
+
             // Le résultat est déjà en base64 (avec le préfixe data:image/png;base64,)
             // On enlève le préfixe pour stocker seulement le code base64
             $base64 = str_replace('data:image/png;base64,', '', $qrcode);
-            
+
             return $base64;
         } catch (\Exception $e) {
             // Journaliser l'erreur mais ne pas interrompre la génération du PDF
