@@ -356,6 +356,9 @@
             @include('inventory.partials.delete-modal')
         </div>
     </div>
+</x-app-layout>
+
+@push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const itemsPerPage = 10;
@@ -564,8 +567,4 @@
             updateSortIcons();
         });
     </script>
-</x-app-layout>
-
-@push('scripts')
-
 @endpush

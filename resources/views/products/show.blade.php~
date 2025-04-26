@@ -152,7 +152,7 @@
             </div>
 
             <!-- Section des statistiques de troc - uniquement si produit physique ET en stock -->
-            @if($product->type === 'physical' && $product->is_barterable))
+            @if($product->type === 'physical' && !$product->is_barterable))
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">
                     <div class="p-5">
                         <h3 class="font-medium text-gray-900 dark:text-gray-100 text-xl mb-4">{{ __('Statistiques des trocs') }}</h3>
