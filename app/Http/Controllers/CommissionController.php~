@@ -38,6 +38,8 @@ class CommissionController extends Controller
         // Initialiser la requête de base avec les relations nécessaires (eager loading)
         $query = Commission::with([
             'user:id,name,email',
+            'shop:id,name,shop_id',
+            'bill:id,reference'
         ]);
 
         // Appliquer les filtres

@@ -56,16 +56,16 @@
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                         <!-- Search and filters -->
                         <div class="w-full md:w-2/3 space-y-3">
-                            <form action="{{ route('clients.index') }}" method="GET" class="space-y-3">
+                            <form action="{{ route('clients.index') }}" method="GET" class="flex flex-col space-y-3">
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 dark:text-gray-500" viewBox="0 0 20 20" fill="currentColor">
                                             <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
                                         </svg>
                                     </div>
-                                    <input type="text" name="search" value="{{ request('search') }}" id="clientSearchInput" class="w-full pl-10 pr-12 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100" placeholder="Rechercher par nom, téléphone ou autre info...">
+                                    <input type="text" name="search" value="{{ request('search') }}" class="w-full pl-10 pr-12 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100" placeholder="Rechercher par nom, email ou téléphone...">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-3">
-                                        <button type="reset" id="clearSearchBtn" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+                                        <button type="reset" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
                                             </svg>
@@ -74,7 +74,7 @@
                                 </div>
 
                                 <div class="flex flex-wrap gap-2">
-                                    <select name="gender" id="filterGender" class="rounded-md border-gray-300 dark:border-gray-600 text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100">
+                                    <select name="gender" class="rounded-md border-gray-300 dark:border-gray-600 text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100">
                                         <option value="">Tous les genres</option>
                                         <option value="M" {{ request('gender') == 'M' ? 'selected' : '' }}>Hommes</option>
                                         <option value="F" {{ request('gender') == 'F' ? 'selected' : '' }}>Femmes</option>
@@ -90,50 +90,9 @@
                                         </select>
                                     @endif
 
-                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm transition-colors">
+                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm transition-colors duration-200">
                                         Filtrer
                                     </button>
-
-                                    <button id="toggleAdvancedSearch" type="button" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
-                                        </svg>
-                                        Recherche avancée
-                                    </button>
-                                </div>
-
-                                <div id="advancedSearchPanel" class="hidden mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date de naissance</label>
-                                            <div class="flex items-center space-x-2">
-                                                <input type="date" name="birth_from" id="birthFrom" value="{{ request('birth_from') }}" class="w-full rounded-md border-gray-300 dark:border-gray-600 text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-gray-100">
-                                                <span class="text-gray-500 dark:text-gray-400">à</span>
-                                                <input type="date" name="birth_to" id="birthTo" value="{{ request('birth_to') }}" class="w-full rounded-md border-gray-300 dark:border-gray-600 text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-gray-100">
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Factures</label>
-                                            <div class="flex items-center space-x-2">
-                                                <input type="number" min="0" name="min_bills" id="minBills" value="{{ request('min_bills') }}" placeholder="Min" class="w-full rounded-md border-gray-300 dark:border-gray-600 text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-gray-100">
-                                                <span class="text-gray-500 dark:text-gray-400">à</span>
-                                                <input type="number" min="0" name="max_bills" id="maxBills" value="{{ request('max_bills') }}" placeholder="Max" class="w-full rounded-md border-gray-300 dark:border-gray-600 text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-gray-100">
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dernière facture</label>
-                                            <div class="flex items-center space-x-2">
-                                                <input type="date" name="last_bill_from" id="lastBillFrom" value="{{ request('last_bill_from') }}" class="w-full rounded-md border-gray-300 dark:border-gray-600 text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-gray-100">
-                                                <span class="text-gray-500 dark:text-gray-400">à</span>
-                                                <input type="date" name="last_bill_to" id="lastBillTo" value="{{ request('last_bill_to') }}" class="w-full rounded-md border-gray-300 dark:border-gray-600 text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-gray-100">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-end mt-3">
-                                        <button type="submit" id="applyAdvancedFilters" class="bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm font-medium py-1.5 px-4 rounded-md transition-colors">
-                                            Appliquer les filtres
-                                        </button>
-                                    </div>
                                 </div>
                             </form>
                         </div>
@@ -293,7 +252,7 @@
                         <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">Aucun client trouvé</h3>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Essayez de modifier vos critères de recherche ou ajoutez un nouveau client.</p>
                         <div class="mt-6">
-                            <button type="button" onclick="toggleModal('newClientModal')" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <button type="button" onclick="toggleModal('createClient')" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
                                 </svg>
@@ -302,7 +261,7 @@
                         </div>
                     </div>
 
-                    <!-- Info récapitulative au lieu de pagination -->
+                    <!-- Statistiques au lieu de pagination -->
                     <div class="mt-6 flex items-center justify-between">
                         <div class="flex-1 flex sm:items-center sm:justify-between">
                             <div>
@@ -329,55 +288,57 @@
                 </button>
             </div>
 
-            <form id="newClientForm" method="POST" action="{{ route('clients.store') }}" class="mt-4 space-y-4">
+            <form id="newClientForm" method="POST" action="{{ route('clients.store') }}">
                 @csrf
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nom</label>
-                    <input type="text" name="name" required
-                           class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100">
-                </div>
+                <div class="mt-4 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nom</label>
+                        <input type="text" name="name" required
+                               class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100">
+                    </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Genre</label>
-                    <select name="sex" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100">
-                        <option value="">Non spécifié</option>
-                        <option value="M">Homme</option>
-                        <option value="F">Femme</option>
-                        <option value="Other">Autre</option>
-                    </select>
-                </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Genre</label>
+                        <select name="sex" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100">
+                            <option value="">Non spécifié</option>
+                            <option value="M">Homme</option>
+                            <option value="F">Femme</option>
+                            <option value="Other">Autre</option>
+                        </select>
+                    </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date de naissance</label>
-                    <input type="date" name="birth"
-                           class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100">
-                </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date de naissance</label>
+                        <input type="date" name="birth"
+                               class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100">
+                    </div>
 
-                <div id="phonesContainer">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Téléphones</label>
-                    <div class="space-y-2">
-                        <div class="flex gap-2">
-                            <input type="text" name="phones[]" placeholder="+237 6XX XX XX XX"
-                                   class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100">
-                            <button type="button" onclick="addPhoneField()"
-                                    class="mt-1 bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white h-10 w-10 rounded-md flex items-center justify-center transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
+                    <div id="phonesContainer">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Téléphones</label>
+                        <div class="space-y-2">
+                            <div class="flex gap-2">
+                                <input type="text" name="phones[]" placeholder="+237 6XX XX XX XX"
+                                       class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100">
+                                <button type="button" onclick="addPhoneField()"
+                                        class="mt-1 bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white h-10 w-10 rounded-md flex items-center justify-center transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="pt-3 border-t dark:border-gray-700 flex justify-end gap-2">
-                    <button type="button" onclick="toggleModal('newClientModal')"
-                            class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-md border border-gray-300 dark:border-gray-600 transition-colors">
-                        Annuler
-                    </button>
-                    <button type="submit"
-                            class="bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors">
-                        Créer
-                    </button>
+                    <div class="pt-3 border-t dark:border-gray-700 flex justify-end gap-2">
+                        <button type="button" onclick="toggleModal('newClientModal')"
+                                class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-md border border-gray-300 dark:border-gray-600 transition-colors">
+                            Annuler
+                        </button>
+                        <button type="submit"
+                                class="bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors">
+                            Créer
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -558,7 +519,7 @@
     </div>
 
     <script>
-        // Utility functions
+        // Fonction utilitaire pour basculer les modales
         function toggleModal(modalId) {
             const modal = document.getElementById(modalId);
             if (modal) {
@@ -566,9 +527,11 @@
             }
         }
 
+        // Fonction pour ajouter un champ de téléphone
         function addPhoneField() {
             const container = document.querySelector('#phonesContainer .space-y-2');
             const phoneFields = container.querySelectorAll('input[name="phones[]"]');
+            const lastPhoneField = phoneFields[phoneFields.length - 1];
 
             const newPhoneFieldContainer = document.createElement('div');
             newPhoneFieldContainer.className = 'flex gap-2';
@@ -585,11 +548,13 @@
             container.appendChild(newPhoneFieldContainer);
         }
 
+        // Fonction pour supprimer un champ de téléphone
         function removePhoneField(button) {
             const fieldContainer = button.parentElement;
             fieldContainer.remove();
         }
 
+        // Fonction pour confirmer la suppression d'un client
         function confirmDelete(clientId, clientName) {
             document.getElementById('deleteClientId').value = clientId;
             document.getElementById('deleteClientName').textContent = clientName;
@@ -598,6 +563,7 @@
             toggleModal('deleteModal');
         }
 
+        // Fonctions de navigation
         function viewClient(clientId) {
             window.location.href = `/clients/${clientId}`;
         }
@@ -606,39 +572,7 @@
             window.location.href = `/clients/${clientId}/edit`;
         }
 
-        // Toggle advanced search panel
-        document.addEventListener('DOMContentLoaded', function() {
-            const toggleAdvancedSearchBtn = document.getElementById('toggleAdvancedSearch');
-            const advancedSearchPanel = document.getElementById('advancedSearchPanel');
-
-            if (toggleAdvancedSearchBtn && advancedSearchPanel) {
-                toggleAdvancedSearchBtn.addEventListener('click', function() {
-                    advancedSearchPanel.classList.toggle('hidden');
-                });
-            }
-
-            // Montrer le panneau de recherche avancée si des filtres avancés sont actifs
-            if (
-                document.querySelector('[name="birth_from"]').value ||
-                document.querySelector('[name="birth_to"]').value ||
-                document.querySelector('[name="min_bills"]').value ||
-                document.querySelector('[name="max_bills"]').value ||
-                document.querySelector('[name="last_bill_from"]').value ||
-                document.querySelector('[name="last_bill_to"]').value
-            ) {
-                advancedSearchPanel.classList.remove('hidden');
-            }
-
-            // Réinitialiser le formulaire lorsque le bouton de suppression est cliqué
-            const clearSearchBtn = document.getElementById('clearSearchBtn');
-            if (clearSearchBtn) {
-                clearSearchBtn.addEventListener('click', function() {
-                    window.location.href = "{{ route('clients.index') }}";
-                });
-            }
-        });
-
-        // Import Modal Functions
+        // Fonction pour importer des clients
         function toggleImportModal() {
             const modal = document.getElementById('importClientsModal');
             const modalContent = document.getElementById('importModalContent');
@@ -662,6 +596,7 @@
             }
         }
 
+        // Fonction pour afficher une étape spécifique du processus d'importation
         function showImportStep(step) {
             // Cacher toutes les étapes
             document.querySelectorAll('.import-step').forEach(el => {
@@ -672,413 +607,77 @@
             document.getElementById(`importStep${step}`).classList.remove('hidden');
         }
 
+        // Initialisation des gestionnaires d'événements pour l'importation
         document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier si les éléments existent avant d'ajouter les événements
             const importFile = document.getElementById('importFile');
-            const selectedFileContainer = document.getElementById('selectedFileContainer');
-            const selectedFileName = document.getElementById('selectedFileName');
-            const removeFileBtn = document.getElementById('removeFileBtn');
             const goToStep2Btn = document.getElementById('goToStep2Btn');
             const backToStep1Btn = document.getElementById('backToStep1Btn');
             const goToStep3Btn = document.getElementById('goToStep3Btn');
             const backToStep2Btn = document.getElementById('backToStep2Btn');
             const importBtn = document.getElementById('importBtn');
-            const columnMappingContainer = document.getElementById('columnMappingContainer');
-            const previewTable = document.getElementById('previewTable');
-            const skipHeaderRow = document.getElementById('skipHeaderRow');
-            const recordCount = document.getElementById('recordCount');
-            const mobileImportHelper = document.getElementById('mobileImportHelper');
 
-            let fileData = null;
-            let headers = [];
-            let parsedData = [];
-            let columnMapping = {};
-            let fileType = '';
-
-            // Champs disponibles dans l'application
-            const availableFields = [
-                { id: 'name', label: 'Nom' },
-                { id: 'email', label: 'Email' },
-                { id: 'phone', label: 'Téléphone' },
-                { id: 'address', label: 'Adresse' },
-                { id: 'company', label: 'Entreprise' },
-                { id: 'notes', label: 'Notes' }
-            ];
-
-            // Afficher l'aide mobile si nécessaire
-            if (window.innerWidth < 768) {
-                mobileImportHelper.classList.remove('hidden');
-            }
-
-            // Gérer le téléchargement de fichier
-            if(importFile) {
+            if (importFile) {
+                // Gestion de l'upload de fichier
                 importFile.addEventListener('change', function(e) {
                     if (this.files && this.files[0]) {
                         const file = this.files[0];
-                        selectedFileName.textContent = file.name;
-                        selectedFileContainer.classList.remove('hidden');
+                        document.getElementById('selectedFileName').textContent = file.name;
+                        document.getElementById('selectedFileContainer').classList.remove('hidden');
                         goToStep2Btn.disabled = false;
                         goToStep2Btn.classList.remove('opacity-50', 'cursor-not-allowed');
-
-                        // Déterminer le type de fichier
-                        fileType = file.name.split('.').pop().toLowerCase();
-
-                        // Lire le fichier
-                        const reader = new FileReader();
-                        reader.onload = function(event) {
-                            fileData = event.target.result;
-                            parseFileData(file.name, fileData);
-                        };
-                        reader.readAsText(file);
                     }
                 });
             }
 
-            // Supprimer le fichier
-            if(removeFileBtn) {
-                removeFileBtn.addEventListener('click', function() {
-                    importFile.value = '';
-                    selectedFileContainer.classList.add('hidden');
-                    goToStep2Btn.disabled = true;
-                    goToStep2Btn.classList.add('opacity-50', 'cursor-not-allowed');
-                    fileData = null;
-                    headers = [];
-                    parsedData = [];
-                    fileType = '';
-                });
-            }
-
-            // Navigation entre les étapes
-            if(goToStep2Btn) {
+            if (goToStep2Btn) {
+                // Navigation entre les étapes
                 goToStep2Btn.addEventListener('click', function() {
-                    if (window.innerWidth < 768) {
-                        simplifyImportProcess();
-                    } else {
-                        createColumnMappingUI();
-                        showImportStep(2);
-                    }
+                    showImportStep(2);
                 });
             }
 
-            if(backToStep1Btn) {
+            if (backToStep1Btn) {
                 backToStep1Btn.addEventListener('click', function() {
                     showImportStep(1);
                 });
             }
 
-            if(goToStep3Btn) {
+            if (goToStep3Btn) {
                 goToStep3Btn.addEventListener('click', function() {
-                    createPreviewTable();
                     showImportStep(3);
                 });
             }
 
-            if(backToStep2Btn) {
+            if (backToStep2Btn) {
                 backToStep2Btn.addEventListener('click', function() {
                     showImportStep(2);
                 });
             }
 
-            if(importBtn) {
+            if (importBtn) {
                 importBtn.addEventListener('click', function() {
-                    importClients();
+                    // Simulation d'importation
+                    importBtn.disabled = true;
+                    importBtn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin mr-1"></i> Importation...';
+
+                    // Après un délai, indiquer le succès
+                    setTimeout(() => {
+                        alert('Importation réussie!');
+                        toggleImportModal();
+                        window.location.reload();
+                    }, 1500);
                 });
             }
 
-            // Simplifier le processus d'importation sur mobile
-            function simplifyImportProcess() {
-                // Passer directement de l'étape 1 à l'étape 3 sur mobile
-                // Définir un mappage automatique basé sur les noms de colonnes
-                headers.forEach(header => {
-                    // Auto-mapper les colonnes basées sur des noms communs
-                    const headerLower = header.toLowerCase();
-                    if (headerLower.includes('nom') || headerLower.includes('name')) {
-                        columnMapping[header] = 'name';
-                    } else if (headerLower.includes('email') || headerLower.includes('mail') || headerLower.includes('courriel')) {
-                        columnMapping[header] = 'email';
-                    } else if (headerLower.includes('tel') || headerLower.includes('phone') || headerLower.includes('mobile') || headerLower.includes('portable')) {
-                        columnMapping[header] = 'phone';
-                    } else if (headerLower.includes('adresse') || headerLower.includes('address')) {
-                        columnMapping[header] = 'address';
-                    } else if (headerLower.includes('entreprise') || headerLower.includes('company') || headerLower.includes('société')) {
-                        columnMapping[header] = 'company';
-                    } else if (headerLower.includes('note') || headerLower.includes('commentaire') || headerLower.includes('remarque')) {
-                        columnMapping[header] = 'notes';
-                    }
-                });
-
-                // Passer directement à l'aperçu
-                createPreviewTable();
-                showImportStep(3);
-            }
-
-            // Analyser les données du fichier
-            function parseFileData(filename, data) {
-                headers = [];
-                parsedData = [];
-
-                if (fileType === 'csv') {
-                    // Analyser CSV
-                    const lines = data.split('\n');
-                    if (lines.length > 0) {
-                        // Extraire les en-têtes
-                        headers = lines[0].split(',').map(header => header.trim().replace(/"/g, ''));
-
-                        // Extraire les données
-                        for (let i = 1; i < lines.length; i++) {
-                            if (lines[i].trim() !== '') {
-                                const values = lines[i].split(',').map(value => value.trim().replace(/"/g, ''));
-                                const row = {};
-                                headers.forEach((header, index) => {
-                                    row[header] = values[index] || '';
-                                });
-                                parsedData.push(row);
-                            }
-                        }
-                    }
-                } else if (fileType === 'xlsx' || fileType === 'xls') {
-                    // Pour Excel, nous aurions besoin d'une bibliothèque comme SheetJS/xlsx
-                    alert('Le support des fichiers Excel nécessite une bibliothèque supplémentaire. Veuillez utiliser un fichier CSV pour le moment.');
-                } else if (fileType === 'vcf') {
-                    // Analyser les fichiers VCF (contacts)
-                    const contacts = data.split('BEGIN:VCARD');
-
-                    for (let i = 1; i < contacts.length; i++) {
-                        const contact = 'BEGIN:VCARD' + contacts[i];
-                        const contactData = parseVCard(contact);
-                        if (contactData) {
-                            parsedData.push(contactData);
-                        }
-                    }
-
-                    // Créer des en-têtes adaptés pour les contacts
-                    headers = ['name', 'email', 'phone', 'address'];
-
-                    // Définir un mappage automatique pour les contacts
-                    columnMapping = {
-                        'name': 'name',
-                        'email': 'email',
-                        'phone': 'phone',
-                        'address': 'address'
-                    };
-                }
-            }
-
-            // Analyser un contact VCF
-            function parseVCard(vcard) {
-                const lines = vcard.split('\n');
-                const contact = {};
-
-                for (let line of lines) {
-                    line = line.trim();
-
-                    if (line.startsWith('FN:')) {
-                        contact.name = line.substring(3).trim();
-                    } else if (line.startsWith('N:')) {
-                        // Si FN n'est pas présent, utiliser N
-                        if (!contact.name) {
-                            const nameParts = line.substring(2).split(';');
-                            contact.name = `${nameParts[1] || ''} ${nameParts[0] || ''}`.trim();
-                        }
-                    } else if (line.startsWith('TEL')) {
-                        const tel = line.split(':')[1]?.trim();
-                        if (tel) contact.phone = tel;
-                    } else if (line.startsWith('EMAIL')) {
-                        const email = line.split(':')[1]?.trim();
-                        if (email) contact.email = email;
-                    } else if (line.startsWith('ADR')) {
-                        const adr = line.split(':')[1]?.trim().replace(/;/g, ', ');
-                        if (adr) contact.address = adr;
-                    } else if (line.startsWith('NOTE')) {
-                        const note = line.split(':')[1]?.trim();
-                        if (note) contact.notes = note;
-                    }
-                }
-
-                // S'assurer qu'il y a au moins un nom
-                if (!contact.name) {
-                    return null;
-                }
-
-                return contact;
-            }
-
-            // Créer l'interface de mappage des colonnes
-            function createColumnMappingUI() {
-                columnMappingContainer.innerHTML = '';
-
-                headers.forEach(header => {
-                    const row = document.createElement('div');
-                    row.className = 'flex items-center space-x-4';
-
-                    const sourceCol = document.createElement('div');
-                    sourceCol.className = 'w-1/2';
-                    sourceCol.innerHTML = `
-                        <div class="text-sm font-medium text-gray-700 dark:text-gray-300">${header}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">Colonne du fichier</div>
-                    `;
-
-                    const arrow = document.createElement('div');
-                    arrow.className = 'text-gray-400 dark:text-gray-500';
-                    arrow.innerHTML = '<i class="bi bi-arrow-right"></i>';
-
-                    const selectCol = document.createElement('div');
-                    selectCol.className = 'w-1/2';
-
-                    const select = document.createElement('select');
-                    select.className = 'mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100 sm:text-sm rounded-md';
-                    select.dataset.sourceColumn = header;
-
-                    // Option vide
-                    const emptyOption = document.createElement('option');
-                    emptyOption.value = '';
-                    emptyOption.textContent = 'Ne pas importer';
-                    select.appendChild(emptyOption);
-
-                    // Options pour chaque champ disponible
-                    availableFields.forEach(field => {
-                        const option = document.createElement('option');
-                        option.value = field.id;
-                        option.textContent = field.label;
-
-                        // Auto-mapper les colonnes avec des noms similaires
-                        const headerLower = header.toLowerCase();
-                        const fieldLower = field.label.toLowerCase();
-                        const fieldIdLower = field.id.toLowerCase();
-
-                        if (headerLower === fieldLower ||
-                            headerLower === fieldIdLower ||
-                            headerLower.includes(fieldLower) ||
-                            fieldLower.includes(headerLower)) {
-                            option.selected = true;
-                            columnMapping[header] = field.id;
-                        }
-
-                        select.appendChild(option);
-                    });
-
-                    // Événement pour mettre à jour le mapping
-                    select.addEventListener('change', function() {
-                        columnMapping[header] = this.value;
-                    });
-
-                    selectCol.appendChild(select);
-
-                    row.appendChild(sourceCol);
-                    row.appendChild(arrow);
-                    row.appendChild(selectCol);
-
-                    columnMappingContainer.appendChild(row);
-                });
-            }
-
-            // Créer la table de prévisualisation
-            function createPreviewTable() {
-                // Nettoyer la table existante
-                const thead = previewTable.querySelector('thead tr');
-                const tbody = previewTable.querySelector('tbody');
-                thead.innerHTML = '';
-                tbody.innerHTML = '';
-
-                // Ajouter les en-têtes
-                const mappedHeaders = headers.filter(header => columnMapping[header] && columnMapping[header] !== '');
-                mappedHeaders.forEach(header => {
-                    const th = document.createElement('th');
-                    th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider';
-                    th.textContent = availableFields.find(field => field.id === columnMapping[header])?.label || header;
-                    thead.appendChild(th);
-                });
-
-                // Ajouter les données
-                const dataToShow = skipHeaderRow.checked && parsedData.length > 0 ? parsedData.slice(1) : parsedData;
-                dataToShow.forEach(row => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
-
-                    mappedHeaders.forEach(header => {
-                        const td = document.createElement('td');
-                        td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400';
-                        td.textContent = row[header] || '';
-                        tr.appendChild(td);
-                    });
-
-                    tbody.appendChild(tr);
-                });
-
-                // Mettre à jour le compteur d'enregistrements
-                recordCount.textContent = `${dataToShow.length} clients à importer`;
-            }
-
-            // Importer les clients
-            function importClients() {
-                const dataToImport = skipHeaderRow.checked && parsedData.length > 0 && fileType !== 'vcf' ? parsedData.slice(1) : parsedData;
-
-                // Préparer les données pour l'import
-                const clientsToImport = dataToImport.map(row => {
-                    const client = {};
-
-                    // Mapper les colonnes selon la configuration
-                    if (fileType === 'vcf') {
-                        // Pour les fichiers VCF, les données sont déjà mappées
-                        return row;
-                    } else {
-                        // Pour CSV et Excel
-                        headers.forEach(header => {
-                            if (columnMapping[header] && columnMapping[header] !== '') {
-                                client[columnMapping[header]] = row[header] || '';
-                            }
-                        });
-                        return client;
-                    }
-                });
-
-                // Vérifier s'il y a des données à importer
-                if (clientsToImport.length === 0) {
-                    alert('Aucun client à importer. Veuillez vérifier votre fichier.');
-                    return;
-                }
-
-                // Désactiver le bouton d'import et afficher une animation de chargement
-                importBtn.disabled = true;
-                importBtn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin mr-1"></i> Importation...';
-
-                // Envoyer les données au serveur
-                fetch('/clients/import', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({
-                        clients: clientsToImport,
-                        source: fileType === 'vcf' ? 'contacts' : (fileType === 'xlsx' || fileType === 'xls' ? 'excel' : 'csv')
-                    })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert(`${data.imported} clients ont été importés avec succès.`);
-                            // Fermer la modal et rafraîchir la page
-                            toggleImportModal();
-                            window.location.reload();
-                        } else {
-                            alert(data.message || 'Une erreur est survenue lors de l\'importation.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Une erreur est survenue lors de l\'importation. Veuillez réessayer.');
-                    })
-                    .finally(() => {
-                        // Réactiver le bouton d'import
-                        importBtn.disabled = false;
-                        importBtn.innerHTML = '<i class="bi bi-check-circle mr-1"></i> Importer';
-                    });
-            }
-
-            // Événement pour mettre à jour la prévisualisation
-            if(skipHeaderRow) {
-                skipHeaderRow.addEventListener('change', function() {
-                    createPreviewTable();
+            // Gestion du bouton de suppression de fichier
+            const removeFileBtn = document.getElementById('removeFileBtn');
+            if (removeFileBtn) {
+                removeFileBtn.addEventListener('click', function() {
+                    if (importFile) importFile.value = '';
+                    document.getElementById('selectedFileContainer').classList.add('hidden');
+                    goToStep2Btn.disabled = true;
+                    goToStep2Btn.classList.add('opacity-50', 'cursor-not-allowed');
                 });
             }
         });

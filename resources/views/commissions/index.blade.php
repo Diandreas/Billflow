@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="bg-gradient-to-r from-purple-600 to-indigo-500 py-3 px-4 rounded-lg shadow-sm">
-            <div class="flex justify-between items-center">
-                <div>
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                <div class="mb-2 sm:mb-0">
                     <h2 class="text-xl font-semibold text-white">
                         {{ __('Commissions') }}
                     </h2>
@@ -28,257 +28,250 @@
                 </div>
             @endif
 
-            <!-- Statistiques des commissions -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div class="bg-white rounded-lg shadow p-4">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-full bg-purple-100 mr-3">
-                            <i class="bi bi-cash-stack text-purple-600 text-xl"></i>
+            <!-- Dashboard Layout -->
+            <div class="flex flex-col lg:flex-row gap-4">
+                <!-- Left column - Stats & Shops -->
+                <div class="w-full lg:w-1/3 space-y-4">
+                    <!-- Statistiques des commissions -->
+                    <div class="bg-white rounded-lg shadow overflow-hidden">
+                        <div class="p-3 bg-gray-50 border-b border-gray-200">
+                            <h3 class="text-sm font-medium text-gray-700">
+                                <i class="bi bi-graph-up mr-1"></i>
+                                {{ __('Aperçu financier') }}
+                            </h3>
                         </div>
-                        <div>
-                            <div class="text-sm text-gray-500">Total Commissions</div>
-                            <div class="text-lg font-semibold">{{ number_format($stats['total_commissions'], 2, ',', ' ') }} FCFA</div>
+                        <div class="p-4 space-y-3">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-purple-100 mr-3">
+                                    <i class="bi bi-cash-stack text-purple-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Total Commissions</div>
+                                    <div class="text-base font-semibold">{{ number_format($stats['total_commissions'], 2, ',', ' ') }} FCFA</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-yellow-100 mr-3">
+                                    <i class="bi bi-hourglass-split text-yellow-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Commissions en attente</div>
+                                    <div class="text-base font-semibold">{{ number_format($stats['pending_commissions'], 2, ',', ' ') }} FCFA</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-green-100 mr-3">
+                                    <i class="bi bi-check-circle text-green-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Commissions payées</div>
+                                    <div class="text-base font-semibold">{{ number_format($stats['paid_commissions'], 2, ',', ' ') }} FCFA</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="bg-white rounded-lg shadow p-4">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-full bg-yellow-100 mr-3">
-                            <i class="bi bi-hourglass-split text-yellow-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <div class="text-sm text-gray-500">Commissions en attente</div>
-                            <div class="text-lg font-semibold">{{ number_format($stats['pending_commissions'], 2, ',', ' ') }} FCFA</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow p-4">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-full bg-green-100 mr-3">
-                            <i class="bi bi-check-circle text-green-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <div class="text-sm text-gray-500">Commissions payées</div>
-                            <div class="text-lg font-semibold">{{ number_format($stats['paid_commissions'], 2, ',', ' ') }} FCFA</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Liste des boutiques avec statistiques -->
-            <div class="bg-white overflow-hidden shadow-sm rounded-lg mb-4">
-                <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                    <h3 class="text-sm font-medium text-gray-700">
-                        <i class="bi bi-shop mr-1"></i>
-                        {{ __('Boutiques et leurs commissions') }}
-                    </h3>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Boutique') }}</th>
-                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Commissions totales') }}</th>
-                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('En attente') }}</th>
-                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Payées') }}</th>
-                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Nb. vendeurs') }}</th>
-                                <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Actions') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @forelse ($shops as $shop)
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-3 py-2 whitespace-nowrap">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0 h-6 w-6 mr-2">
-                                                @if ($shop->logo)
-                                                    <img class="h-6 w-6 rounded-md object-cover" src="{{ asset('storage/'.$shop->logo) }}" alt="{{ $shop->name }}">
-                                                @else
-                                                    <div class="h-6 w-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center">
-                                                        <i class="bi bi-shop text-sm"></i>
+                    <!-- Liste des boutiques avec statistiques -->
+                    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+                        <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                            <h3 class="text-sm font-medium text-gray-700">
+                                <i class="bi bi-shop mr-1"></i>
+                                {{ __('Boutiques') }}
+                            </h3>
+                        </div>
+                        <div class="overflow-y-auto max-h-72">
+                            <ul class="divide-y divide-gray-200">
+                                @forelse ($shops as $shop)
+                                    <li class="p-3 hover:bg-gray-50">
+                                        <a href="{{ route('commissions.shop-report', $shop->id) }}" class="block">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center">
+                                                    <div class="flex-shrink-0 h-8 w-8 mr-3">
+                                                        @if ($shop->logo)
+                                                            <img class="h-8 w-8 rounded-md object-cover" src="{{ asset('storage/'.$shop->logo) }}" alt="{{ $shop->name }}">
+                                                        @else
+                                                            <div class="h-8 w-8 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center">
+                                                                <i class="bi bi-shop"></i>
+                                                            </div>
+                                                        @endif
                                                     </div>
-                                                @endif
+                                                    <div>
+                                                        <div class="font-medium text-sm">{{ $shop->name }}</div>
+                                                        <div class="text-xs text-gray-500">{{ $shop->vendors_count ?? 0 }} vendeur(s)</div>
+                                                    </div>
+                                                </div>
+                                                <div class="text-right">
+                                                    <div class="text-xs font-medium">{{ number_format($shop->commission_stats['total'], 0, ',', ' ') }} FCFA</div>
+                                                    <div class="text-xs">
+                                                        <span class="text-green-600">{{ number_format($shop->commission_stats['paid'], 0, ',', ' ') }}</span> /
+                                                        <span class="text-yellow-600">{{ number_format($shop->commission_stats['pending'], 0, ',', ' ') }}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div class="font-medium text-xs">{{ $shop->name }}</div>
-                                                @if ($shop->shop_id)
-                                                    <div class="text-gray-500 text-xs">ID: {{ $shop->shop_id }}</div>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-xs font-medium">
-                                        {{ number_format($shop->commission_stats['total'], 2, ',', ' ') }} FCFA
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-xs font-medium text-yellow-600">
-                                        {{ number_format($shop->commission_stats['pending'], 2, ',', ' ') }} FCFA
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-xs font-medium text-green-600">
-                                        {{ number_format($shop->commission_stats['paid'], 2, ',', ' ') }} FCFA
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-xs">
-                                        {{ $shop->vendors_count ?? 0 }}
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-xs text-right">
-                                        <a href="{{ route('commissions.shop-report', $shop->id) }}" class="inline-flex items-center px-2 py-1 bg-indigo-100 border border-transparent rounded text-xs font-medium text-indigo-700 hover:bg-indigo-200 mx-1">
-                                            <i class="bi bi-eye-fill mr-1"></i> Détails
                                         </a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="px-3 py-3 text-center text-sm text-gray-500">{{ __('Aucune boutique trouvée') }}</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                                    </li>
+                                @empty
+                                    <li class="p-3 text-center text-sm text-gray-500">{{ __('Aucune boutique trouvée') }}</li>
+                                @endforelse
+                            </ul>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Filtres -->
-            <div class="bg-white overflow-hidden shadow-sm rounded-lg mb-4">
-                <div class="p-4 bg-gray-50 border-b border-gray-200">
-                    <h3 class="text-sm font-medium text-gray-700">
-                        <i class="bi bi-funnel mr-1"></i>
-                        {{ __('Filtres') }}
-                    </h3>
-                </div>
-                <div class="p-4">
-                    <form action="{{ route('commissions.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label for="shop" class="block text-xs font-medium text-gray-700 mb-1">{{ __('Boutique') }}</label>
-                            <select name="shop_id" id="shop" class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50">
-                                <option value="">{{ __('Toutes les boutiques') }}</option>
-                                @foreach($shops as $shop)
-                                    <option value="{{ $shop->id }}" {{ request('shop_id') == $shop->id ? 'selected' : '' }}>{{ $shop->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label for="month" class="block text-xs font-medium text-gray-700 mb-1">{{ __('Mois') }}</label>
-                            <select name="month" id="month" class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50">
-                                <option value="">{{ __('Tous les mois') }}</option>
-                                @foreach($months as $key => $month)
-                                    <option value="{{ $key }}" {{ request('month') == $key ? 'selected' : '' }}>{{ $month }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label for="status" class="block text-xs font-medium text-gray-700 mb-1">{{ __('Statut') }}</label>
-                            <select name="status" id="status" class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50">
-                                <option value="">{{ __('Tous les statuts') }}</option>
-                                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>{{ __('En attente') }}</option>
-                                <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>{{ __('Payée') }}</option>
-                            </select>
-                        </div>
-                        <div class="md:flex md:flex-col md:justify-end">
-                            <button type="submit" class="mt-4 inline-flex justify-center items-center px-3 py-2 bg-purple-600 border border-transparent rounded text-xs font-medium text-white hover:bg-purple-700">
+                <!-- Right column - Search & Commissions -->
+                <div class="w-full lg:w-2/3 space-y-4">
+                    <!-- Recherche et filtres unifiés -->
+                    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+                        <div class="p-3 bg-gray-50 border-b border-gray-200">
+                            <h3 class="text-sm font-medium text-gray-700">
                                 <i class="bi bi-search mr-1"></i>
-                                {{ __('Filtrer') }}
-                            </button>
+                                {{ __('Recherche & Filtres') }}
+                            </h3>
                         </div>
-                    </form>
-                </div>
-            </div>
+                        <div class="p-4">
+                            <form action="{{ route('commissions.index') }}" method="GET">
+                                <div class="flex flex-col sm:flex-row gap-3">
+                                    <!-- Champ de recherche principal -->
+                                    <div class="w-full sm:w-2/5">
+                                        <div class="relative">
+                                            <input type="text" name="search" value="{{ request('search') }}" placeholder="Rechercher une référence, un vendeur..." class="w-full text-sm rounded-md border-gray-300 pr-10 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50">
+                                            <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
+                                                <i class="bi bi-search"></i>
+                                            </span>
+                                        </div>
+                                    </div>
 
-            <!-- Liste des commissions -->
-            <div class="bg-white overflow-hidden shadow-sm rounded-lg">
-                <div class="p-4 bg-gray-50 border-b border-gray-200">
-                    <h3 class="text-sm font-medium text-gray-700">
-                        <i class="bi bi-list-ul mr-1"></i>
-                        {{ __('Liste des commissions') }}
-                    </h3>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Référence') }}</th>
-                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Boutique') }}</th>
-                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Vendeur') }}</th>
-                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Période') }}</th>
-                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Montant') }}</th>
-                                <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Statut') }}</th>
-                                <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Actions') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @forelse ($commissions as $commission)
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-3 py-2 whitespace-nowrap text-xs">
-                                        {{ $commission->reference ?? 'N/A' }}
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-xs">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0 h-6 w-6 mr-2">
-                                                @if ($commission->shop->logo)
-                                                    <img class="h-6 w-6 rounded-md object-cover" src="{{ asset('storage/'.$commission->shop->logo) }}" alt="{{ $commission->shop->name }}">
-                                                @else
-                                                    <div class="h-6 w-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center">
-                                                        <i class="bi bi-shop text-sm"></i>
-                                                    </div>
-                                                @endif
-                                            </div>
-                                            <div>
-                                                <div class="font-medium text-xs">{{ $commission->shop->name }}</div>
-                                                @if ($commission->shop->shop_id)
-                                                    <div class="text-gray-500 text-xs">ID: {{ $commission->shop->shop_id }}</div>
-                                                @endif
-                                            </div>
+                                    <!-- Filtres groupés -->
+                                    <div class="w-full sm:w-3/5">
+                                        <div class="flex flex-wrap gap-2">
+                                            <select name="shop_id" class="w-full sm:w-auto text-xs rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50">
+                                                <option value="">{{ __('Boutique...') }}</option>
+                                                @foreach($shops as $shop)
+                                                    <option value="{{ $shop->id }}" {{ request('shop_id') == $shop->id ? 'selected' : '' }}>{{ $shop->name }}</option>
+                                                @endforeach
+                                            </select>
+
+                                            <select name="month" class="w-full sm:w-auto text-xs rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50">
+                                                <option value="">{{ __('Mois...') }}</option>
+                                                @foreach($months as $key => $month)
+                                                    <option value="{{ $key }}" {{ request('month') == $key ? 'selected' : '' }}>{{ $month }}</option>
+                                                @endforeach
+                                            </select>
+
+                                            <select name="status" class="w-full sm:w-auto text-xs rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50">
+                                                <option value="">{{ __('Statut...') }}</option>
+                                                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>{{ __('En attente') }}</option>
+                                                <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>{{ __('Payée') }}</option>
+                                            </select>
+
+                                            <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-purple-600 text-xs font-medium text-white rounded hover:bg-purple-700">
+                                                <i class="bi bi-funnel mr-1"></i>
+                                                {{ __('Filtrer') }}
+                                            </button>
                                         </div>
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-xs">
-                                        <div class="font-medium">{{ $commission->user->name }}</div>
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
-                                        {{ $commission->period_month ?? 'N/A' }} {{ $commission->period_year ?? '' }}
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-xs font-medium">
-                                        {{ number_format($commission->amount, 2, ',', ' ') }} FCFA
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap">
-                                        @if ($commission->is_paid)
-                                            <span class="px-2 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-green-100 text-green-800">
-                                                <i class="bi bi-check-circle-fill mr-1"></i>{{ __('Payée') }}
-                                            </span>
-                                        @else
-                                            <span class="px-2 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-yellow-100 text-yellow-800">
-                                                <i class="bi bi-exclamation-circle-fill mr-1"></i>{{ __('En attente') }}
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-xs text-right">
-                                        <div class="flex justify-end space-x-1">
-                                            <a href="{{ route('commissions.show', $commission) }}" class="text-purple-600 hover:text-purple-900 bg-purple-50 p-1 rounded" title="{{ __('Voir') }}">
-                                                <i class="bi bi-eye text-xs"></i>
-                                            </a>
-                                            @if (!$commission->is_paid)
-                                                <button type="button" onclick="confirmDelete('{{ $commission->id }}')" class="text-red-600 hover:text-red-900 bg-red-50 p-1 rounded" title="{{ __('Supprimer') }}">
-                                                    <i class="bi bi-trash text-xs"></i>
-                                                </button>
-                                            @endif
-                                            @if (!$commission->is_paid)
-                                                <a href="#" onclick="showPayModal('{{ $commission->id }}')" class="text-green-600 hover:text-green-900 bg-green-50 p-1 rounded" title="{{ __('Marquer comme payée') }}">
-                                                    <i class="bi bi-cash text-xs"></i>
-                                                </a>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Liste des commissions (tableau compact) -->
+                    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+                        <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                            <h3 class="text-sm font-medium text-gray-700">
+                                <i class="bi bi-list-ul mr-1"></i>
+                                {{ __('Liste des commissions') }}
+                            </h3>
+                            <div class="text-xs text-gray-500">
+                                {{ $commissions->total() }} résultat(s)
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead class="bg-gray-50">
                                 <tr>
-                                    <td colspan="7" class="px-3 py-3 text-center text-sm text-gray-500">{{ __('Aucune commission trouvée') }}</td>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Référence') }}</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Vendeur / Boutique') }}</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Période') }}</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Montant') }}</th>
+                                    <th scope="col" class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Statut') }}</th>
+                                    <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Actions') }}</th>
                                 </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="p-4 border-t">
-                    {{ $commissions->appends(request()->except('page'))->links() }}
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                @forelse ($commissions as $commission)
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-3 py-2 whitespace-nowrap text-xs font-medium">
+                                            {{ $commission->reference ?? 'N/A' }}
+                                        </td>
+                                        <td class="px-3 py-2 text-xs">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-6 w-6 mr-2">
+                                                    @if ($commission->shop->logo)
+                                                        <img class="h-6 w-6 rounded-md object-cover" src="{{ asset('storage/'.$commission->shop->logo) }}" alt="{{ $commission->shop->name }}">
+                                                    @else
+                                                        <div class="h-6 w-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center">
+                                                            <i class="bi bi-shop text-sm"></i>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                                <div>
+                                                    <div class="font-medium">{{ $commission->user->name }}</div>
+                                                    <div class="text-gray-500 text-xs">{{ $commission->shop->name }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                            {{ $commission->period_month ?? 'N/A' }} {{ $commission->period_year ?? '' }}
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-xs font-medium">
+                                            {{ number_format($commission->amount, 0, ',', ' ') }} FCFA
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-center">
+                                            @if ($commission->is_paid)
+                                                <span class="px-2 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-green-100 text-green-800">
+                                                        <i class="bi bi-check-circle-fill mr-1"></i>{{ __('Payée') }}
+                                                    </span>
+                                            @else
+                                                <span class="px-2 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-yellow-100 text-yellow-800">
+                                                        <i class="bi bi-exclamation-circle-fill mr-1"></i>{{ __('En attente') }}
+                                                    </span>
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-xs text-right">
+                                            <div class="flex justify-end space-x-1">
+                                                <a href="{{ route('commissions.show', $commission) }}" class="text-purple-600 hover:text-purple-900 bg-purple-50 p-1 rounded" title="{{ __('Voir') }}">
+                                                    <i class="bi bi-eye text-xs"></i>
+                                                </a>
+                                                @if (!$commission->is_paid)
+                                                    <button type="button" onclick="showPayModal('{{ $commission->id }}')" class="text-green-600 hover:text-green-900 bg-green-50 p-1 rounded" title="{{ __('Marquer comme payée') }}">
+                                                        <i class="bi bi-cash text-xs"></i>
+                                                    </button>
+
+                                                    <button type="button" onclick="confirmDelete('{{ $commission->id }}')" class="text-red-600 hover:text-red-900 bg-red-50 p-1 rounded" title="{{ __('Supprimer') }}">
+                                                        <i class="bi bi-trash text-xs"></i>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="px-3 py-3 text-center text-sm text-gray-500">{{ __('Aucune commission trouvée') }}</td>
+                                    </tr>
+                                @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="p-3 border-t">
+                            {{ $commissions->appends(request()->except('page'))->links() }}
+                        </div>
+                    </div>
                 </div>
             </div>
 
+            <!-- Modals -->
             <!-- Modal de confirmation de suppression -->
             <div id="deleteModal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
                 <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -374,11 +367,12 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 
     @push('styles')
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @endpush
 
     <script>
