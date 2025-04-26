@@ -23,14 +23,14 @@ class InventoryController extends Controller
                 ->where('stock_alert_threshold', '>', 0)
                 ->count(),
             'total_stock_value' => Product::where('type', 'physical')
-                ->selectRaw('SUM(stock_quantity * default_price) as value')
-                ->first()->value ?? 0,
+                    ->selectRaw('SUM(stock_quantity * default_price) as value')
+                    ->first()->value ?? 0,
             'total_cost_value' => Product::where('type', 'physical')
-                ->selectRaw('SUM(stock_quantity * cost_price) as value')
-                ->first()->value ?? 0,
+                    ->selectRaw('SUM(stock_quantity * cost_price) as value')
+                    ->first()->value ?? 0,
         ];
 
-        // Produits physiques en rupture ou faible stock 
+        // Produits physiques en rupture ou faible stock
         $lowStockProducts = Product::where('type', 'physical')
             ->where(function($query) {
                 $query->whereColumn('stock_quantity', '<=', 'stock_alert_threshold')
@@ -252,7 +252,7 @@ class InventoryController extends Controller
             if ($product->stock_quantity < abs($adjustment)) {
                 return back()->with('error', 'Quantité insuffisante en stock');
             }
-            
+
             InventoryMovement::createExit(
                 $product->id,
                 abs($adjustment),
