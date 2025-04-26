@@ -25,27 +25,26 @@ class CommissionPaymentController extends Controller
         $query = CommissionPayment::with(['user', 'shop']);
 
         // Filter by vendor/user
-        if ($request->filled('user_id')) {
+        if ($request->has('user_id')) {
             $query->where('user_id', $request->input('user_id'));
         }
 
         // Filter by shop
-        if ($request->filled('shop_id')) {
+        if ($request->has('shop_id')) {
             $query->where('shop_id', $request->input('shop_id'));
         }
 
         // Filter by payment method
-        if ($request->filled('payment_method') && $request->input('payment_method') !== 'all') {
+        if ($request->has('payment_method') && $request->input('payment_method') !== 'all') {
             $query->where('payment_method', $request->input('payment_method'));
         }
 
-        // Filter by period - using proper date formatting
-        if ($request->filled('period_start')) {
-            $query->whereDate('paid_at', '>=', $request->input('period_start'));
+        // Filter by period
+        if ($request->has('period_start')) {
+            $query->where('paid_at', '>=', $request->input('period_start'));
         }
-
-        if ($request->filled('period_end')) {
-            $query->whereDate('paid_at', '<=', $request->input('period_end'));
+        if ($request->has('period_end')) {
+            $query->where('paid_at', '<=', $request->input('period_end') . ' 23:59:59');
         }
 
         // Get payments
@@ -53,7 +52,9 @@ class CommissionPaymentController extends Controller
 
         // Get vendors and shops for filters
         $sellers = User::where('role', 'vendeur')->orderBy('name')->get();
-        $shops = Gate::allows('admin') ? Shop::orderBy('name')->get() : Auth::user()->shops;
+        $shops = Gate::allows('admin') 
+            ? Shop::orderBy('name')->get() 
+            : Auth::user()->shops;
 
         // Statistics
         $stats = [
@@ -124,7 +125,7 @@ class CommissionPaymentController extends Controller
         }
 
         $shop = Shop::findOrFail($shopId);
-
+        
         $payments = CommissionPayment::with(['user', 'paidByUser'])
             ->where('shop_id', $shopId)
             ->orderBy('paid_at', 'desc')
@@ -151,4 +152,4 @@ class CommissionPaymentController extends Controller
 
         return view('commission-payments.shop-history', compact('shop', 'payments', 'stats', 'paymentsByVendor'));
     }
-}
+} 
