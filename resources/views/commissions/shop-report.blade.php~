@@ -542,19 +542,13 @@
                             return response.json();
                         })
                         .then(data => {
-                            // Supprimer les anciens champs de commission_ids s'il y en a
-                            document.querySelectorAll('input[name="commission_ids[]"]').forEach(el => el.remove());
-
-                            // Ajouter un champ caché pour chaque commission
-                            data.commissions.forEach(commission => {
-                                const input = document.createElement('input');
-                                input.type = 'hidden';
-                                input.name = 'commission_ids[]';
-                                input.value = commission.id;
-                                payAllForm.appendChild(input);
-                            });
-
-                            payAllModal.classList.remove('hidden');
+                            // Traitement des données...
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'commission_ids[]';
+                            input.value = commission.id;
+                            payAllForm.appendChild(input);
+                            // ...reste du code...
                         })
                         .catch(error => {
                             console.error('Erreur détaillée:', error);

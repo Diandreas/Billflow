@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 
-Route::get('/commissions/{userId}', [App\Http\Controllers\CommissionController::class, 'getVendorPendingCommissions']);
+Route::get('/commissions/{userId}', [App\Http\Controllers\CommissionController::class, 'getVendorPendingCommissions'])->middleware('auth:web');
 Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);

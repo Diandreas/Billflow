@@ -10,6 +10,7 @@ class Commission extends Model
     use HasFactory;
 
     protected $fillable = [
+        'id',
         'user_id',
         'bill_id',
         'shop_id',
@@ -157,4 +158,4 @@ class Commission extends Model
     {
         return $query->where('shop_id', $shopId);
     }
-} 
+}

@@ -42,29 +42,6 @@ return new class extends Migration
             $table->foreign('category_id')->references('id')->on('product_categories')->onDelete('set null');
             $table->decimal('cost_price', 10, 2)->nullable()->comment('Prix d\'achat');
             $table->string('status')->default('actif')->comment('Statut: actif, inactif');
-            $table->boolean('is_barterable')->default(false)->comment('Indique si le produit peut être utilisé dans un troc');
-            $table->decimal('total_sales', 12, 2)->default(0)->comment('Total des ventes de ce produit');
-            $table->timestamps();
-        });
-
-        // Table des mouvements d'inventaire
-        Schema::create('inventory_movements', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('product_id');
-            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-            $table->foreignId('shop_id')->constrained('shops');
-            $table->string('type'); // entrée, sortie, ajustement, vente, achat
-            $table->integer('quantity');
-            $table->string('reference')->nullable(); // référence externe
-            $table->unsignedBigInteger('bill_id')->nullable();
-            $table->foreign('bill_id')->references('id')->on('bills')->onDelete('set null');
-            $table->unsignedBigInteger('user_id')->nullable();
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
-            $table->text('notes')->nullable();
-            $table->decimal('unit_price', 10, 2)->nullable();
-            $table->decimal('total_price', 10, 2)->nullable();
-            $table->integer('stock_before');
-            $table->integer('stock_after');
             $table->timestamps();
         });
     }
@@ -74,8 +51,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('inventory_movements');
         Schema::dropIfExists('products');
         Schema::dropIfExists('product_categories');
     }
-};
+}; 

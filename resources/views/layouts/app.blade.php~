@@ -19,7 +19,7 @@
 
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+
     <!-- Intro.js -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.0.1/introjs.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.0.1/intro.min.js"></script>
@@ -86,7 +86,7 @@
             border: 1px solid rgba(209, 213, 219, 0.2) !important;
         }
         .introjs-overlay {
-
+         
             transform: scale(2);
         }
 
@@ -374,7 +374,7 @@
                             <span>{{ __('Toutes les commissions') }}</span>
                         </a>
                     </li>
-
+                    
                     <li>
                         <a class="{{ request()->routeIs('commission-payments.index') || request()->routeIs('commission-payments.show') || (request()->routeIs('commission-payments.shop-history') && !request()->is('*vendor*')) ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700' }}
                           flex items-center p-3 rounded-lg transition-colors duration-200"
@@ -404,7 +404,7 @@
                             <span>{{ __('Mes commissions') }}</span>
                         </a>
                     </li>
-
+                    
                     <li>
                         <a class="{{ request()->routeIs('commission-payments.vendor-history') ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700' }}
                           flex items-center p-3 rounded-lg transition-colors duration-200"

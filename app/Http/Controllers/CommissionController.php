@@ -723,7 +723,7 @@ class CommissionController extends Controller
             ->paginate(15, ['*'], 'all_page');
 
         // Paiements récents
-        $recentPayments = CommissionPayment::with(['vendor', 'paid_by_user'])
+        $recentPayments = CommissionPayment::with(['vendor'])
             ->where('shop_id', $shopId)
             ->orderBy('paid_at', 'desc')
             ->take(10)
@@ -927,5 +927,48 @@ class CommissionController extends Controller
         ];
 
         return view('commissions.shop', compact('shop', 'commissions', 'vendorStats', 'totalStats'));
+    }
+
+    /**
+     * Récupérer les commissions en attente d'un vendeur pour une boutique spécifique (API)
+     *
+     * @param  int  $userId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    /**
+     * Récupérer les commissions en attente d'un vendeur pour le paiement en masse (API)
+     *
+     * @param  int  $userId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPendingCommissionsForPayment($userId, Request $request)
+    {
+        try {
+            // Validation basique
+            $shopId = $request->query('shop_id');
+            if (!$shopId) {
+                return response()->json(['error' => 'Shop ID is required'], 400);
+            }
+
+            // Requête simple sans vérifications d'autorisation
+            $commissions = Commission::where('user_id', $userId)
+                ->where('shop_id', $shopId)
+                ->where('is_paid', false)
+                ->get(['id', 'amount', 'created_at']);
+
+            return response()->json([
+                'commissions' => $commissions,
+                'total' => $commissions->sum('amount')
+            ]);
+        } catch (\Exception $e) {
+            // Log l'erreur pour que vous puissiez la déboguer
+            \Log::error('Error in getPendingCommissionsForPayment: ' . $e->getMessage());
+
+            // Retourne une réponse d'erreur propre
+            return response()->json([
+                'error' => 'Une erreur est survenue lors de la récupération des commissions',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }
