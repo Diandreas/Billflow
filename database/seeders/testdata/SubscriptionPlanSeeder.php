@@ -1,19 +1,18 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\testdata;
 
-use Illuminate\Database\Seeder;
-use App\Models\SubscriptionPlan;
 use App\Models\Feature;
-use Illuminate\Support\Str;
+use App\Models\SubscriptionPlan;
 use Faker\Factory as Faker;
+use Illuminate\Database\Seeder;
 
 class SubscriptionPlanSeeder extends Seeder
 {
     public function run()
     {
         $faker = Faker::create('fr_FR');
-        
+
         // Créer d'abord les caractéristiques (features)
         $features = [
             // Caractéristiques générales
@@ -24,7 +23,7 @@ class SubscriptionPlanSeeder extends Seeder
             ['name' => 'Formation incluse', 'description' => 'Formation de base pour les utilisateurs'],
             ['name' => 'Support premium', 'description' => 'Support prioritaire avec temps de réponse garanti'],
             ['name' => 'Personnalisation', 'description' => 'Options de personnalisation avancées'],
-            
+
             // Caractéristiques spécifiques à la facturation
             ['name' => 'Nombre de factures mensuelles', 'description' => 'Nombre maximum de factures à générer par mois'],
             ['name' => 'Nombre de clients', 'description' => 'Nombre maximum de clients dans la base de données'],
@@ -39,7 +38,7 @@ class SubscriptionPlanSeeder extends Seeder
             ['name' => 'Personnalisation des modèles', 'description' => 'Personnalisation complète des modèles de factures'],
             ['name' => 'Export comptable', 'description' => 'Export de données pour logiciels comptables']
         ];
-        
+
         // Créer les caractéristiques dans la base de données
         $featureIds = [];
         foreach ($features as $feature) {
@@ -47,10 +46,10 @@ class SubscriptionPlanSeeder extends Seeder
                 'name' => $feature['name'],
                 'description' => $feature['description'],
             ]);
-            
+
             $featureIds[$feature['name']] = $feat->id;
         }
-        
+
         // Définir les plans d'abonnement
         $plans = [
             [
@@ -159,7 +158,7 @@ class SubscriptionPlanSeeder extends Seeder
                 ]
             ],
         ];
-        
+
         // Créer également des plans annuels avec remise pour les plans payants
         $annualPlans = [];
         foreach ($plans as $plan) {
@@ -170,22 +169,22 @@ class SubscriptionPlanSeeder extends Seeder
                 $annualPlan['description'] = 'Version annuelle du plan ' . $plan['name'] . ' avec 15% de réduction';
                 $annualPlan['price'] = $plan['price'] * 12 * 0.85; // 15% de réduction sur le prix annuel
                 $annualPlan['billing_cycle'] = 'yearly';
-                
+
                 $annualPlans[] = $annualPlan;
             }
         }
-        
+
         // Fusionner les plans mensuels et annuels
         $allPlans = array_merge($plans, $annualPlans);
-        
+
         // Créer les plans d'abonnement
         foreach ($allPlans as $planData) {
             $planFeatures = $planData['features'];
             unset($planData['features']);
-            
+
             // Créer le plan
             $plan = SubscriptionPlan::create($planData);
-            
+
             // Attacher les caractéristiques au plan
             foreach ($planFeatures as $feature) {
                 if (isset($featureIds[$feature['name']])) {
@@ -196,4 +195,4 @@ class SubscriptionPlanSeeder extends Seeder
             }
         }
     }
-} 
+}

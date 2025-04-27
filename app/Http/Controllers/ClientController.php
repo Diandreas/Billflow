@@ -19,12 +19,12 @@ class ClientController extends Controller
 
         // Filtrer les clients par boutique pour les non-administrateurs
         if (!Gate::allows('admin')) {
-            $shopIds = Auth::user()->shops->pluck('id')->toArray();
-
-            // Trouver les clients qui ont des factures dans ces boutiques
-            $query->whereHas('bills', function($q) use ($shopIds) {
-                $q->whereIn('shop_id', $shopIds);
-            });
+//            $shopIds = Auth::user()->shops->pluck('id')->toArray();
+//
+//            // Trouver les clients qui ont des factures dans ces boutiques
+//            $query->whereHas('bills', function($q) use ($shopIds) {
+//                $q->whereIn('shop_id', $shopIds);
+//            });
         }
 
         // Recherche par nom ou email

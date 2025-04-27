@@ -11,6 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Table des boutiques (shop) car nécessaire pour la référence dans bills
+        Schema::create('shops', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->unique();
+            $table->text('address')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('email')->nullable();
+            $table->string('city')->nullable();
+            $table->string('region')->nullable();
+            $table->text('description')->nullable();
+            $table->string('logo_path')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
         // Table des téléphones
         Schema::create('phones', function (Blueprint $table) {
             $table->id();
@@ -40,7 +55,7 @@ return new class extends Migration
             $table->unique(['client_id', 'phone_id']);
         });
 
-        // Table des factures
+        // Table des factures avec toutes les colonnes importantes
         Schema::create('bills', function (Blueprint $table) {
             $table->id();
             $table->string('reference')->unique();
@@ -51,12 +66,26 @@ return new class extends Migration
             $table->decimal('tax_rate', 5, 2)->default(19.25);
             $table->decimal('tax_amount', 12, 2);
             $table->string('status')->default('En attente');
+            $table->boolean('needs_approval')->default(false);
+            $table->boolean('approved')->default(false);
+            $table->foreignId('approved_by')->nullable()->references('id')->on('users');
+            $table->dateTime('approved_at')->nullable();
+            $table->text('approval_notes')->nullable();
             $table->dateTime('payment_date')->nullable();
             $table->string('payment_method')->nullable();
+            $table->boolean('is_barter_bill')->default(false);
+            $table->unsignedBigInteger('barter_id')->nullable();
             $table->text('comments')->nullable();
+            $table->integer('print_count')->default(0);
+            $table->dateTime('last_printed_at')->nullable();
             $table->boolean('is_recurring')->default(false);
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('seller_id')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('client_id')->constrained()->onDelete('restrict');
+            $table->foreignId('shop_id')->nullable()->constrained();
+            $table->string('signature_path')->nullable()->comment('Chemin du fichier de la signature');
+            $table->integer('reprint_count')->default(0)->comment('Nombre de réimpressions');
+            $table->timestamp('last_print_date')->nullable();
             $table->timestamps();
         });
 
@@ -65,30 +94,33 @@ return new class extends Migration
             $table->id();
             $table->foreignId('bill_id')->constrained()->onDelete('cascade');
             $table->foreignId('product_id')->constrained()->onDelete('restrict');
+            $table->string('name')->nullable();
+            $table->boolean('is_barter_item')->default(false);
             $table->decimal('unit_price', 12, 2);
             $table->integer('quantity');
-            $table->decimal('price', 12, 2);
+            $table->decimal('price', 12, 2)->nullable();
             $table->decimal('total', 12, 2);
             $table->timestamps();
         });
 
-        // Table des mouvements d'inventaire
-        Schema::create('inventory_movements', function (Blueprint $table) {
+        // Table des livraisons
+        Schema::create('deliveries', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('product_id');
-            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-            $table->string('type'); // entrée, sortie, ajustement, vente, achat
-            $table->integer('quantity');
-            $table->string('reference')->nullable(); // référence externe
-            $table->unsignedBigInteger('bill_id')->nullable();
-            $table->foreign('bill_id')->references('id')->on('bills')->onDelete('set null');
-            $table->unsignedBigInteger('user_id')->nullable();
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
+            $table->string('reference')->unique();
+            $table->foreignId('bill_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Créateur
+            $table->foreignId('delivery_agent_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->string('recipient_name');
+            $table->string('recipient_phone');
+            $table->text('delivery_address');
+            $table->decimal('delivery_fee', 10, 2)->default(0);
+            $table->dateTime('scheduled_at')->nullable();
+            $table->dateTime('delivered_at')->nullable();
+            $table->string('status')->default('pending'); // pending, in_transit, delivered, cancelled
             $table->text('notes')->nullable();
-            $table->decimal('unit_price', 10, 2)->nullable();
-            $table->decimal('total_price', 10, 2)->nullable();
-            $table->integer('stock_before');
-            $table->integer('stock_after');
+            $table->string('payment_status')->default('unpaid'); // unpaid, paid
+            $table->decimal('total_amount', 12, 2);
+            $table->decimal('amount_paid', 12, 2)->default(0);
             $table->timestamps();
         });
     }
@@ -98,11 +130,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('inventory_movements');
+        Schema::dropIfExists('deliveries');
         Schema::dropIfExists('bill_items');
         Schema::dropIfExists('bills');
         Schema::dropIfExists('client_phone');
         Schema::dropIfExists('clients');
         Schema::dropIfExists('phones');
+        Schema::dropIfExists('shops');
     }
-}; 
+};

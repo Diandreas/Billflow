@@ -1,9 +1,9 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\testdata;
 
-use App\Models\User;
 use App\Models\Shop;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -98,18 +98,18 @@ class CustomTestAccountsSeeder extends Seeder
 
         // Trouver les boutiques existantes
         $shops = Shop::all();
-        
+
         if ($shops->count() >= 3) {
             // Assigner les managers aux boutiques
             $regionalManager->shops()->attach($shops->pluck('id')->toArray(), ['is_manager' => true, 'assigned_at' => now()]);
             $topManager->shops()->attach($shops[0]->id, ['is_manager' => true, 'assigned_at' => now()]);
             $standardManager->shops()->attach($shops[1]->id, ['is_manager' => true, 'assigned_at' => now()]);
-            
+
             // Assigner les vendeurs aux boutiques
             $seniorVendor->shops()->attach([$shops[0]->id, $shops[1]->id], ['assigned_at' => now()]);
             $standardVendor->shops()->attach($shops[1]->id, ['assigned_at' => now()]);
             $juniorVendor->shops()->attach($shops[2]->id, ['assigned_at' => now()]);
-            
+
             // Personnaliser certains taux de commission
             $seniorVendor->shops()->updateExistingPivot($shops[0]->id, ['custom_commission_rate' => 8.0]);
             $seniorVendor->shops()->updateExistingPivot($shops[1]->id, ['custom_commission_rate' => 5.5]);
@@ -126,4 +126,4 @@ class CustomTestAccountsSeeder extends Seeder
         echo "Vendeur Junior: vendeur-junior@test.com / test123!\n";
         echo "--------------------------------------------------------------------\n";
     }
-} 
+}

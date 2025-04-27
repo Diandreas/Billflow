@@ -108,7 +108,7 @@ class BarterController extends Controller
     public function create()
     {
         $clients = Client::orderBy('name')->get();
-        $products = Product::orderBy('name')->where('is_barterable', true)->where('type', 'physical')->where('stock_quantity', '>', 0)->get();
+        $products = Product::orderBy('name')->where('physical', true)->get();
         $shops = Gate::allows('admin')
             ? Shop::orderBy('name')->get()
             : Auth::user()->shops;

@@ -378,9 +378,9 @@ class BillController extends Controller
     public function show(Bill $bill)
     {
         // Vérifier les autorisations en utilisant Gate
-//        if (!Gate::allows('edit-bill', $bill)) {
-//            abort(403, 'Action non autorisée.');
-//        }
+        if (!Gate::allows('edit-bill', $bill)) {
+            abort(403, 'Action non autorisée.');
+        }
 
         $bill->load(['client', 'seller', 'shop', 'items.product']);
 

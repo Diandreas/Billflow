@@ -1,18 +1,16 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\testdata;
 
 use Illuminate\Database\Seeder;
-use App\Models\Phone;
-use App\Models\Client;
 
 class PhonesSeeder extends Seeder
 {
     public function run()
     {
-        // Le PhonesSeeder n'est plus nécessaire car les téléphones 
+        // Le PhonesSeeder n'est plus nécessaire car les téléphones
         // sont déjà créés dans le ClientsSeeder
-        
+
         // Mais on pourrait ajouter des téléphones supplémentaires ici si besoin
         // Exemple:
         /*

@@ -1,11 +1,11 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\testdata;
 
-use Illuminate\Database\Seeder;
 use App\Models\Client;
 use App\Models\Phone;
 use Faker\Factory as Faker;
+use Illuminate\Database\Seeder;
 
 class ClientsSeeder extends Seeder
 {
@@ -13,7 +13,7 @@ class ClientsSeeder extends Seeder
     {
         // Utiliser Faker pour générer des données aléatoires
         $faker = Faker::create('fr_FR');
-        
+
         // Données fixes pour assurer une diversité prévisible
         $clients = [
             ['name' => 'Société ABC', 'email' => 'contact@abc.com', 'sex' => 'M', 'birth' => '1985-03-15', 'phone' => '+237 691234567', 'address' => '123 Avenue Centrale, Douala', 'notes' => 'Client fondateur'],
@@ -49,20 +49,20 @@ class ClientsSeeder extends Seeder
                 'notes' => $clientData['notes'],
                 'user_id' => 1, // Attribuer tous les clients à l'utilisateur ID 1
             ]);
-            
+
             // Créer et associer le téléphone
             $phone = Phone::create([
                 'number' => $clientData['phone']
             ]);
-            
+
             $client->phones()->attach($phone->id);
         }
-        
+
         // Générer des clients supplémentaires aléatoires (30 clients)
         for ($i = 0; $i < 30; $i++) {
             $sex = $faker->randomElement(['M', 'F']);
             $firstName = ($sex === 'M') ? $faker->firstNameMale : $faker->firstNameFemale;
-            
+
             // Alternance entre particuliers et entreprises
             if ($i % 3 == 0) {
                 // Entreprise
@@ -73,7 +73,7 @@ class ClientsSeeder extends Seeder
                 $name = $firstName . ' ' . $faker->lastName;
                 $email = $faker->email;
             }
-            
+
             // Créer le client
             $client = Client::create([
                 'name' => $name,
@@ -84,12 +84,12 @@ class ClientsSeeder extends Seeder
                 'notes' => $faker->boolean(30) ? $faker->sentence() : null,
                 'user_id' => 1,
             ]);
-            
+
             // Créer et associer le téléphone
             $phone = Phone::create([
                 'number' => '+237 6' . $faker->numberBetween(55, 99) . $faker->numerify('######')
             ]);
-            
+
             $client->phones()->attach($phone->id);
         }
     }

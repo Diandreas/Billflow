@@ -56,12 +56,12 @@ class DashboardController extends Controller
                     DB::raw('COALESCE(SUM(total), 0) as amount')
                 )
                 ->whereBetween('created_at', [$startDate, $endDate]);
-                
+
             // Filtrer par boutique si demandé
             if ($shopId) {
                 $query->where('shop_id', $shopId);
             }
-            
+
             $results = $query->groupBy(DB::raw('DATE(created_at)'))
                 ->orderBy('date')
                 ->get();
@@ -101,10 +101,10 @@ class DashboardController extends Controller
             $currentMonth = now()->format('m');
             $currentYear = now()->format('Y');
             $shopId = $request->input('shop_id');
-            
+
             // Requête de base
             $query = DB::table('bills');
-            
+
             // Filtrer par boutique si demandé
             if ($shopId) {
                 $query->where('shop_id', $shopId);
@@ -169,7 +169,7 @@ class DashboardController extends Controller
         $shopId = $request->input('shop_id');
         $shops = null;
         $selectedShop = null;
-        
+
         // Si c'est un admin ou manager, on peut sélectionner une boutique
         if (Gate::allows('manager', $user)) {
             if (Gate::allows('admin', $user)) {
@@ -177,7 +177,7 @@ class DashboardController extends Controller
             } else {
                 $shops = $user->managedShops;
             }
-            
+
             // Si un ID de boutique est fourni, on récupère cette boutique
             if ($shopId) {
                 $selectedShop = Shop::with('managers')->find($shopId);
@@ -191,30 +191,30 @@ class DashboardController extends Controller
                 $shops = $userShops;
             }
         }
-        
+
         // Préparation des requêtes avec filtrage par boutique au besoin
         $billsQuery = Bill::query();
-        
+
         if ($shopId) {
             $billsQuery->where('shop_id', $shopId);
         }
-        
+
         // Calcul du pourcentage de changement mensuel pour les factures
         $thisMonth = now()->month;
         $lastMonth = now()->subMonth()->month;
         $thisYear = now()->year;
         $lastYear = now()->subMonth()->year;
-        
+
         $currentMonthBills = (clone $billsQuery)
             ->whereYear('created_at', $thisYear)
             ->whereMonth('created_at', $thisMonth)
             ->count();
-            
+
         $lastMonthBills = (clone $billsQuery)
             ->whereYear('created_at', $lastYear)
             ->whereMonth('created_at', $lastMonth)
             ->count();
-        
+
         $monthlyBillsPercentChange = 0;
         if ($lastMonthBills > 0) {
             $monthlyBillsPercentChange = round((($currentMonthBills - $lastMonthBills) / $lastMonthBills) * 100, 1);
@@ -232,26 +232,26 @@ class DashboardController extends Controller
         // Statistiques des paiements de commissions (pour admin et manager)
         if (Gate::allows('manager', $user)) {
             $commissionsPaymentsQuery = CommissionPayment::query();
-            
+
             if ($shopId) {
                 $commissionsPaymentsQuery->where('shop_id', $shopId);
             }
-            
+
             $currentMonthPayments = (clone $commissionsPaymentsQuery)
                 ->whereYear('paid_at', $thisYear)
                 ->whereMonth('paid_at', $thisMonth)
                 ->count();
-                
+
             $lastMonthPayments = (clone $commissionsPaymentsQuery)
                 ->whereYear('paid_at', $lastYear)
                 ->whereMonth('paid_at', $lastMonth)
                 ->count();
-            
+
             $monthlyPaymentsPercentChange = 0;
             if ($lastMonthPayments > 0) {
                 $monthlyPaymentsPercentChange = round((($currentMonthPayments - $lastMonthPayments) / $lastMonthPayments) * 100, 1);
             }
-            
+
             $globalStats['commissionsPayments'] = [
                 'totalPayments' => $commissionsPaymentsQuery->count(),
                 'totalAmount' => number_format($commissionsPaymentsQuery->sum('amount'), 0, ',', ' ') . ' FCFA',
@@ -271,11 +271,11 @@ class DashboardController extends Controller
         $latestCommissionPayments = null;
         if (Gate::allows('manager', $user)) {
             $commissionPaymentsQuery = \App\Models\CommissionPayment::query();
-            
+
             if ($shopId) {
                 $commissionPaymentsQuery->where('shop_id', $shopId);
             }
-            
+
             $latestCommissionPayments = $commissionPaymentsQuery
                 ->with(['user', 'shop'])
                 ->latest('paid_at')
@@ -292,11 +292,11 @@ class DashboardController extends Controller
                 DB::raw('COUNT(*) as count'),
                 DB::raw('SUM(total) as total')
             );
-            
+
         if ($shopId) {
             $topClientsQuery->where('bills.shop_id', $shopId);
         }
-        
+
         // Top clients
         $topClients = $topClientsQuery
             ->groupBy('clients.id', 'clients.name')
@@ -309,7 +309,7 @@ class DashboardController extends Controller
                 $client->url = route('clients.show', $client->id);
                 return $client;
             });
-            
+
         // Statistiques des vendeurs de la boutique sélectionnée
         $sellerStats = [];
         if ($shopId) {
@@ -326,7 +326,7 @@ class DashboardController extends Controller
                 ->get()
                 ->map(function ($seller) {
                     $salesTotal = $seller->sales->sum('total');
-                    
+
                     return [
                         'id' => $seller->id,
                         'name' => $seller->name,
@@ -339,20 +339,20 @@ class DashboardController extends Controller
         }
 
         // Données des produits les plus vendus (pour le donut chart)
-        $topProductsQuery = DB::table('bill_products')
-            ->join('products', 'bill_products.product_id', '=', 'products.id')
-            ->join('bills', 'bill_products.bill_id', '=', 'bills.id')
+        $topProductsQuery = DB::table('bill_items')
+            ->join('products', 'bill_items.product_id', '=', 'products.id')
+            ->join('bills', 'bill_items.bill_id', '=', 'bills.id')
             ->select(
                 'products.id',
                 'products.name',
-                DB::raw('SUM(bill_products.quantity) as quantity'),
-                DB::raw('SUM(bill_products.total) as total')
+                DB::raw('SUM(bill_items.quantity) as quantity'),
+                DB::raw('SUM(bill_items.total) as total')
             );
-            
+
         if ($shopId) {
             $topProductsQuery->where('bills.shop_id', $shopId);
         }
-        
+
         $topProducts = $topProductsQuery
             ->groupBy('products.id', 'products.name')
             ->orderByDesc('quantity')
@@ -367,10 +367,10 @@ class DashboardController extends Controller
 
         // Données pour le graphique de performance des ventes
         $salesChartData = $this->getSalesPerformanceData($shopId);
-        
+
         // Données pour le graphique du statut des factures
         $billStatusData = $this->getBillStatusData($shopId);
-        
+
         // Données pour le graphique des méthodes de paiement
         $paymentMethodsData = $this->getPaymentMethodsData($shopId);
 
@@ -378,42 +378,42 @@ class DashboardController extends Controller
         if (Gate::allows('vendeur', $user)) {
             // Statistiques de commissions
             $vendorCommissions = \App\Models\Commission::where('user_id', $user->id);
-            
+
             if ($shopId) {
                 $vendorCommissions->where('shop_id', $shopId);
             }
-            
+
             // Statistiques des ventes du vendeur
             $vendorSales = Bill::where('user_id', $user->id);
-            
+
             if ($shopId) {
                 $vendorSales->where('shop_id', $shopId);
             }
-            
+
             $totalSales = $vendorSales->count();
             $totalSalesAmount = $vendorSales->sum('total');
-            
+
             // Nombre de ventes ce mois-ci
             $currentMonthSales = (clone $vendorSales)
                 ->whereYear('created_at', $thisYear)
                 ->whereMonth('created_at', $thisMonth)
                 ->count();
-                
+
             // Nombre de ventes le mois dernier
             $lastMonthSales = (clone $vendorSales)
                 ->whereYear('created_at', $lastYear)
                 ->whereMonth('created_at', $lastMonth)
                 ->count();
-            
+
             // Calcul du pourcentage de changement
             $salesPercentChange = 0;
             if ($lastMonthSales > 0) {
                 $salesPercentChange = round((($currentMonthSales - $lastMonthSales) / $lastMonthSales) * 100, 1);
             }
-            
+
             // Les dernières factures du vendeur
             $latestBills = (clone $vendorSales)->with('client')->latest()->take(5)->get();
-            
+
             $vendorStats = [
                 'total_sales' => $totalSales,
                 'total_sales_amount' => number_format($totalSalesAmount, 0, ',', ' ') . ' FCFA',
@@ -425,26 +425,26 @@ class DashboardController extends Controller
                 'paid_commissions' => $vendorCommissions->where('is_paid', true)->count(),
                 'pending_commissions' => $vendorCommissions->where('is_paid', false)->count(),
             ];
-            
+
             // Statistiques de paiements reçus
             $vendorPayments = \App\Models\CommissionPayment::where('user_id', $user->id);
-            
+
             if ($shopId) {
                 $vendorPayments->where('shop_id', $shopId);
             }
-            
+
             $vendorPaymentsStats = [
                 'total_payments' => $vendorPayments->count(),
                 'total_received' => number_format($vendorPayments->sum('amount'), 0, ',', ' ') . ' FCFA',
                 'last_payment' => $vendorPayments->latest('paid_at')->first(),
             ];
-            
+
             // Les 5 derniers paiements reçus
             $vendorLatestPayments = $vendorPayments->with(['shop'])
                 ->latest('paid_at')
                 ->take(5)
                 ->get();
-            
+
             return view('dashboard', compact(
                 'selectedShop',
                 'shops',
@@ -458,8 +458,8 @@ class DashboardController extends Controller
         }
 
         return view('dashboard', compact(
-            'shops', 
-            'selectedShop', 
+            'shops',
+            'selectedShop',
             'globalStats',
             'latestBills',
             'topClients',
@@ -482,32 +482,32 @@ class DashboardController extends Controller
         $currentMonthStart = $now->copy()->startOfMonth();
         $lastMonthStart = $now->copy()->subMonth()->startOfMonth();
         $lastMonthEnd = $now->copy()->subMonth()->endOfMonth();
-        
+
         // Labels pour les semaines
         $labels = [];
         $currentWeekLabels = [];
         $daysInMonth = $now->daysInMonth;
-        
+
         for ($i = 1; $i <= 4; $i++) {
             $weekStart = ($i - 1) * 7 + 1;
             $weekEnd = min($i * 7, $daysInMonth);
             $labels[] = "Sem $i ($weekStart-$weekEnd)";
             $currentWeekLabels[] = $weekStart;
         }
-        
+
         // Données des ventes pour le mois actuel
         $currentMonthData = $this->getWeeklySalesData($currentMonthStart, $now, $shopId);
-        
+
         // Données des ventes pour le mois précédent
         $previousMonthData = $this->getWeeklySalesData($lastMonthStart, $lastMonthEnd, $shopId);
-        
+
         return [
             'labels' => $labels,
             'current' => $currentMonthData,
             'previous' => $previousMonthData
         ];
     }
-    
+
     /**
      * Récupérer les données de ventes hebdomadaires pour une période donnée
      */
@@ -515,21 +515,21 @@ class DashboardController extends Controller
     {
         $daysInMonth = $startDate->daysInMonth;
         $weeklySales = [0, 0, 0, 0]; // 4 semaines
-        
+
         $query = Bill::whereBetween('date', [$startDate, $endDate]);
-        
+
         if ($shopId) {
             $query->where('shop_id', $shopId);
         }
-        
+
         $bills = $query->get();
-        
+
         foreach ($bills as $bill) {
             $day = $bill->date->day;
             $weekIndex = min(floor(($day - 1) / 7), 3); // Déterminer la semaine (0-3)
             $weeklySales[$weekIndex] += $bill->total;
         }
-        
+
         return $weeklySales;
     }
 
@@ -541,40 +541,40 @@ class DashboardController extends Controller
         $query = Bill::select('status', DB::raw('count(*) as total'))
             ->whereIn('status', ['pending', 'paid', 'cancelled'])
             ->groupBy('status');
-            
+
         if ($shopId) {
             $query->where('shop_id', $shopId);
         }
-        
+
         $results = $query->get();
-        
+
         $statusLabels = [];
         $statusValues = [];
-        
+
         // Mapper les statuts pour la traduction
         $statusMap = [
             'pending' => 'En attente',
             'paid' => 'Payée',
             'cancelled' => 'Annulée'
         ];
-        
+
         foreach ($results as $result) {
             $statusLabels[] = $statusMap[$result->status] ?? $result->status;
             $statusValues[] = $result->total;
         }
-        
+
         // Ajouter des valeurs par défaut si aucune donnée n'est trouvée
         if (empty($statusLabels)) {
             $statusLabels = ['Payée', 'En attente', 'Annulée'];
             $statusValues = [0, 0, 0];
         }
-        
+
         return [
             'labels' => $statusLabels,
             'values' => $statusValues
         ];
     }
-    
+
     /**
      * Récupérer les données pour le graphique des méthodes de paiement
      */
@@ -584,16 +584,16 @@ class DashboardController extends Controller
             ->whereNotNull('payment_method')
             ->where('status', 'paid')
             ->groupBy('payment_method');
-            
+
         if ($shopId) {
             $query->where('shop_id', $shopId);
         }
-        
+
         $results = $query->get();
-        
+
         $methodLabels = [];
         $methodValues = [];
-        
+
         // Mapper les méthodes pour la traduction
         $methodMap = [
             'cash' => 'Espèces',
@@ -602,18 +602,18 @@ class DashboardController extends Controller
             'transfer' => 'Virement',
             'check' => 'Chèque'
         ];
-        
+
         foreach ($results as $result) {
             $methodLabels[] = $methodMap[$result->payment_method] ?? $result->payment_method;
             $methodValues[] = $result->total;
         }
-        
+
         // Ajouter des valeurs par défaut si aucune donnée n'est trouvée
         if (empty($methodLabels)) {
             $methodLabels = ['Espèces', 'Carte', 'Mobile Money', 'Virement'];
             $methodValues = [0, 0, 0, 0];
         }
-        
+
         return [
             'labels' => $methodLabels,
             'values' => $methodValues
@@ -629,7 +629,7 @@ class DashboardController extends Controller
             $currentMonth = now();
             $previousMonth = now()->subMonth();
             $shopId = $request->input('shop_id');
-            
+
             // Divisez le mois en 4 semaines
             $weeks = [
                 [
@@ -649,7 +649,7 @@ class DashboardController extends Controller
                     'end' => $currentMonth->copy()->endOfMonth()
                 ]
             ];
-            
+
             $prevWeeks = [
                 [
                     'start' => $previousMonth->copy()->startOfMonth(),
@@ -668,43 +668,43 @@ class DashboardController extends Controller
                     'end' => $previousMonth->copy()->endOfMonth()
                 ]
             ];
-            
+
             // Récupérer les données pour les graphiques
             $currentWeeklyData = [];
             $previousWeeklyData = [];
-            
+
             foreach ($weeks as $index => $weekDates) {
                 $query = DB::table('bills')
                     ->select(DB::raw('COALESCE(SUM(total), 0) as revenue'))
                     ->whereBetween('created_at', [$weekDates['start'], $weekDates['end']]);
-                    
+
                 if ($shopId) {
                     $query->where('shop_id', $shopId);
                 }
-                
+
                 $currentWeeklyData[] = $query->first()->revenue;
             }
-            
+
             foreach ($prevWeeks as $index => $weekDates) {
                 $query = DB::table('bills')
                     ->select(DB::raw('COALESCE(SUM(total), 0) as revenue'))
                     ->whereBetween('created_at', [$weekDates['start'], $weekDates['end']]);
-                    
+
                 if ($shopId) {
                     $query->where('shop_id', $shopId);
                 }
-                
+
                 $previousWeeklyData[] = $query->first()->revenue;
             }
-            
+
             $labels = ['Semaine 1', 'Semaine 2', 'Semaine 3', 'Semaine 4'];
-            
+
             return response()->json([
                 'labels' => $labels,
                 'currentMonth' => $currentWeeklyData,
                 'lastMonth' => $previousWeeklyData
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'error' => $e->getMessage()
@@ -719,29 +719,29 @@ class DashboardController extends Controller
     {
         try {
             $shopId = $request->input('shop_id');
-            
+
             $query = DB::table('bills')
                 ->select('status', DB::raw('COUNT(*) as count'))
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year);
-                
+
             if ($shopId) {
                 $query->where('shop_id', $shopId);
             }
-            
+
             $statusCounts = $query->groupBy('status')->get();
-            
+
             $labels = [];
             $counts = [];
             $colors = [
                 'pending' => '#FFC107',
-                'paid' => '#28A745', 
+                'paid' => '#28A745',
                 'partially_paid' => '#17A2B8',
                 'cancelled' => '#DC3545',
                 'overdue' => '#FF5722'
             ];
             $backgroundColors = [];
-            
+
             foreach ($statusCounts as $status) {
                 $statusLabel = match ($status->status) {
                     'pending' => 'En attente',
@@ -751,18 +751,18 @@ class DashboardController extends Controller
                     'overdue' => 'En retard',
                     default => $status->status
                 };
-                
+
                 $labels[] = $statusLabel;
                 $counts[] = $status->count;
                 $backgroundColors[] = $colors[$status->status] ?? '#6C757D';
             }
-            
+
             return response()->json([
                 'labels' => $labels,
                 'counts' => $counts,
                 'colors' => $backgroundColors
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'error' => $e->getMessage()
@@ -777,34 +777,34 @@ class DashboardController extends Controller
     {
         try {
             $shopId = $request->input('shop_id');
-            
+
             // Produits à faible stock
             $lowStockQuery = DB::table('products')
                 ->where('quantity', '<=', DB::raw('reorder_level'))
                 ->where('quantity', '>', 0);
-                
+
             // Produits en rupture de stock
             $outOfStockQuery = DB::table('products')
                 ->where('quantity', '=', 0);
-            
+
             // Récupérer les mouvements d'inventaire récents
             $inventoryMovementsQuery = InventoryMovement::with(['product', 'user'])
                 ->latest()
                 ->take(5);
-                
+
             // Filtrer par boutique si nécessaire
             if ($shopId) {
                 $inventoryMovementsQuery->where('shop_id', $shopId);
             }
-            
+
             $result = [
                 'lowStockCount' => $lowStockQuery->count(),
                 'outOfStockCount' => $outOfStockQuery->count(),
                 'recentMovements' => $inventoryMovementsQuery->get()
             ];
-            
+
             return response()->json($result);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'error' => $e->getMessage()
@@ -857,13 +857,13 @@ class DashboardController extends Controller
 
     /**
      * Exporter les statistiques au format CSV
-     * 
+     *
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function exportStats()
     {
         $stats = $this->getStatsData();
-        
+
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename=statistiques-export.csv',
@@ -871,10 +871,10 @@ class DashboardController extends Controller
             'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             'Expires' => '0'
         ];
-        
+
         $callback = function() use ($stats) {
             $file = fopen('php://output', 'w');
-            
+
             // En-têtes CSV - Statistiques générales
             fputcsv($file, ['Statistiques Générales']);
             fputcsv($file, ['Métrique', 'Valeur']);
@@ -883,35 +883,35 @@ class DashboardController extends Controller
             fputcsv($file, ['Revenu Total', $stats['totalRevenue']]);
             fputcsv($file, ['Panier Moyen', $stats['averageTicket']]);
             fputcsv($file, ['']);
-            
+
             // En-têtes CSV - Top clients
             fputcsv($file, ['Top 5 Clients']);
             fputcsv($file, ['Client', 'Nombre de factures', 'Montant total']);
-            
+
             foreach ($stats['topClients'] as $client) {
                 fputcsv($file, [$client->name, $client->count, $client->total]);
             }
-            
+
             fputcsv($file, ['']);
-            
+
             // En-têtes CSV - Statistiques mensuelles
             fputcsv($file, ['Statistiques Mensuelles']);
             fputcsv($file, ['Mois', 'Nombre de factures', 'Revenu Total']);
-            
+
             foreach ($stats['monthlyStats'] as $month => $data) {
                 fputcsv($file, [
-                    $month, 
+                    $month,
                     $data['count'],
                     number_format($data['amount'], 0, ',', ' ') . ' FCFA'
                 ]);
             }
-            
+
             fclose($file);
         };
-        
+
         return response()->stream($callback, 200, $headers);
     }
-    
+
     /**
      * Récupérer les données complètes pour l'exportation des statistiques
      */
@@ -924,7 +924,7 @@ class DashboardController extends Controller
             'totalRevenue' => number_format(Bill::sum('total'), 0, ',', ' ') . ' FCFA',
             'averageTicket' => number_format(Bill::avg('total') ?? 0, 0, ',', ' ') . ' FCFA'
         ];
-        
+
         // Top clients
         $stats['topClients'] = DB::table('bills')
             ->join('clients', 'bills.client_id', '=', 'clients.id')
@@ -941,26 +941,26 @@ class DashboardController extends Controller
                 $client->total = number_format($client->total, 0, ',', ' ') . ' FCFA';
                 return $client;
             });
-        
+
         // Statistiques mensuelles (6 derniers mois)
         $monthlyStats = [];
         for ($i = 5; $i >= 0; $i--) {
             $month = now()->subMonths($i);
             $monthStr = $month->format('Y-m');
             $monthLabel = $month->translatedFormat('F Y');
-            
+
             $bills = Bill::whereYear('created_at', $month->year)
                 ->whereMonth('created_at', $month->month)
                 ->get();
-            
+
             $monthlyStats[$monthLabel] = [
                 'count' => $bills->count(),
                 'amount' => $bills->sum('total')
             ];
         }
-        
+
         $stats['monthlyStats'] = $monthlyStats;
-        
+
         return $stats;
     }
 }

@@ -1,20 +1,20 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\testdata;
 
-use App\Models\User;
 use App\Models\Shop;
+use App\Models\User;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Faker\Factory as Faker;
 
 class UserAndShopSeeder extends Seeder
 {
     public function run()
     {
         $faker = Faker::create('fr_FR');
-        
+
         // Création d'un utilisateur administrateur principal
         $admin = User::create([
             'name' => 'Admin Principal',
@@ -44,37 +44,37 @@ class UserAndShopSeeder extends Seeder
         // Création de 5 boutiques avec des emplacements diversifiés
         $shopData = [
             [
-                'name' => 'BillFlow Central', 
+                'name' => 'BillFlow Central',
                 'address' => '123 Avenue du Commerce, Douala',
                 'city' => 'Douala',
                 'region' => 'Littoral'
             ],
             [
-                'name' => 'BillFlow Yaoundé', 
+                'name' => 'BillFlow Yaoundé',
                 'address' => '45 Boulevard des Ministères, Yaoundé',
                 'city' => 'Yaoundé',
                 'region' => 'Centre'
             ],
             [
-                'name' => 'BillFlow Ouest', 
+                'name' => 'BillFlow Ouest',
                 'address' => '78 Rue du Marché, Bafoussam',
                 'city' => 'Bafoussam',
                 'region' => 'Ouest'
             ],
             [
-                'name' => 'BillFlow Littoral', 
+                'name' => 'BillFlow Littoral',
                 'address' => '10 Avenue de la Plage, Kribi',
                 'city' => 'Kribi',
                 'region' => 'Sud'
             ],
             [
-                'name' => 'BillFlow Nord', 
+                'name' => 'BillFlow Nord',
                 'address' => '55 Rue des Artisans, Garoua',
                 'city' => 'Garoua',
                 'region' => 'Nord'
             ],
         ];
-        
+
         $shops = [];
         foreach ($shopData as $data) {
             $shop = Shop::create([
@@ -112,7 +112,7 @@ class UserAndShopSeeder extends Seeder
         // Assigner les managers aux boutiques (un manager par boutique)
         foreach ($managers as $index => $manager) {
             $manager->shops()->attach($shops[$index]->id, [
-                'is_manager' => true, 
+                'is_manager' => true,
                 'assigned_at' => $faker->dateTimeBetween('-1 year', '-6 months')
             ]);
         }
@@ -120,11 +120,11 @@ class UserAndShopSeeder extends Seeder
         // Création de 15 vendeurs avec des statistiques variées
         $vendeurs = [];
         $commissionRates = [3.0, 3.5, 4.0, 4.5, 5.0, 3.0, 3.5, 4.0, 4.5, 5.0, 3.0, 3.5, 4.0, 4.5, 5.0];
-        
+
         for ($i = 0; $i < 15; $i++) {
             $gender = $faker->randomElement(['male', 'female']);
             $firstName = $gender === 'male' ? $faker->firstNameMale : $faker->firstNameFemale;
-            
+
             $vendeur = User::create([
                 'name' => $firstName . ' ' . $faker->lastName,
                 'email' => 'vendeur' . ($i + 1) . '@billflow.com',
@@ -158,7 +158,7 @@ class UserAndShopSeeder extends Seeder
         for ($i = 0; $i < 5; $i++) {
             $vendeur = $vendeurs[$i];
             $currentShops = $vendeur->shops->pluck('id')->toArray();
-            
+
             // Trouver une boutique où ce vendeur ne travaille pas encore
             $availableShops = Shop::whereNotIn('id', $currentShops)->pluck('id');
             if ($availableShops->isNotEmpty()) {
@@ -171,14 +171,14 @@ class UserAndShopSeeder extends Seeder
                 $this->command->info('Vendeur ' . $vendeur->name . ' assigné à une boutique supplémentaire avec commission spéciale');
             }
         }
-        
-        
+
+
         $this->command->info('Création des utilisateurs et boutiques terminée !');
-        
+
         // Correction du problème avec les comptes utilisant un rôle invalide (staff)
         $this->command->info('NOTE: Le rôle "staff" n\'existe pas dans l\'énumération de la table users.');
         $this->command->info('Les rôles valides sont: admin, manager, vendeur');
-        
+
         // Créer le compte de support avec un rôle valide
         $supportUser = User::create([
             'name' => 'Thérèse Bruneau',
@@ -191,7 +191,7 @@ class UserAndShopSeeder extends Seeder
             'created_at' => now()->subMonths(8),
             'updated_at' => now()->addYear(),
         ]);
-        
+
         $this->command->info('Compte de support créé : support.technique@billflow.com avec le rôle "manager"');
     }
-} 
+}

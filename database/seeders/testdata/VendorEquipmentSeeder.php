@@ -1,10 +1,9 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\testdata;
 
-use App\Models\User;
 use App\Models\Shop;
-
+use App\Models\User;
 use App\Models\VendorEquipment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Arr;
@@ -15,12 +14,12 @@ class VendorEquipmentSeeder extends Seeder
     {
         // Récupérer tous les vendeurs
         $vendors = User::where('role', 'vendeur')->get();
-        
+
         if ($vendors->isEmpty()) {
             $this->command->info('Aucun vendeur trouvé. Exécutez d\'abord UserAndShopSeeder.');
             return;
         }
-        
+
         // Types d'équipements possibles
         $equipmentTypes = [
             'Tablette',
@@ -31,7 +30,7 @@ class VendorEquipmentSeeder extends Seeder
             'Badge',
             'Caisse enregistreuse'
         ];
-        
+
         // Marques par type d'équipement
         $brandsByType = [
             'Tablette' => ['Apple', 'Samsung', 'Lenovo'],
@@ -42,38 +41,38 @@ class VendorEquipmentSeeder extends Seeder
             'Badge' => ['Generic'],
             'Caisse enregistreuse' => ['Casio', 'Sharp', 'IBM']
         ];
-        
+
         // États possibles
         $states = ['returned', 'returned', 'assigned', 'assigned'];
         $shops_id = [1, 2, 3, 4];
 
-        
+
         // Attribuer des équipements aux vendeurs
         foreach ($vendors as $vendor) {
             // Chaque vendeur reçoit entre 2 et 4 équipements
             $equipmentCount = rand(2, 4);
-            
+
             // Tableau pour suivre les types déjà attribués
             $assignedTypes = [];
-            
+
             for ($i = 0; $i < $equipmentCount; $i++) {
                 // Sélectionner un type d'équipement qui n'a pas encore été attribué
                 $availableTypes = array_diff($equipmentTypes, $assignedTypes);
                 if (empty($availableTypes)) break;
-                
+
                 $type = Arr::random($availableTypes);
                 $assignedTypes[] = $type;
-                
+
                 // Sélectionner une marque pour ce type
                 $brand = Arr::random($brandsByType[$type]);
-                
+
                 // Générer un numéro de série aléatoire
                 $serialNumber = strtoupper(substr($brand, 0, 3)) . '-' . rand(10000, 99999);
-                
+
                 // Déterminer si l'équipement est retourné (10% de chance)
                 $isReturned = (rand(1, 10) === 1);
                 $shops = Shop::all();
-                
+
                 // Créer l'équipement
                 VendorEquipment::create([
                     'user_id' => $vendor->id,
@@ -95,4 +94,4 @@ class VendorEquipmentSeeder extends Seeder
             }
         }
     }
-} 
+}
