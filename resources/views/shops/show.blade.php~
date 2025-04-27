@@ -307,7 +307,7 @@
                                     </div>
                                 </div>
 
-
+                             
                             </div>
                         @empty
                             <div class="col-span-2 bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-4">

@@ -14,10 +14,54 @@ class ShopController extends Controller
     /**
      * Affiche la liste des boutiques
      */
-    public function index()
+    /**
+     * Affiche la liste des boutiques avec filtrage et tri
+     */
+    public function index(Request $request)
     {
-        $shops = Shop::with('managers')->paginate(15);
-        return view('shops.index', compact('shops'));
+        $query = Shop::with('managers', 'users');
+
+        // Recherche par texte
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtrage par statut
+        if ($request->filled('status')) {
+            $status = $request->input('status');
+            if ($status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($status === 'inactive') {
+                $query->where('is_active', false);
+            }
+        }
+
+        // Tri des résultats
+        $sort = $request->input('sort', 'name');
+        $direction = 'asc';
+
+        if ($sort === 'created_at') {
+            $query->orderBy('created_at', 'desc');
+        } elseif ($sort === 'status') {
+            $query->orderBy('is_active', 'desc');
+        } else {
+            $query->orderBy('name', 'asc');
+        }
+
+        // Récupération des statistiques
+        $totalShops = $query->count();
+        $activeShops = Shop::where('is_active', true)->count();
+        $inactiveShops = Shop::where('is_active', false)->count();
+
+        $shops = $query->paginate(15)->withQueryString();
+
+        return view('shops.index', compact('shops', 'totalShops', 'activeShops', 'inactiveShops'));
     }
 
     /**
@@ -60,13 +104,13 @@ class ShopController extends Controller
     public function show(Shop $shop)
     {
         $shop->load(['managers', 'vendors', 'bills']);
-        
+
         // Préparer les statistiques des commissions pour chaque vendeur
         foreach ($shop->vendors as $vendor) {
             $vendorCommissions = \App\Models\Commission::where('user_id', $vendor->id)
                 ->where('shop_id', $shop->id)
                 ->get();
-                
+
             $vendor->commission_stats = [
                 'total' => $vendorCommissions->sum('amount'),
                 'pending' => $vendorCommissions->where('is_paid', false)->sum('amount'),
@@ -74,7 +118,7 @@ class ShopController extends Controller
                 'last_commission' => $vendorCommissions->sortByDesc('created_at')->first()
             ];
         }
-        
+
         return view('shops.show', compact('shop'));
     }
 
@@ -106,7 +150,7 @@ class ShopController extends Controller
             if ($shop->logo_path) {
                 Storage::disk('public')->delete($shop->logo_path);
             }
-            
+
             $logoPath = $request->file('logo')->store('shop-logos', 'public');
             $validated['logo_path'] = $logoPath;
         }
@@ -138,7 +182,7 @@ class ShopController extends Controller
         return redirect()->route('shops.index')
             ->with('success', 'Boutique supprimée avec succès');
     }
-    
+
     /**
      * Gère l'assignation d'utilisateurs à une boutique
      */
@@ -146,10 +190,10 @@ class ShopController extends Controller
     {
         $users = User::where('role', '<>', 'admin')->get();
         $assignedUsers = $shop->users;
-        
+
         return view('shops.manage-users', compact('shop', 'users', 'assignedUsers'));
     }
-    
+
     /**
      * Ajoute ou met à jour des utilisateurs pour une boutique
      */
@@ -161,7 +205,7 @@ class ShopController extends Controller
             'users.*.is_manager' => 'boolean',
             'users.*.custom_commission_rate' => 'nullable|numeric|min:0|max:100',
         ]);
-        
+
         foreach ($validated['users'] as $userData) {
             $shop->users()->syncWithoutDetaching([
                 $userData['id'] => [
@@ -171,19 +215,19 @@ class ShopController extends Controller
                 ]
             ]);
         }
-        
+
         return redirect()->route('shops.show', $shop)
             ->with('success', 'Utilisateurs assignés avec succès');
     }
-    
+
     /**
      * Retire un utilisateur d'une boutique
      */
     public function removeUser(Request $request, Shop $shop, User $user)
     {
         $shop->users()->detach($user->id);
-        
+
         return redirect()->route('shops.show', $shop)
             ->with('success', 'Utilisateur retiré de la boutique avec succès');
     }
-} 
+}

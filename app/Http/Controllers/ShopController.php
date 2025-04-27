@@ -20,6 +20,15 @@ class ShopController extends Controller
     public function index(Request $request)
     {
         $query = Shop::with('managers', 'users');
+        $user = auth()->user();
+
+        // Si l'utilisateur est un manager, filtrer pour ne montrer que ses boutiques
+        if ($user->role === 'manager') {
+            $query->whereHas('users', function($q) use ($user) {
+                $q->where('users.id', $user->id)
+                    ->where('shop_user.is_manager', true);
+            });
+        }
 
         // Recherche par texte
         if ($request->filled('search')) {
@@ -54,16 +63,31 @@ class ShopController extends Controller
             $query->orderBy('name', 'asc');
         }
 
-        // Récupération des statistiques
-        $totalShops = $query->count();
-        $activeShops = Shop::where('is_active', true)->count();
-        $inactiveShops = Shop::where('is_active', false)->count();
+        // Récupération des statistiques - adaptées au contexte utilisateur
+        if ($user->role === 'manager') {
+            // Pour les managers, compter uniquement leurs boutiques
+            $managerShopIds = $user->shops()
+                ->where('shop_user.is_manager', true)
+                ->pluck('shops.id');
+
+            $totalShops = count($managerShopIds);
+            $activeShops = Shop::whereIn('id', $managerShopIds)
+                ->where('is_active', true)
+                ->count();
+            $inactiveShops = Shop::whereIn('id', $managerShopIds)
+                ->where('is_active', false)
+                ->count();
+        } else {
+            // Pour les admins, compter toutes les boutiques
+            $totalShops = $query->count();
+            $activeShops = Shop::where('is_active', true)->count();
+            $inactiveShops = Shop::where('is_active', false)->count();
+        }
 
         $shops = $query->paginate(15)->withQueryString();
 
         return view('shops.index', compact('shops', 'totalShops', 'activeShops', 'inactiveShops'));
     }
-
     /**
      * Affiche le formulaire de création d'une boutique
      */
