@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Barter;
 use App\Models\BarterItem;
+use App\Models\Bill;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -176,61 +177,57 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        // Charger toutes les factures sans pagination
-        $invoices = $product->bills()->with('client')->latest('date')->get();
-
-        // Statistiques du produit
-        $stats = [
-            'total_sales' => $invoices->sum(function($bill) {
-                return $bill->pivot->quantity * $bill->pivot->price;
-            }),
-            'total_quantity' => $invoices->sum('pivot.quantity'),
-            'average_price' => $invoices->avg('pivot.price'),
-            'usage_count' => $invoices->count(),
-            'first_use' => $invoices->last()?->date,
-            'last_use' => $invoices->first()?->date,
-        ];
-
-        // Évolution mensuelle
-        $monthlyStats = $invoices
-            ->groupBy(function($bill) {
-                return $bill->date->format('Y-m');
-            })
-            ->map(function($bills) {
-                return [
-                    'count' => $bills->count(),
-                    'total' => $bills->sum(function($bill) {
-                        return $bill->pivot->quantity * $bill->pivot->price;
-                    }),
-                    'quantity' => $bills->sum('pivot.quantity'),
-                    'average_price' => $bills->avg('pivot.price')
+        // Statistiques
+        $stats = $this->getProductStats($product);
+        
+        // Historique des prix directement calculé
+        $priceHistory = $this->getPriceHistory($product);
+        
+        // Récupérer les factures associées à ce produit
+        $invoices = Bill::whereHas('items', function($query) use ($product) {
+            $query->where('product_id', $product->id);
+        })
+        ->with(['client', 'items' => function($query) use ($product) {
+            $query->where('product_id', $product->id);
+        }])
+        ->orderBy('date', 'desc')
+        ->get();
+        
+        // Ajouter les informations de pivot
+        foreach ($invoices as $invoice) {
+            $item = $invoice->items->first();
+            if ($item) {
+                $invoice->pivot = (object)[
+                    'price' => $item->unit_price,
+                    'quantity' => $item->quantity,
+                    'total' => $item->total
                 ];
-            });
-
-        // Prix utilisés
-        $priceHistory = DB::table('bill_items')
-            ->join('bills', 'bill_items.bill_id', '=', 'bills.id')
-            ->where('bill_items.product_id', $product->id)
-            ->orderBy('bills.date', 'desc')
-            ->select('bills.date', 'bill_items.price')
-            ->limit(10)
-            ->get();
-
-        // Obtenir les trocs associés
-        $barterItems = $product->barterItems()->with('barter')->latest()->take(5)->get();
-
-        // Obtenir les statistiques de troc pour ce produit
-        $barterStats = $this->getProductBarterStats($product->id);
-
-        return view('products.show', compact(
-            'product',
-            'stats',
-            'monthlyStats',
-            'priceHistory',
-            'invoices',
-            'barterItems',
-            'barterStats'
-        ));
+            }
+        }
+        
+        // Si c'est un produit physique, récupérer les trocs
+        $barterItems = collect();
+        $barterStats = [
+            'total_barters' => 0,
+            'total_quantity' => 0,
+            'total_value' => 0,
+            'average_value' => 0,
+            'given_barters' => 0,
+            'received_barters' => 0
+        ];
+        
+        if ($product->type === 'physical' && $product->is_barterable) {
+            // Récupérer les trocs
+            $barterItems = BarterItem::where('product_id', $product->id)
+                ->with(['barter', 'barter.client'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            // Calculer les statistiques des trocs
+            $barterStats = $this->getBarterStats($product);
+        }
+        
+        return view('products.show', compact('product', 'stats', 'priceHistory', 'invoices', 'barterItems', 'barterStats'));
     }
 
     public function edit(Product $product)
@@ -359,39 +356,57 @@ class ProductController extends Controller
     }
 
     /**
+     * Récupère les statistiques du produit
+     */
+    private function getProductStats($product)
+    {
+        // Récupérer les factures
+        $items = DB::table('bill_items')
+            ->join('bills', 'bill_items.bill_id', '=', 'bills.id')
+            ->where('product_id', $product->id)
+            ->select('bill_items.*', 'bills.date')
+            ->get();
+        
+        // Calculer les statistiques
+        $stats = [
+            'total_sales' => $items->sum('total'),
+            'total_quantity' => $items->sum('quantity'),
+            'average_price' => $items->count() > 0 ? $items->sum('total') / $items->sum('quantity') : 0,
+            'usage_count' => $items->count(),
+            'first_use' => $items->min('date') ? new \Carbon\Carbon($items->min('date')) : null,
+            'last_use' => $items->max('date') ? new \Carbon\Carbon($items->max('date')) : null,
+        ];
+        
+        return $stats;
+    }
+    
+    /**
      * Récupère les statistiques des trocs pour un produit
      */
-    private function getProductBarterStats($productId)
+    private function getBarterStats($product)
     {
-        // Total des trocs où ce produit est utilisé
-        $totalBarters = BarterItem::where('product_id', $productId)->count();
-
-        // Nombre de trocs où ce produit a été reçu par le client (sorti du stock)
-        $receivedBarters = BarterItem::where('product_id', $productId)
-            ->where('type', 'received')
-            ->count();
-
-        // Nombre de trocs où ce produit a été donné par le client (entré en stock)
-        $givenBarters = BarterItem::where('product_id', $productId)
-            ->where('type', 'given')
-            ->count();
-
+        // Récupérer tous les trocs associés à ce produit
+        $barterItems = BarterItem::where('product_id', $product->id)->get();
+        
+        // Nombre de trocs où ce produit a été donné par le client
+        $givenBarters = $barterItems->where('type', 'given')->count();
+        
+        // Nombre de trocs où ce produit a été reçu par le client
+        $receivedBarters = $barterItems->where('type', 'received')->count();
+        
+        // Valeur totale des trocs impliquant ce produit
+        $totalValue = $barterItems->sum('total_value');
+        
         // Quantité totale échangée
-        $totalQuantity = BarterItem::where('product_id', $productId)->sum('quantity');
-
-        // Valeur totale échangée
-        $totalValue = BarterItem::where('product_id', $productId)
-            ->selectRaw('SUM(value * quantity) as total_value')
-            ->first()
-            ->total_value ?? 0;
-
+        $totalQuantity = $barterItems->sum('quantity');
+        
         return [
-            'total_barters' => $totalBarters,
-            'received_barters' => $receivedBarters,
-            'given_barters' => $givenBarters,
+            'total_barters' => $barterItems->count(),
             'total_quantity' => $totalQuantity,
             'total_value' => $totalValue,
-            'average_value' => $totalQuantity > 0 ? $totalValue / $totalQuantity : 0,
+            'average_value' => $barterItems->count() > 0 ? $totalValue / $barterItems->count() : 0,
+            'given_barters' => $givenBarters,
+            'received_barters' => $receivedBarters
         ];
     }
 
@@ -1051,5 +1066,34 @@ class ProductController extends Controller
             return redirect()->back()
                 ->withErrors(['error' => 'Erreur lors du chargement du fichier : ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Récupère l'historique des prix directement depuis la base de données
+     */
+    private function getPriceHistory($product)
+    {
+        // Récupérer tous les prix utilisés pour ce produit
+        $priceHistory = DB::table('bill_items')
+            ->select(
+                'unit_price as price',
+                DB::raw('COUNT(*) as usage_count'), 
+                DB::raw('SUM(quantity) as total_quantity'),
+                DB::raw('SUM(total) as total_amount'),
+                DB::raw('MIN(bills.date) as first_used'),
+                DB::raw('MAX(bills.date) as last_used')
+            )
+            ->join('bills', 'bill_items.bill_id', '=', 'bills.id')
+            ->where('product_id', $product->id)
+            ->groupBy('unit_price')
+            ->orderBy('usage_count', 'desc')
+            ->get();
+
+        // Marquer le prix par défaut
+        foreach ($priceHistory as $price) {
+            $price->is_default = ($price->price == $product->default_price);
+        }
+        
+        return $priceHistory;
     }
 }
