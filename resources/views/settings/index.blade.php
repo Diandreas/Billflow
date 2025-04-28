@@ -55,6 +55,15 @@
                                     <input type="text" name="siret" value="{{ $settings->siret }}"
                                            class="mt-1 block w-full rounded-md border-gray-300">
                                 </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        Numéro de Contribuable
+                                    </label>
+                                    <input type="text" name="tax_number" value="{{ $settings->tax_number }}"
+                                           class="mt-1 block w-full rounded-md border-gray-300">
+                                    <p class="mt-1 text-xs text-gray-500">Ce numéro apparaîtra sur vos factures</p>
+                                </div>
                             </div>
 
                             <!-- Contact Info -->
