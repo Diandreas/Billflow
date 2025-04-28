@@ -266,4 +266,14 @@ Route::prefix('qrcodes')->name('qrcodes.')->group(function () {
     });
 });
 
+// Routes pour l'exportation et l'importation du système (admin uniquement)
+Route::prefix('admin/system')->middleware(['auth', 'can:admin'])->group(function () {
+    Route::get('/export-import', [App\Http\Controllers\SystemExportImportController::class, 'index'])->name('system.export-import');
+    Route::get('/export', [App\Http\Controllers\SystemExportImportController::class, 'exportSystem'])->name('system.export');
+    Route::post('/import', [App\Http\Controllers\SystemExportImportController::class, 'importSystem'])->name('system.import');
+    Route::post('/import/confirm', [App\Http\Controllers\SystemExportImportController::class, 'confirmImport'])->name('system.import.confirm');
+    Route::get('/backup/{filename}/download', [App\Http\Controllers\SystemExportImportController::class, 'downloadBackup'])->name('system.backup.download');
+    Route::delete('/backup/{filename}', [App\Http\Controllers\SystemExportImportController::class, 'deleteBackup'])->name('system.backup.delete');
+});
+
 require __DIR__.'/auth.php';
