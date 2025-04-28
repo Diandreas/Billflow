@@ -22,7 +22,8 @@ class Product extends Model
         'cost_price',
         'status',
         'category_id',
-        'is_barterable'
+        'is_barterable',
+        'supplier_id'
     ];
 
     protected $casts = [
@@ -45,6 +46,14 @@ class Product extends Model
     public function category()
     {
         return $this->belongsTo(ProductCategory::class);
+    }
+
+    /**
+     * Relation avec le fournisseur
+     */
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     /**

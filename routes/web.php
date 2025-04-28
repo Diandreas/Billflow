@@ -20,6 +20,8 @@ use App\Http\Controllers\ShopDashboardController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CommissionController;
 use App\Http\Controllers\CommissionPaymentController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\ImportMapperController;
 
 Route::get('/', [DashboardController::class, 'index'])
     ->middleware(['auth'])
@@ -50,18 +52,38 @@ Route::middleware('auth')->group(function () {
     Route::get('/templates/import-clients.csv', [ClientController::class, 'importTemplate'])->name('clients.import.template');
 
     // Routes pour les produits
-    Route::resource('products', ProductController::class);
+    Route::resource('products', ProductController::class)->except(['show']);
     Route::get('/api/products/search', [ProductController::class, 'search'])->name('products.search');
     Route::post('/api/products/quick-create', [ProductController::class, 'quickCreate'])->name('products.quick-create');
     Route::get('/api/products/{product}/price-history', [ProductController::class, 'priceHistory'])->name('products.price-history');
     Route::get('/api/products/{product}/usage-stats', [ProductController::class, 'usageStats'])->name('products.usage-stats');
     Route::get('/clients/search', [ClientController::class, 'search']);
     Route::get('/products/search', [ProductController::class, 'search']);
+    
+    // Route pour l'exportation des produits - avant la route show pour éviter les conflits
+    Route::get('/products/export', [ProductController::class, 'export'])->name('products.export');
+    Route::get('/products-export', [ProductController::class, 'showExportForm'])->name('products.export.form');
+    
+    // Route de détail des produits - après les routes spécifiques
     Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
+    
+    // Nouvelles routes pour l'importation de produits
+    Route::get('/products-import', [ImportMapperController::class, 'showImportForm'])->name('products.import.form');
+    Route::post('/products-import', [ImportMapperController::class, 'analyzeFile'])->name('products.import');
+    Route::post('/products-import/process-mapping', [ImportMapperController::class, 'processMapping'])->name('products.process-mapping');
+    Route::get('/products-import/template', [ProductController::class, 'downloadTemplate'])->name('products.import.template');
+    Route::get('/products-import/review', [ProductController::class, 'reviewImport'])->name('products.review-import');
+    Route::post('/products-import/process-review', [ProductController::class, 'processReviewedImport'])->name('products.process-reviewed-import');
 
     // Routes pour les catégories de produits
     Route::resource('product-categories', ProductCategoryController::class);
     Route::get('/api/product-categories', [ProductCategoryController::class, 'getAll'])->name('api.product-categories');
+
+    // Routes pour les fournisseurs
+    Route::resource('suppliers', SupplierController::class);
+    Route::get('/api/suppliers/search', [SupplierController::class, 'search'])->name('suppliers.search');
+    Route::post('/api/suppliers/quick-create', [SupplierController::class, 'quickCreate'])->name('suppliers.quick-create');
+    Route::get('/api/suppliers/stats', [SupplierController::class, 'getStats'])->name('suppliers.stats');
 
     // Routes pour la gestion de l'inventaire
     Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');

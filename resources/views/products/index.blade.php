@@ -9,10 +9,20 @@
                     {{ __('Gérez votre catalogue de produits et services') }}
                 </p>
             </div>
-            <button onclick="toggleModal('newProductModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-5 rounded-lg shadow-sm inline-flex items-center transition-colors duration-150">
-                <i class="bi bi-plus-lg mr-2"></i>
-                {{ __('Nouveau Produit') }}
-            </button>
+            <div class="flex space-x-2">
+                <a href="{{ route('products.import.form') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-5 rounded-lg shadow-sm inline-flex items-center transition-colors duration-150">
+                    <i class="bi bi-file-earmark-arrow-up mr-2"></i>
+                    {{ __('Importer') }}
+                </a>
+                <a href="{{ route('products.export.form') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-5 rounded-lg shadow-sm inline-flex items-center transition-colors duration-150">
+                    <i class="bi bi-file-earmark-arrow-down mr-2"></i>
+                    {{ __('Exporter') }}
+                </a>
+                <button onclick="toggleModal('newProductModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-5 rounded-lg shadow-sm inline-flex items-center transition-colors duration-150">
+                    <i class="bi bi-plus-lg mr-2"></i>
+                    {{ __('Nouveau Produit') }}
+                </button>
+            </div>
         </div>
     </x-slot>
 
