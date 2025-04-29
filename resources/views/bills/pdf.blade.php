@@ -321,23 +321,13 @@
         @endif
     </div>
 
-    <!-- QR Code -->
-    @if(isset($qrCode) && $qrCode)
-        <div style="position: absolute; top: 90px; right: 30px; text-align: center;">
-            <img src="data:image/png;base64,{{ $qrCode }}" alt="QR Code" style="width: 100px; height: 100px; max-width: 100px; max-height: 100px;">
-            <p style="font-size: 9px; margin-top: 5px;">Scanner pour vérifier l'authenticité</p>
-        </div>
-    @else
-        <div style="position: absolute; top: 90px; right: 30px; text-align: center; width: 100px; height: 100px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center;">
-            <p style="font-size: 9px; color: #999;">QR code non disponible</p>
-        </div>
-    @endif
-
     <!-- Pied de page -->
     <div class="footer-container">
         <div class="footer">
             <p>
-                {{ $settings->company_name ?? 'Entreprise' }} - {{ isset($settings->siret) && $settings->siret ? 'SIRET: ' . $settings->siret : '' }}
+                {{ $settings->company_name ?? 'Entreprise' }} 
+                {{ isset($settings->siret) && $settings->siret ? '- SIRET: ' . $settings->siret : '' }}
+                {{ isset($settings->tax_number) && $settings->tax_number ? '- N° Contribuable: ' . $settings->tax_number : '' }}
             </p>
             <p>Nous vous remercions pour votre confiance.</p>
             <p>Cette facture constitue une preuve d'achat et peut être exigée pour tout service après-vente.</p>
