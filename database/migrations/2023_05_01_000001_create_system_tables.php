@@ -100,6 +100,7 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->string('website')->nullable();
             $table->string('siret')->nullable();
+            $table->string('tax_number')->nullable()->comment('Numéro de contribuable');
             $table->decimal('tax_rate', 5, 2)->default(19.25);
             $table->string('currency')->default('XAF');
             $table->string('logo_path')->nullable();
