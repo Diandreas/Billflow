@@ -13,6 +13,7 @@ class Setting extends Model
         'email',
         'website',
         'siret',
+        'tax_number',
         'logo_path'
     ];
 
