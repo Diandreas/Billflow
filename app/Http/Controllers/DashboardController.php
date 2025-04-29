@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Client;
 use App\Models\Shop;
 use App\Models\User;
+use App\Models\Supplier;
 use App\Models\InventoryMovement;
 use App\Models\CommissionPayment;
 use Carbon\Carbon;
@@ -962,5 +963,91 @@ class DashboardController extends Controller
         $stats['monthlyStats'] = $monthlyStats;
 
         return $stats;
+    }
+
+    /**
+     * Récupère les statistiques des meilleurs fournisseurs
+     */
+    public function getTopSuppliers(Request $request)
+    {
+        try {
+            $timeRange = $request->input('timeRange', 'month');
+            $limit = $request->input('limit', 5);
+            $shopId = $request->input('shop_id');
+
+            // Gestion des dates
+            $startDate = match ($timeRange) {
+                'month' => now()->startOfMonth(),
+                'quarter' => now()->startOfQuarter(),
+                'year' => now()->startOfYear(),
+                'all' => now()->subYears(50), // Toutes les données
+                default => now()->startOfMonth()
+            };
+            $endDate = now();
+
+            // Requête de base pour les statistiques de vente par fournisseur
+            $query = DB::table('suppliers')
+                ->join('products', 'suppliers.id', '=', 'products.supplier_id')
+                ->join('bill_items', 'products.id', '=', 'bill_items.product_id')
+                ->join('bills', 'bill_items.bill_id', '=', 'bills.id')
+                ->where('bills.status', '!=', 'cancelled')
+                ->where('bills.date', '>=', $startDate)
+                ->where('bills.date', '<=', $endDate)
+                ->select(
+                    'suppliers.id',
+                    'suppliers.name',
+                    DB::raw('COUNT(DISTINCT bills.id) as bills_count'),
+                    DB::raw('SUM(bill_items.quantity) as products_sold'),
+                    DB::raw('SUM(bill_items.quantity * bill_items.price) as total_sales')
+                )
+                ->groupBy('suppliers.id', 'suppliers.name')
+                ->orderByDesc('total_sales');
+
+            // Filtrer par boutique si spécifié
+            if ($shopId) {
+                $query->where('bills.shop_id', $shopId);
+            }
+
+            // Top fournisseurs par ventes
+            $topSuppliersBySales = $query->limit($limit)->get();
+
+            // Top fournisseurs par produits en stock
+            $topSuppliersByStock = Supplier::withCount('products')
+                ->join('products', 'suppliers.id', '=', 'products.supplier_id')
+                ->where('products.type', 'physical')
+                ->select('suppliers.*', DB::raw('SUM(products.stock_quantity) as total_stock'))
+                ->groupBy('suppliers.id')
+                ->orderByDesc('total_stock')
+                ->limit($limit)
+                ->get();
+
+            // Top fournisseurs par valeur de stock
+            $topSuppliersByStockValue = Supplier::withCount('products')
+                ->join('products', 'suppliers.id', '=', 'products.supplier_id')
+                ->where('products.type', 'physical')
+                ->select(
+                    'suppliers.*', 
+                    DB::raw('SUM(products.stock_quantity * products.cost_price) as stock_value')
+                )
+                ->groupBy('suppliers.id')
+                ->orderByDesc('stock_value')
+                ->limit($limit)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'top_suppliers_by_sales' => $topSuppliersBySales,
+                    'top_suppliers_by_stock' => $topSuppliersByStock,
+                    'top_suppliers_by_stock_value' => $topSuppliersByStockValue
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la récupération des meilleurs fournisseurs: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des données: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
