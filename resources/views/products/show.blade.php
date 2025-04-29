@@ -244,76 +244,76 @@
             <!-- Historique des prix - visible par défaut -->
             <div id="prices-content" class="tab-content bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mb-6">
                 <div class="p-5">
-                    <div class="mb-4 flex justify-between items-center">
+                    <div class="mb-6 flex justify-between items-center">
                         <h3 class="font-medium text-gray-900 dark:text-gray-100 text-lg">{{ __('Historique des prix utilisés') }}</h3>
 
-                        @if(count($priceHistory) > 0)
                             <div class="flex items-center space-x-2 text-sm">
                                 <span class="text-gray-500 dark:text-gray-400">{{ __('Prix par défaut') }}: <span class="font-medium text-gray-700 dark:text-gray-300">{{ number_format($product->default_price, 0, ',', ' ') }} FCFA</span></span>
-                            </div>
-                        @endif
+                            <button id="refreshPriceHistory" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 ml-2">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                        </div>
                     </div>
 
-                    @if(count($priceHistory) > 0)
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            @foreach($priceHistory as $price)
-                                @php
-                                    $defaultPrice = $product->default_price ?: 1;
-                                    $priceDiff = $price->price - $product->default_price;
-                                    $pricePercent = ($priceDiff / $defaultPrice) * 100;
-                                    $isDefaultPrice = $price->price == $product->default_price;
-                                    $usageCount = property_exists($price, 'usage_count') ? $price->usage_count : 1;
-                                @endphp
-                                <div class="price-card border rounded-md {{ $isDefaultPrice ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900' : 'border-gray-200 dark:border-gray-700' }}" data-price="{{ $price->price }}">
+                    <div id="priceHistoryLoader" class="text-center py-8">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ __('Chargement...') }}</p>
+                            </div>
+
+                    <div id="priceHistoryContainer" class="hidden">
+                        <!-- Les données seront chargées par JavaScript -->
+                    </div>
+
+                    <div id="noPriceHistoryMessage" class="text-center py-6 text-gray-500 dark:text-gray-400 hidden">
+                        <p>{{ __('Aucun historique de prix disponible') }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prix graphique - template qui sera cloné par JavaScript -->
+            <template id="price-card-template">
+                <div class="price-card border rounded-md mb-6">
                                     <div class="p-4">
-                                        <div class="flex justify-between">
+                        <div class="flex justify-between items-start">
                                             <div>
-                                                <div class="text-lg font-bold text-gray-900 dark:text-gray-100">
-                                                    {{ number_format($price->price, 0, ',', ' ') }} FCFA
+                                <div class="flex items-center">
+                                    <div class="text-lg font-bold text-gray-900 dark:text-gray-100 price-value"></div>
+                                    <span class="price-badge ml-2 px-2 py-1 text-xs rounded-md hidden"></span>
                                                 </div>
                                                 <div class="mt-1 flex items-center">
-                                                    <span class="text-sm text-gray-500 dark:text-gray-400">{{ $usageCount }} facture(s)</span>
-
-                                                    @if($priceDiff != 0)
-                                                        <span class="ml-2 text-sm {{ $priceDiff > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
-                                                    {{ $priceDiff > 0 ? '+' : '' }}{{ number_format($pricePercent, 1) }}%
-                                                </span>
-                                                    @endif
+                                    <span class="text-sm text-gray-500 dark:text-gray-400 usage-count"></span>
+                                    <span class="price-diff ml-2 text-sm"></span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-medium text-gray-800 dark:text-gray-200">Quantité totale: <span class="total-quantity"></span></div>
+                                <div class="text-sm font-medium text-gray-800 dark:text-gray-200">Montant total: <span class="total-amount"></span></div>
+                            </div>
                                                 </div>
+                    </div>
+                    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Première utilisation</div>
+                                <div class="text-sm font-medium text-gray-800 dark:text-gray-200 first-used"></div>
                                             </div>
                                             <div>
-                                                @if($isDefaultPrice)
-                                                    <span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs rounded-md">Par défaut</span>
-                                                @endif
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Dernière utilisation</div>
+                                <div class="text-sm font-medium text-gray-800 dark:text-gray-200 last-used"></div>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex justify-between">
-                                        <button
-                                            onclick="showInvoicesByPrice('{{ $price->price }}')"
-                                            class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center"
-                                            title="Voir les factures utilisant ce prix">
+                        <button class="view-invoices-btn text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center">
                                             <i class="bi bi-filter mr-1"></i> Voir factures
                                         </button>
 
-                                        @if(!$isDefaultPrice)
-                                            <a href="{{ route('products.edit', $product) }}?set_price={{ $price->price }}"
-                                               class="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
-                                               title="Définir comme prix par défaut">
+                        <button class="set-default-btn text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300 hidden">
                                                 Définir par défaut
-                                            </a>
-                                        @endif
-                                    </div>
-                                </div>
-                            @endforeach
+                        </button>
                         </div>
-                    @else
-                        <div class="text-center py-6 text-gray-500 dark:text-gray-400">
-                            <p>{{ __('Aucun historique de prix disponible') }}</p>
-                        </div>
-                    @endif
                 </div>
-            </div>
+            </template>
 
             <!-- Liste des factures - caché par défaut -->
             <div id="invoices-content" class="tab-content bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mb-6 hidden">
@@ -336,7 +336,7 @@
                                         @foreach($priceHistory as $price)
                                             <option value="{{ $price->price }}">
                                                 {{ number_format($price->price, 0, ',', ' ') }} FCFA
-                                                ({{ $usageCount }})
+                                                ({{ $price->usage_count ?? 0 }})
                                             </option>
                                         @endforeach
                                     </select>
@@ -528,8 +528,19 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
+    @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Variables globales
+            const productId = '{{ $product->id }}';
+            const defaultPrice = {{ $product->default_price }};
+            const priceHistoryContainer = document.getElementById('priceHistoryContainer');
+            const priceHistoryLoader = document.getElementById('priceHistoryLoader');
+            const noPriceHistoryMessage = document.getElementById('noPriceHistoryMessage');
+            
+            // Historique des prix préchargé
+            const priceHistory = @json($priceHistory);
+            
             // Gestion des onglets
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabContents = document.querySelectorAll('.tab-content');
@@ -549,277 +560,153 @@
                     button.classList.add('border-indigo-500', 'text-indigo-600', 'dark:text-indigo-400');
 
                     // Afficher le contenu correspondant
-                    const contentId = button.id.replace('tab-', '') + '-content';
-                    document.getElementById(contentId).classList.remove('hidden');
+                    const tabId = button.id.replace('tab-', '');
+                    document.getElementById(`${tabId}-content`).classList.remove('hidden');
                 });
             });
 
-            // Fonctionnalité pour afficher les factures par prix
-            window.showInvoicesByPrice = function(price) {
-                // Passer à l'onglet factures
+            // Afficher directement l'historique des prix
+            displayPriceHistory();
+            
+            // Fonction pour afficher l'historique des prix
+            function displayPriceHistory() {
+                // Masquer le loader
+                priceHistoryLoader.classList.add('hidden');
+                
+                if (priceHistory.length === 0) {
+                    noPriceHistoryMessage.classList.remove('hidden');
+                    return;
+                }
+                
+                // Créer une grille pour les cartes
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 lg:grid-cols-2 gap-6';
+                priceHistoryContainer.appendChild(grid);
+                priceHistoryContainer.classList.remove('hidden');
+                
+                // Afficher chaque prix
+                priceHistory.forEach(price => {
+                    createPriceCard(price, grid);
+                });
+            }
+            
+            // Créer une carte de prix
+            function createPriceCard(price, container) {
+                const isDefaultPrice = price.is_default;
+                const priceDiff = price.price - defaultPrice;
+                const pricePercent = defaultPrice ? ((priceDiff / defaultPrice) * 100).toFixed(1) : 0;
+
+                // Cloner le template
+                const priceCard = document.getElementById('price-card-template').content.cloneNode(true);
+                const card = priceCard.querySelector('.price-card');
+                
+                // Styliser la carte
+                if (isDefaultPrice) {
+                    card.classList.add('border-indigo-300', 'dark:border-indigo-700', 'bg-indigo-50', 'dark:bg-indigo-900');
+                } else {
+                    card.classList.add('border-gray-200', 'dark:border-gray-700');
+                }
+                
+                // Définir les valeurs
+                card.dataset.price = price.price;
+                card.querySelector('.price-value').textContent = formatPrice(price.price);
+                card.querySelector('.usage-count').textContent = `${price.usage_count} facture(s)`;
+                card.querySelector('.total-quantity').textContent = formatNumber(price.total_quantity);
+                card.querySelector('.total-amount').textContent = formatPrice(price.total_amount);
+                
+                // Dates d'utilisation
+                card.querySelector('.first-used').textContent = price.first_used ? formatDate(price.first_used) : 'N/A';
+                card.querySelector('.last-used').textContent = price.last_used ? formatDate(price.last_used) : 'N/A';
+                
+                // Différence de prix
+                const priceDiffElement = card.querySelector('.price-diff');
+                if (priceDiff !== 0) {
+                    priceDiffElement.textContent = `${priceDiff > 0 ? '+' : ''}${pricePercent}%`;
+                    priceDiffElement.classList.add(priceDiff > 0 ? 'text-green-600' : 'text-red-600');
+                    priceDiffElement.classList.add(priceDiff > 0 ? 'dark:text-green-400' : 'dark:text-red-400');
+                }
+                
+                // Badge "Par défaut"
+                const badgeElement = card.querySelector('.price-badge');
+                if (isDefaultPrice) {
+                    badgeElement.textContent = 'Par défaut';
+                    badgeElement.classList.add('bg-indigo-100', 'dark:bg-indigo-800', 'text-indigo-700', 'dark:text-indigo-300');
+                    badgeElement.classList.remove('hidden');
+                }
+                
+                // Bouton "Définir par défaut"
+                const setDefaultBtn = card.querySelector('.set-default-btn');
+                if (!isDefaultPrice) {
+                    setDefaultBtn.classList.remove('hidden');
+                    setDefaultBtn.addEventListener('click', function() {
+                        window.location.href = `{{ route('products.edit', $product) }}?set_price=${price.price}`;
+                    });
+                }
+                
+                // Bouton "Voir factures"
+                const viewInvoicesBtn = card.querySelector('.view-invoices-btn');
+                viewInvoicesBtn.addEventListener('click', function() {
+                    showInvoicesByPrice(price.price);
+                });
+                
+                // Ajouter la carte au conteneur
+                container.appendChild(card);
+            }
+
+            // Fonction pour afficher les factures selon le prix
+            function showInvoicesByPrice(price) {
+                // Changer d'onglet
                 document.getElementById('tab-invoices').click();
-
-                // Définir le filtre de prix
-                const priceFilter = document.getElementById('priceFilter');
-                if (priceFilter) {
-                    priceFilter.value = price;
-                    filterInvoices();
-                }
-            };
-
-            // Filtrage des factures
-            const searchInput = document.getElementById('searchInvoice');
-            const priceFilter = document.getElementById('priceFilter');
-
-            if (searchInput) {
-                searchInput.addEventListener('input', filterInvoices);
-            }
-
-            if (priceFilter) {
-                priceFilter.addEventListener('change', filterInvoices);
-            }
-
-            function filterInvoices() {
-                const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-                const selectedPrice = priceFilter ? priceFilter.value : '';
-
+                
                 // Filtrer les factures
-                const rows = Array.from(document.querySelectorAll('.invoice-row'));
-
-                filteredRows = rows.filter(row => {
-                    const reference = row.dataset.reference;
-                    const client = row.dataset.client;
-                    const date = row.dataset.date;
-                    const price = row.dataset.price;
-
-                    const matchesSearch = !searchTerm ||
-                        reference.includes(searchTerm) ||
-                        client.includes(searchTerm) ||
-                        date.includes(searchTerm);
-
-                    const matchesPrice = !selectedPrice || price === selectedPrice;
-
-                    return matchesSearch && matchesPrice;
-                });
-
-                // Mise à jour du message d'aucun résultat
-                const noResults = document.getElementById('noInvoiceResults');
-                if (filteredRows.length === 0 && rows.length > 0) {
-                    noResults.classList.remove('hidden');
-                } else {
-                    noResults.classList.add('hidden');
-                }
-
-                // Appliquer le tri actuel
-                applySorting();
-
-                // Réinitialiser la pagination
-                currentPage = 1;
-                updatePagination();
-            }
-
-            // Système de pagination côté client
-            let currentPage = 1;
-            let pageSize = 10;
-            let filteredRows = [];
-            let sortField = 'date';
-            let sortDirection = 'desc';
-
-            // Initialiser la pagination
-            function setupClientPagination() {
-                // Initialiser le tableau filtré
-                filteredRows = Array.from(document.querySelectorAll('.invoice-row'));
-
-                // Configurer les contrôles de pagination
-                document.getElementById('prev-page').addEventListener('click', () => {
-                    if (currentPage > 1) {
-                        currentPage--;
-                        updatePagination();
-                    }
-                });
-
-                document.getElementById('next-page').addEventListener('click', () => {
-                    const maxPage = Math.ceil(filteredRows.length / pageSize);
-                    if (currentPage < maxPage) {
-                        currentPage++;
-                        updatePagination();
-                    }
-                });
-
-                // Gérer la taille de page
-                const pageSizeFilter = document.getElementById('pageSizeFilter');
-                if (pageSizeFilter) {
-                    pageSizeFilter.addEventListener('change', function() {
-                        if (this.value === 'all') {
-                            pageSize = filteredRows.length;
-                        } else {
-                            pageSize = parseInt(this.value);
-                        }
-                        currentPage = 1;
-                        updatePagination();
-                    });
-                }
-
-                // Configurer le tri des colonnes
-                document.querySelectorAll('th[data-sort]').forEach(header => {
-                    header.addEventListener('click', () => {
-                        const field = header.dataset.sort;
-
-                        if (field === sortField) {
-                            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-                        } else {
-                            sortField = field;
-                            sortDirection = 'asc';
-                        }
-
-                        // Mettre à jour l'icône de tri
-                        document.querySelectorAll('th[data-sort] i').forEach(icon => {
-                            icon.className = 'bi bi-arrow-down-up ml-1';
-                        });
-
-                        const icon = header.querySelector('i');
-                        if (icon) {
-                            icon.className = `bi bi-arrow-${sortDirection === 'asc' ? 'up' : 'down'} ml-1`;
-                        }
-
-                        applySorting();
-                        updatePagination();
-                    });
-                });
-
-                // Tri initial par date (desc)
-                const dateHeader = document.querySelector('th[data-sort="date"]');
-                if (dateHeader) {
-                    const icon = dateHeader.querySelector('i');
-                    if (icon) icon.className = 'bi bi-arrow-down ml-1';
-                }
-
-                applySorting();
-                updatePagination();
-            }
-
-            // Fonction de tri
-            function applySorting() {
-                filteredRows.sort((a, b) => {
-                    let valueA = a.dataset[sortField];
-                    let valueB = b.dataset[sortField];
-
-                    // Tri spécial pour les dates
-                    if (sortField === 'date' && a.dataset['dateSort'] && b.dataset['dateSort']) {
-                        valueA = a.dataset['dateSort'];
-                        valueB = b.dataset['dateSort'];
-                    }
-
-                    // Convertir en nombres si nécessaire
-                    if (['price', 'quantity', 'total'].includes(sortField)) {
-                        valueA = parseFloat(valueA) || 0;
-                        valueB = parseFloat(valueB) || 0;
-                    }
-
-                    // Comparaison
-                    if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
-                    if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
-                    return 0;
-                });
-            }
-
-            // Mettre à jour l'affichage de la pagination
-            function updatePagination() {
-                const paginationNumbers = document.getElementById('pagination-numbers');
-                const prevButton = document.getElementById('prev-page');
-                const nextButton = document.getElementById('next-page');
-                const showingStart = document.getElementById('showing-start');
-                const showingEnd = document.getElementById('showing-end');
-                const totalEntries = document.getElementById('total-entries');
-
-                // Masquer toutes les lignes
-                document.querySelectorAll('.invoice-row').forEach(row => {
-                    row.style.display = 'none';
-                });
-
-                // Calculer les indices
-                const startIndex = (currentPage - 1) * pageSize;
-                const endIndex = Math.min(startIndex + pageSize, filteredRows.length);
-
-                // Afficher les lignes de la page actuelle
-                for (let i = startIndex; i < endIndex; i++) {
-                    filteredRows[i].style.display = '';
-                }
-
-                // Mettre à jour l'info de pagination
-                if (filteredRows.length > 0) {
-                    showingStart.textContent = startIndex + 1;
-                    showingEnd.textContent = endIndex;
-                    totalEntries.textContent = filteredRows.length;
-                } else {
-                    showingStart.textContent = '0';
-                    showingEnd.textContent = '0';
-                    totalEntries.textContent = '0';
-                }
-
-                // État des boutons
-                prevButton.disabled = currentPage === 1;
-                nextButton.disabled = endIndex >= filteredRows.length;
-
-                // Générer les boutons de page
-                const maxPage = Math.ceil(filteredRows.length / pageSize);
-                paginationNumbers.innerHTML = '';
-
-                if (maxPage <= 5) {
-                    // Afficher tous les numéros de page
-                    for (let i = 1; i <= maxPage; i++) {
-                        addPageButton(i);
-                    }
-                } else {
-                    // Version simplifiée avec ellipsis
-                    if (currentPage <= 3) {
-                        for (let i = 1; i <= 3; i++) addPageButton(i);
-                        addEllipsis();
-                        addPageButton(maxPage);
-                    } else if (currentPage >= maxPage - 2) {
-                        addPageButton(1);
-                        addEllipsis();
-                        for (let i = maxPage - 2; i <= maxPage; i++) addPageButton(i);
+                const rows = document.querySelectorAll('#invoicesTableBody tr');
+                let visible = 0;
+                
+                rows.forEach(row => {
+                    if (parseFloat(row.dataset.price) === parseFloat(price)) {
+                        row.classList.remove('hidden');
+                        visible++;
                     } else {
-                        addPageButton(1);
-                        addEllipsis();
-                        addPageButton(currentPage - 1);
-                        addPageButton(currentPage);
-                        addPageButton(currentPage + 1);
-                        addEllipsis();
-                        addPageButton(maxPage);
+                        row.classList.add('hidden');
                     }
-                }
-
-                function addPageButton(page) {
-                    const button = document.createElement('button');
-                    button.classList.add('px-3', 'py-1', 'rounded', 'border', 'text-sm');
-
-                    if (page === currentPage) {
-                        button.classList.add('bg-indigo-600', 'dark:bg-indigo-700', 'text-white', 'border-indigo-600', 'dark:border-indigo-700');
-                    } else {
-                        button.classList.add('border-gray-300', 'dark:border-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-indigo-50', 'dark:hover:bg-indigo-900');
-                    }
-
-                    button.textContent = page;
-                    button.addEventListener('click', () => {
-                        currentPage = page;
-                        updatePagination();
+                });
+                
+                // Afficher ou masquer le message "Aucun résultat"
+                document.getElementById('noInvoiceResults').classList.toggle('hidden', visible > 0);
+                
+                // Mettre à jour le filtre
+                const priceFilterSelect = document.getElementById('priceFilter');
+                if (priceFilterSelect) {
+                    Array.from(priceFilterSelect.options).forEach(option => {
+                        if (parseFloat(option.value) === parseFloat(price)) {
+                            priceFilterSelect.value = option.value;
+                        }
                     });
-
-                    paginationNumbers.appendChild(button);
-                }
-
-                function addEllipsis() {
-                    const span = document.createElement('span');
-                    span.classList.add('px-2', 'py-1', 'text-sm', 'text-gray-500', 'dark:text-gray-400');
-                    span.textContent = '...';
-                    paginationNumbers.appendChild(span);
                 }
             }
 
-            // Initialiser la pagination
+            // Fonctions utilitaires
+            function formatPrice(price) {
+                return new Intl.NumberFormat('fr-FR', {
+                    style: 'currency',
+                    currency: 'XOF',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(price).replace('XOF', 'FCFA');
+            }
+
+            function formatNumber(number) {
+                return new Intl.NumberFormat('fr-FR').format(number);
+            }
+
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('fr-FR');
+            }
+
+            // Initialiser la pagination et le tri
             setupClientPagination();
         });
     </script>
+    @endpush
 </x-app-layout>

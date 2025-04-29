@@ -593,6 +593,11 @@
                                 <a href="{{ route('settings.index') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                     <i class="fas fa-cog mr-2"></i> {{ __('Paramètres') }}
                                 </a>
+                                @if(Auth::user()->isAdmin())
+                                <a href="{{ route('system.export-import') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <i class="fas fa-database mr-2"></i> {{ __('Export/Import Système') }}
+                                </a>
+                                @endif
                             </div>
                             <div class="py-1">
                                 <form method="POST" action="{{ route('logout') }}">
