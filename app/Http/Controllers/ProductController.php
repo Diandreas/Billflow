@@ -177,6 +177,20 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
+        // Récupérer tous les IDs de produits pour la navigation
+        $productIds = Product::orderBy('name')->pluck('id')->toArray();
+        $currentIndex = array_search($product->id, $productIds) + 1; // +1 pour l'affichage (1-based)
+        $totalProducts = count($productIds);
+
+        // Déterminer les produits précédent et suivant
+        $previousIndex = ($currentIndex > 1) ? $currentIndex - 2 : $totalProducts - 1;
+        $nextIndex = ($currentIndex < $totalProducts) ? $currentIndex : 0;
+
+        $previousProduct = $productIds[$previousIndex];
+        $nextProduct = $productIds[$nextIndex];
+        $firstProduct = $productIds[0];
+        $lastProduct = $productIds[$totalProducts - 1];
+
         // Statistiques
         $stats = $this->getProductStats($product);
 
@@ -227,7 +241,20 @@ class ProductController extends Controller
             $barterStats = $this->getBarterStats($product);
         }
 
-        return view('products.show', compact('product', 'stats', 'priceHistory', 'invoices', 'barterItems', 'barterStats'));
+        return view('products.show', compact(
+            'product',
+            'stats',
+            'priceHistory',
+            'invoices',
+            'barterItems',
+            'barterStats',
+            'previousProduct',
+            'nextProduct',
+            'firstProduct',
+            'lastProduct',
+            'currentIndex',
+            'totalProducts'
+        ));
     }
 
     public function edit(Product $product)
