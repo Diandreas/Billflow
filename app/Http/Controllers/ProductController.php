@@ -179,20 +179,20 @@ class ProductController extends Controller
     {
         // Statistiques
         $stats = $this->getProductStats($product);
-        
+
         // Historique des prix directement calculé
         $priceHistory = $this->getPriceHistory($product);
-        
+
         // Récupérer les factures associées à ce produit
         $invoices = Bill::whereHas('items', function($query) use ($product) {
             $query->where('product_id', $product->id);
         })
-        ->with(['client', 'items' => function($query) use ($product) {
-            $query->where('product_id', $product->id);
-        }])
-        ->orderBy('date', 'desc')
-        ->get();
-        
+            ->with(['client', 'items' => function($query) use ($product) {
+                $query->where('product_id', $product->id);
+            }])
+            ->orderBy('date', 'desc')
+            ->get();
+
         // Ajouter les informations de pivot
         foreach ($invoices as $invoice) {
             $item = $invoice->items->first();
@@ -204,7 +204,7 @@ class ProductController extends Controller
                 ];
             }
         }
-        
+
         // Si c'est un produit physique, récupérer les trocs
         $barterItems = collect();
         $barterStats = [
@@ -215,18 +215,18 @@ class ProductController extends Controller
             'given_barters' => 0,
             'received_barters' => 0
         ];
-        
+
         if ($product->type === 'physical' && $product->is_barterable) {
             // Récupérer les trocs
             $barterItems = BarterItem::where('product_id', $product->id)
                 ->with(['barter', 'barter.client'])
                 ->orderBy('created_at', 'desc')
                 ->get();
-            
+
             // Calculer les statistiques des trocs
             $barterStats = $this->getBarterStats($product);
         }
-        
+
         return view('products.show', compact('product', 'stats', 'priceHistory', 'invoices', 'barterItems', 'barterStats'));
     }
 
@@ -358,15 +358,14 @@ class ProductController extends Controller
     /**
      * Récupère les statistiques du produit
      */
-    private function getProductStats($product)
-    {
+    private function getProductStats($product) {
         // Récupérer les factures
         $items = DB::table('bill_items')
             ->join('bills', 'bill_items.bill_id', '=', 'bills.id')
             ->where('product_id', $product->id)
-            ->select('bill_items.*', 'bills.date')
+            ->select('bill_items.total', 'bill_items.quantity', 'bills.date')
             ->get();
-        
+
         // Calculer les statistiques
         $stats = [
             'total_sales' => $items->sum('total'),
@@ -376,10 +375,10 @@ class ProductController extends Controller
             'first_use' => $items->min('date') ? new \Carbon\Carbon($items->min('date')) : null,
             'last_use' => $items->max('date') ? new \Carbon\Carbon($items->max('date')) : null,
         ];
-        
+
         return $stats;
     }
-    
+
     /**
      * Récupère les statistiques des trocs pour un produit
      */
@@ -387,19 +386,19 @@ class ProductController extends Controller
     {
         // Récupérer tous les trocs associés à ce produit
         $barterItems = BarterItem::where('product_id', $product->id)->get();
-        
+
         // Nombre de trocs où ce produit a été donné par le client
         $givenBarters = $barterItems->where('type', 'given')->count();
-        
+
         // Nombre de trocs où ce produit a été reçu par le client
         $receivedBarters = $barterItems->where('type', 'received')->count();
-        
+
         // Valeur totale des trocs impliquant ce produit
         $totalValue = $barterItems->sum('total_value');
-        
+
         // Quantité totale échangée
         $totalQuantity = $barterItems->sum('quantity');
-        
+
         return [
             'total_barters' => $barterItems->count(),
             'total_quantity' => $totalQuantity,
@@ -457,7 +456,7 @@ class ProductController extends Controller
 
             // Préparer les données pour la vue de mappage
             $sampleData = array_slice($rows, 0, 5); // Prendre les 5 premières lignes pour l'aperçu
-            
+
             // Si pas d'en-têtes, générer des en-têtes génériques
             if (!$hasHeaders) {
                 $headers = [];
@@ -489,28 +488,28 @@ class ProductController extends Controller
             foreach ($headers as $index => $header) {
                 $bestMatch = null;
                 $bestScore = 0;
-                
+
                 foreach ($expectedFields as $field => $label) {
                     // Normaliser pour la comparaison
                     $normalizedHeader = $this->normalizeString($header);
                     $normalizedField = $this->normalizeString($field);
                     $normalizedLabel = $this->normalizeString($label);
-                    
+
                     // Calculer la similarité avec le nom du champ
                     $fieldScore = similar_text($normalizedHeader, $normalizedField, $fieldPercent);
-                    
+
                     // Calculer la similarité avec le libellé
                     $labelScore = similar_text($normalizedHeader, $normalizedLabel, $labelPercent);
-                    
+
                     // Prendre le meilleur score entre les deux
                     $score = max($fieldPercent, $labelPercent);
-                    
+
                     if ($score > $bestScore && $score > 60) { // Seuil de 60% de similarité
                         $bestScore = $score;
                         $bestMatch = $field;
                     }
                 }
-                
+
                 $suggestedMapping[$index] = $bestMatch;
             }
 
@@ -528,8 +527,8 @@ class ProductController extends Controller
 
             // Rediriger vers la page de remappage
             return view('products.import-mapping', compact(
-                'headers', 
-                'sampleData', 
+                'headers',
+                'sampleData',
                 'expectedFields',
                 'suggestedMapping',
                 'defaultCategoryId',
@@ -552,12 +551,12 @@ class ProductController extends Controller
         // Convertir en minuscules et supprimer les accents
         $string = strtolower($string);
         $string = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $string);
-        
+
         // Supprimer les caractères spéciaux et les espaces superflus
         $string = preg_replace('/[^a-z0-9]/', ' ', $string);
         $string = preg_replace('/\s+/', ' ', $string);
         $string = trim($string);
-        
+
         return $string;
     }
 
@@ -665,7 +664,7 @@ class ProductController extends Controller
 
         // Champs principaux du produit
         $fields = [
-            'name', 'description', 'default_price', 'type', 'sku', 
+            'name', 'description', 'default_price', 'type', 'sku',
             'stock_quantity', 'stock_alert_threshold', 'accounting_category',
             'tax_category', 'cost_price', 'status', 'is_barterable'
         ];
@@ -758,17 +757,17 @@ class ProductController extends Controller
     public function downloadTemplate()
     {
         $headers = [
-            'Name', 'Description', 'Default Price', 'Type', 'SKU', 
-            'Stock Quantity', 'Stock Alert Threshold', 'Accounting Category', 
+            'Name', 'Description', 'Default Price', 'Type', 'SKU',
+            'Stock Quantity', 'Stock Alert Threshold', 'Accounting Category',
             'Tax Category', 'Cost Price', 'Status', 'Category', 'Is Barterable'
         ];
-        
+
         $filename = 'product_import_template.csv';
         $handle = fopen('php://temp', 'w+');
-        
+
         // Add headers
         fputcsv($handle, $headers);
-        
+
         // Add example row
         fputcsv($handle, [
             'Example Product',
@@ -785,11 +784,11 @@ class ProductController extends Controller
             'Default Category',
             'No'
         ]);
-        
+
         rewind($handle);
         $content = stream_get_contents($handle);
         fclose($handle);
-        
+
         return response($content)
             ->header('Content-Type', 'text/csv')
             ->header('Content-Disposition', "attachment; filename={$filename}");
@@ -843,10 +842,10 @@ class ProductController extends Controller
 
         // Set filename with timestamp
         $filename = 'products_export_' . date('Y-m-d_His') . '.csv';
-        
+
         // Create CSV
         $handle = fopen('php://temp', 'w+');
-        
+
         // CSV Headers
         $headers = [
             'ID',
@@ -866,13 +865,13 @@ class ProductController extends Controller
             'Date de création',
             'Dernière mise à jour'
         ];
-        
+
         // Add UTF-8 BOM to fix accents in Excel
         fputs($handle, "\xEF\xBB\xBF");
-        
+
         // Write headers
         fputcsv($handle, $headers);
-        
+
         // Write data rows
         foreach ($products as $product) {
             $row = [
@@ -893,14 +892,14 @@ class ProductController extends Controller
                 $product->created_at->format('d/m/Y H:i'),
                 $product->updated_at->format('d/m/Y H:i')
             ];
-            
+
             fputcsv($handle, $row);
         }
-        
+
         rewind($handle);
         $content = stream_get_contents($handle);
         fclose($handle);
-        
+
         // Return CSV file as download
         return response($content)
             ->header('Content-Type', 'text/csv')
@@ -970,7 +969,7 @@ class ProductController extends Controller
         try {
             // Load the file again
             $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-            
+
             if ($extension == 'csv') {
                 $reader = IOFactory::createReader('Csv');
                 $reader->setDelimiter(',');
@@ -997,16 +996,16 @@ class ProductController extends Controller
             try {
                 foreach ($validated['duplicates'] as $decision) {
                     $rowIndex = $decision['row_index'] - 2; // Adjust back to 0-based index
-                    
+
                     // Skip if row index is out of bounds
                     if (!isset($rows[$rowIndex])) {
                         $results['errors'][] = "Ligne {$decision['row_index']} non trouvée dans le fichier";
                         continue;
                     }
-                    
+
                     $row = $rows[$rowIndex];
                     $productData = $this->extractProductData($row, $columnMap, $defaultCategoryId, $defaultSupplierId);
-                    
+
                     // Skip empty rows
                     if (empty($productData['name'])) {
                         continue;
@@ -1017,7 +1016,7 @@ class ProductController extends Controller
                             Product::create($productData);
                             $results['created']++;
                             break;
-                            
+
                         case 'update':
                             $product = Product::find($decision['product_id']);
                             if ($product) {
@@ -1027,7 +1026,7 @@ class ProductController extends Controller
                                 $results['errors'][] = "Produit ID {$decision['product_id']} non trouvé";
                             }
                             break;
-                            
+
                         case 'skip':
                             $results['skipped']++;
                             break;
@@ -1035,20 +1034,20 @@ class ProductController extends Controller
                 }
 
                 DB::commit();
-                
+
                 // Clear session data
                 session()->forget([
-                    'import_duplicates', 
-                    'import_file_path', 
-                    'import_column_map', 
+                    'import_duplicates',
+                    'import_file_path',
+                    'import_column_map',
                     'import_mode',
                     'import_default_category_id',
                     'import_default_supplier_id'
                 ]);
-                
+
                 return redirect()->route('products.index')
                     ->with('success', "Import finalisé : {$results['created']} créés, {$results['updated']} mis à jour, {$results['skipped']} ignorés");
-                
+
             } catch (\Exception $e) {
                 DB::rollBack();
                 Log::error("Error processing reviewed import: " . $e->getMessage(), [
@@ -1056,11 +1055,11 @@ class ProductController extends Controller
                     'line' => $e->getLine(),
                     'trace' => $e->getTraceAsString()
                 ]);
-                
+
                 return redirect()->back()
                     ->withErrors(['error' => 'Une erreur est survenue durant le traitement : ' . $e->getMessage()]);
             }
-            
+
         } catch (\Exception $e) {
             Log::error("Error loading file for reviewed import: " . $e->getMessage());
             return redirect()->back()
@@ -1076,16 +1075,16 @@ class ProductController extends Controller
         // Récupérer tous les prix utilisés pour ce produit
         $priceHistory = DB::table('bill_items')
             ->select(
-                'unit_price as price',
-                DB::raw('COUNT(*) as usage_count'), 
-                DB::raw('SUM(quantity) as total_quantity'),
-                DB::raw('SUM(total) as total_amount'),
+                'bill_items.unit_price as price',
+                DB::raw('COUNT(*) as usage_count'),
+                DB::raw('SUM(bill_items.quantity) as total_quantity'),
+                DB::raw('SUM(bill_items.total) as total_amount'),
                 DB::raw('MIN(bills.date) as first_used'),
                 DB::raw('MAX(bills.date) as last_used')
             )
             ->join('bills', 'bill_items.bill_id', '=', 'bills.id')
             ->where('product_id', $product->id)
-            ->groupBy('unit_price')
+            ->groupBy('bill_items.unit_price')
             ->orderBy('usage_count', 'desc')
             ->get();
 
@@ -1093,7 +1092,7 @@ class ProductController extends Controller
         foreach ($priceHistory as $price) {
             $price->is_default = ($price->price == $product->default_price);
         }
-        
+
         return $priceHistory;
     }
 }
