@@ -24,6 +24,7 @@ class SettingController extends Controller
             'email' => 'nullable|email',
             'website' => 'nullable|url',
             'siret' => 'nullable|string',
+            'tax_number'=> 'nullable|string',
             'logo' => 'nullable|image|max:1024'
         ]);
 
@@ -34,7 +35,7 @@ class SettingController extends Controller
             if ($settings->logo_path) {
                 Storage::disk('public')->delete($settings->logo_path);
             }
-            
+
             // Stocker le nouveau logo
             $path = $request->file('logo')->store('logos', 'public');
             $validated['logo_path'] = $path;
