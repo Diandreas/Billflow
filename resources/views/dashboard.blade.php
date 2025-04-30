@@ -95,7 +95,7 @@
                                 </div>
                                 <span class="text-xs font-medium text-teal-700 dark:text-teal-400 text-center">{{ __('Commissions') }}</span>
                             </a>
-                            
+
                             <a href="{{ route('commission-payments.index') }}" class="flex flex-col items-center p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors group">
                                 <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-800/40 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mb-1 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/60 transition-colors">
                                     <i class="fas fa-money-bill-wave text-lg"></i>
@@ -109,7 +109,7 @@
                                 </div>
                                 <span class="text-xs font-medium text-teal-700 dark:text-teal-400 text-center">{{ __('Mes commissions') }}</span>
                             </a>
-                            
+
                             <a href="{{ route('commission-payments.vendor-history', auth()->id()) }}" class="flex flex-col items-center p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors group">
                                 <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-800/40 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mb-1 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/60 transition-colors">
                                     <i class="fas fa-money-bill-wave text-lg"></i>
@@ -287,7 +287,7 @@
                                     </span>
                                 @endif
                             </p>
-                            
+
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                                 <div>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('Total Ventes') }}</p>
@@ -690,7 +690,7 @@
             @can('admin')
             <div class="my-6">
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __('Analyse des fournisseurs') }}</h3>
-                
+
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4" id="supplierStats">
                     <!-- Meilleurs fournisseurs par ventes -->
                     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
@@ -706,7 +706,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Meilleurs fournisseurs par quantité en stock -->
                     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -721,7 +721,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Meilleurs fournisseurs par valeur de stock -->
                     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -992,33 +992,58 @@
                     loadSupplierStats();
                 @endcan
             });
-            
+
             // Fonction pour charger les statistiques des fournisseurs
             function loadSupplierStats() {
                 const shopId = document.getElementById('shop_selector')?.value || '';
-                
-                fetch(`/api/dashboard/top-suppliers?shop_id=${shopId}`)
-                    .then(response => response.json())
+
+                // Utiliser l'URL correcte (web route au lieu d'API route)
+                fetch(`/dashboard/top-suppliers?shop_id=${shopId}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    credentials: 'same-origin'
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur HTTP: ${response.status}`);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success) {
                             // Afficher les fournisseurs par ventes
                             const salesListEl = document.querySelector('#supplierStats > div:nth-child(1) .supplier-list');
                             renderSupplierList(salesListEl, data.data.top_suppliers_by_sales, 'bills_count', 'products_sold', 'total_sales', true);
-                            
+
                             // Afficher les fournisseurs par quantité en stock
                             const stockListEl = document.querySelector('#supplierStats > div:nth-child(2) .supplier-list');
                             renderSupplierList(stockListEl, data.data.top_suppliers_by_stock, 'products_count', 'total_stock', null, false);
-                            
+
                             // Afficher les fournisseurs par valeur de stock
                             const stockValueListEl = document.querySelector('#supplierStats > div:nth-child(3) .supplier-list');
                             renderSupplierList(stockValueListEl, data.data.top_suppliers_by_stock_value, 'products_count', null, 'stock_value', false);
+                        } else {
+                            throw new Error('Données non valides');
                         }
                     })
                     .catch(error => {
                         console.error('Erreur lors du chargement des statistiques des fournisseurs:', error);
+
+                        // Afficher un message d'erreur dans les conteneurs
+                        const containers = document.querySelectorAll('#supplierStats .supplier-list');
+                        containers.forEach(container => {
+                            container.innerHTML = `
+                <div class="text-center py-4">
+                    <p class="text-sm text-red-500 dark:text-red-400">Impossible de charger les données</p>
+                </div>
+            `;
+                        });
                     });
             }
-            
+
             // Fonction pour afficher une liste de fournisseurs
             function renderSupplierList(container, suppliers, countLabel, quantityLabel, valueLabel, isSales) {
                 if (!suppliers || suppliers.length === 0) {
@@ -1029,16 +1054,16 @@
                     `;
                     return;
                 }
-                
+
                 let html = '';
-                
+
                 suppliers.forEach((supplier, index) => {
                     // Formatage des valeurs
                     const number = index + 1;
                     const count = supplier[countLabel] || 0;
                     const quantity = quantityLabel ? (supplier[quantityLabel] || 0) : null;
                     const value = valueLabel ? (supplier[valueLabel] || 0) : null;
-                    
+
                     html += `
                         <div class="flex justify-between items-center p-2 ${index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-700' : ''}">
                             <div class="flex items-center">
@@ -1053,15 +1078,15 @@
                         </div>
                     `;
                 });
-                
+
                 container.innerHTML = html;
             }
-            
+
             // Fonction pour formater un nombre avec séparateur de milliers
             function formatNumber(number) {
                 return new Intl.NumberFormat('fr-FR').format(Math.round(number));
             }
-            
+
             // Fonction pour formater un montant en FCFA
             function formatCurrency(amount) {
                 return new Intl.NumberFormat('fr-FR', {

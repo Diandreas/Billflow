@@ -6,6 +6,9 @@ use App\Models\Product;
 use App\Models\Supplier;
 use Illuminate\Support\Facades\DB;
 
+// Dans routes/api.php
+Route::middleware('auth:sanctum')->get('/dashboard/top-suppliers', [App\Http\Controllers\DashboardController::class, 'getTopSuppliers']);
+
 Route::get('/commissions/{userId}', [App\Http\Controllers\CommissionController::class, 'getVendorPendingCommissions'])->middleware('auth:web');
 Route::middleware('auth:web')->group(function () {
 
@@ -21,7 +24,7 @@ Route::middleware('auth:web')->group(function () {
             ->orderByDesc('products_count')
             ->limit(5)
             ->get();
-            
+
         return response()->json([
             'success' => true,
             'data' => $suppliers

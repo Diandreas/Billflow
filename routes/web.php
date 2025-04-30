@@ -28,7 +28,7 @@ Route::get('/', [DashboardController::class, 'index'])
     ->name('/');
 Route::get('/commissions/{userId}', [App\Http\Controllers\CommissionController::class, 'getVendorPendingCommissions']);
 // Dans routes/web.php (pas routes/api.php)
-
+Route::middleware('auth')->get('/dashboard/top-suppliers', [App\Http\Controllers\DashboardController::class, 'getTopSuppliers'])->name('dashboard.top-suppliers');
 Route::get('/get-pending-commissions/{userId}', [App\Http\Controllers\CommissionController::class, 'getPendingCommissionsForPayment']);
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth'])
@@ -59,14 +59,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/products/{product}/usage-stats', [ProductController::class, 'usageStats'])->name('products.usage-stats');
     Route::get('/clients/search', [ClientController::class, 'search']);
     Route::get('/products/search', [ProductController::class, 'search']);
-    
+
     // Route pour l'exportation des produits - avant la route show pour éviter les conflits
     Route::get('/products/export', [ProductController::class, 'export'])->name('products.export');
     Route::get('/products-export', [ProductController::class, 'showExportForm'])->name('products.export.form');
-    
+
     // Route de détail des produits - après les routes spécifiques
     Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
-    
+
     // Nouvelles routes pour l'importation de produits
     Route::get('/products-import', [ImportMapperController::class, 'showImportForm'])->name('products.import.form');
     Route::post('/products-import', [ImportMapperController::class, 'analyzeFile'])->name('products.import');

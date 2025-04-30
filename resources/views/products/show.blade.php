@@ -8,6 +8,23 @@
                 </span>
             </h2>
             <div class="flex space-x-3">
+                <div class="flex items-center mr-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm">
+                    <a href="{{ route('products.show', ['product' => $firstProduct]) }}" class="px-2.5 py-1.5 border-r border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600" title="Premier produit">
+                        <i class="bi bi-chevron-double-left"></i>
+                    </a>
+                    <a href="{{ route('products.show', ['product' => $previousProduct]) }}" class="px-2.5 py-1.5 border-r border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600" title="Produit précédent">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                    <div class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">
+                        {{ $currentIndex }} / {{ $totalProducts }}
+                    </div>
+                    <a href="{{ route('products.show', ['product' => $nextProduct]) }}" class="px-2.5 py-1.5 border-l border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600" title="Produit suivant">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                    <a href="{{ route('products.show', ['product' => $lastProduct]) }}" class="px-2.5 py-1.5 border-l border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600" title="Dernier produit">
+                        <i class="bi bi-chevron-double-right"></i>
+                    </a>
+                </div>
                 <a href="{{ route('products.edit', $product) }}" class="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm rounded-md">
                     <i class="bi bi-pencil mr-1"></i> {{ __('Modifier') }}
                 </a>
@@ -48,6 +65,17 @@
                                 <div>
                                     <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Catégorie') }}</p>
                                     <p class="text-gray-900 dark:text-gray-100">{{ $product->category ? $product->category->name : __('Non catégorisé') }}</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Fournisseur') }}</p>
+                                    <p class="text-gray-900 dark:text-gray-100">{{ $product->supplier ? $product->supplier->name : __('Non défini') }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Cat. comptable') }}</p>
+                                    <p class="text-gray-900 dark:text-gray-100">{{ $product->accounting_category ?: __('Non définie') }}</p>
                                 </div>
                             </div>
 
@@ -152,7 +180,7 @@
             </div>
 
             <!-- Section des statistiques de troc - uniquement si produit physique ET en stock -->
-            @if($product->type === 'physical' && $product->is_barterable))
+            @if($product->type === 'physical' && $product->is_barterable)
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">
                     <div class="p-5">
                         <h3 class="font-medium text-gray-900 dark:text-gray-100 text-xl mb-4">{{ __('Statistiques des trocs') }}</h3>
@@ -247,8 +275,8 @@
                     <div class="mb-6 flex justify-between items-center">
                         <h3 class="font-medium text-gray-900 dark:text-gray-100 text-lg">{{ __('Historique des prix utilisés') }}</h3>
 
-                            <div class="flex items-center space-x-2 text-sm">
-                                <span class="text-gray-500 dark:text-gray-400">{{ __('Prix par défaut') }}: <span class="font-medium text-gray-700 dark:text-gray-300">{{ number_format($product->default_price, 0, ',', ' ') }} FCFA</span></span>
+                        <div class="flex items-center space-x-2 text-sm">
+                            <span class="text-gray-500 dark:text-gray-400">{{ __('Prix par défaut') }}: <span class="font-medium text-gray-700 dark:text-gray-300">{{ number_format($product->default_price, 0, ',', ' ') }} FCFA</span></span>
                             <button id="refreshPriceHistory" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 ml-2">
                                 <i class="bi bi-arrow-repeat"></i>
                             </button>
@@ -258,7 +286,7 @@
                     <div id="priceHistoryLoader" class="text-center py-8">
                         <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
                         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ __('Chargement...') }}</p>
-                            </div>
+                    </div>
 
                     <div id="priceHistoryContainer" class="hidden">
                         <!-- Les données seront chargées par JavaScript -->
@@ -273,14 +301,14 @@
             <!-- Prix graphique - template qui sera cloné par JavaScript -->
             <template id="price-card-template">
                 <div class="price-card border rounded-md mb-6">
-                                    <div class="p-4">
+                    <div class="p-4">
                         <div class="flex justify-between items-start">
-                                            <div>
+                            <div>
                                 <div class="flex items-center">
                                     <div class="text-lg font-bold text-gray-900 dark:text-gray-100 price-value"></div>
                                     <span class="price-badge ml-2 px-2 py-1 text-xs rounded-md hidden"></span>
-                                                </div>
-                                                <div class="mt-1 flex items-center">
+                                </div>
+                                <div class="mt-1 flex items-center">
                                     <span class="text-sm text-gray-500 dark:text-gray-400 usage-count"></span>
                                     <span class="price-diff ml-2 text-sm"></span>
                                 </div>
@@ -289,29 +317,29 @@
                                 <div class="text-sm font-medium text-gray-800 dark:text-gray-200">Quantité totale: <span class="total-quantity"></span></div>
                                 <div class="text-sm font-medium text-gray-800 dark:text-gray-200">Montant total: <span class="total-amount"></span></div>
                             </div>
-                                                </div>
+                        </div>
                     </div>
                     <div class="p-4 border-t border-gray-200 dark:border-gray-700">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400">Première utilisation</div>
                                 <div class="text-sm font-medium text-gray-800 dark:text-gray-200 first-used"></div>
-                                            </div>
-                                            <div>
+                            </div>
+                            <div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400">Dernière utilisation</div>
                                 <div class="text-sm font-medium text-gray-800 dark:text-gray-200 last-used"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex justify-between">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex justify-between">
                         <button class="view-invoices-btn text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center">
-                                            <i class="bi bi-filter mr-1"></i> Voir factures
-                                        </button>
+                            <i class="bi bi-filter mr-1"></i> Voir factures
+                        </button>
 
                         <button class="set-default-btn text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300 hidden">
-                                                Définir par défaut
+                            Définir par défaut
                         </button>
-                        </div>
+                    </div>
                 </div>
             </template>
 
@@ -529,184 +557,184 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     @push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Variables globales
-            const productId = '{{ $product->id }}';
-            const defaultPrice = {{ $product->default_price }};
-            const priceHistoryContainer = document.getElementById('priceHistoryContainer');
-            const priceHistoryLoader = document.getElementById('priceHistoryLoader');
-            const noPriceHistoryMessage = document.getElementById('noPriceHistoryMessage');
-            
-            // Historique des prix préchargé
-            const priceHistory = @json($priceHistory);
-            
-            // Gestion des onglets
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const tabContents = document.querySelectorAll('.tab-content');
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Variables globales
+                const productId = '{{ $product->id }}';
+                const defaultPrice = {{ $product->default_price }};
+                const priceHistoryContainer = document.getElementById('priceHistoryContainer');
+                const priceHistoryLoader = document.getElementById('priceHistoryLoader');
+                const noPriceHistoryMessage = document.getElementById('noPriceHistoryMessage');
 
-            tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    // Désactiver tous les boutons et contenus
-                    tabButtons.forEach(btn => {
-                        btn.classList.remove('border-indigo-500', 'text-indigo-600', 'dark:text-indigo-400');
-                        btn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+                // Historique des prix préchargé
+                const priceHistory = @json($priceHistory);
+
+                // Gestion des onglets
+                const tabButtons = document.querySelectorAll('.tab-button');
+                const tabContents = document.querySelectorAll('.tab-content');
+
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        // Désactiver tous les boutons et contenus
+                        tabButtons.forEach(btn => {
+                            btn.classList.remove('border-indigo-500', 'text-indigo-600', 'dark:text-indigo-400');
+                            btn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+                        });
+
+                        tabContents.forEach(content => content.classList.add('hidden'));
+
+                        // Activer l'onglet cliqué
+                        button.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+                        button.classList.add('border-indigo-500', 'text-indigo-600', 'dark:text-indigo-400');
+
+                        // Afficher le contenu correspondant
+                        const tabId = button.id.replace('tab-', '');
+                        document.getElementById(`${tabId}-content`).classList.remove('hidden');
                     });
-
-                    tabContents.forEach(content => content.classList.add('hidden'));
-
-                    // Activer l'onglet cliqué
-                    button.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
-                    button.classList.add('border-indigo-500', 'text-indigo-600', 'dark:text-indigo-400');
-
-                    // Afficher le contenu correspondant
-                    const tabId = button.id.replace('tab-', '');
-                    document.getElementById(`${tabId}-content`).classList.remove('hidden');
                 });
-            });
 
-            // Afficher directement l'historique des prix
-            displayPriceHistory();
-            
-            // Fonction pour afficher l'historique des prix
-            function displayPriceHistory() {
-                // Masquer le loader
-                priceHistoryLoader.classList.add('hidden');
-                
-                if (priceHistory.length === 0) {
-                    noPriceHistoryMessage.classList.remove('hidden');
-                    return;
-                }
-                
-                // Créer une grille pour les cartes
-                const grid = document.createElement('div');
-                grid.className = 'grid grid-cols-1 lg:grid-cols-2 gap-6';
-                priceHistoryContainer.appendChild(grid);
-                priceHistoryContainer.classList.remove('hidden');
-                
-                // Afficher chaque prix
-                priceHistory.forEach(price => {
-                    createPriceCard(price, grid);
-                });
-            }
-            
-            // Créer une carte de prix
-            function createPriceCard(price, container) {
-                const isDefaultPrice = price.is_default;
-                const priceDiff = price.price - defaultPrice;
-                const pricePercent = defaultPrice ? ((priceDiff / defaultPrice) * 100).toFixed(1) : 0;
+                // Afficher directement l'historique des prix
+                displayPriceHistory();
 
-                // Cloner le template
-                const priceCard = document.getElementById('price-card-template').content.cloneNode(true);
-                const card = priceCard.querySelector('.price-card');
-                
-                // Styliser la carte
-                if (isDefaultPrice) {
-                    card.classList.add('border-indigo-300', 'dark:border-indigo-700', 'bg-indigo-50', 'dark:bg-indigo-900');
-                } else {
-                    card.classList.add('border-gray-200', 'dark:border-gray-700');
-                }
-                
-                // Définir les valeurs
-                card.dataset.price = price.price;
-                card.querySelector('.price-value').textContent = formatPrice(price.price);
-                card.querySelector('.usage-count').textContent = `${price.usage_count} facture(s)`;
-                card.querySelector('.total-quantity').textContent = formatNumber(price.total_quantity);
-                card.querySelector('.total-amount').textContent = formatPrice(price.total_amount);
-                
-                // Dates d'utilisation
-                card.querySelector('.first-used').textContent = price.first_used ? formatDate(price.first_used) : 'N/A';
-                card.querySelector('.last-used').textContent = price.last_used ? formatDate(price.last_used) : 'N/A';
-                
-                // Différence de prix
-                const priceDiffElement = card.querySelector('.price-diff');
-                if (priceDiff !== 0) {
-                    priceDiffElement.textContent = `${priceDiff > 0 ? '+' : ''}${pricePercent}%`;
-                    priceDiffElement.classList.add(priceDiff > 0 ? 'text-green-600' : 'text-red-600');
-                    priceDiffElement.classList.add(priceDiff > 0 ? 'dark:text-green-400' : 'dark:text-red-400');
-                }
-                
-                // Badge "Par défaut"
-                const badgeElement = card.querySelector('.price-badge');
-                if (isDefaultPrice) {
-                    badgeElement.textContent = 'Par défaut';
-                    badgeElement.classList.add('bg-indigo-100', 'dark:bg-indigo-800', 'text-indigo-700', 'dark:text-indigo-300');
-                    badgeElement.classList.remove('hidden');
-                }
-                
-                // Bouton "Définir par défaut"
-                const setDefaultBtn = card.querySelector('.set-default-btn');
-                if (!isDefaultPrice) {
-                    setDefaultBtn.classList.remove('hidden');
-                    setDefaultBtn.addEventListener('click', function() {
-                        window.location.href = `{{ route('products.edit', $product) }}?set_price=${price.price}`;
-                    });
-                }
-                
-                // Bouton "Voir factures"
-                const viewInvoicesBtn = card.querySelector('.view-invoices-btn');
-                viewInvoicesBtn.addEventListener('click', function() {
-                    showInvoicesByPrice(price.price);
-                });
-                
-                // Ajouter la carte au conteneur
-                container.appendChild(card);
-            }
+                // Fonction pour afficher l'historique des prix
+                function displayPriceHistory() {
+                    // Masquer le loader
+                    priceHistoryLoader.classList.add('hidden');
 
-            // Fonction pour afficher les factures selon le prix
-            function showInvoicesByPrice(price) {
-                // Changer d'onglet
-                document.getElementById('tab-invoices').click();
-                
-                // Filtrer les factures
-                const rows = document.querySelectorAll('#invoicesTableBody tr');
-                let visible = 0;
-                
-                rows.forEach(row => {
-                    if (parseFloat(row.dataset.price) === parseFloat(price)) {
-                        row.classList.remove('hidden');
-                        visible++;
-                    } else {
-                        row.classList.add('hidden');
+                    if (priceHistory.length === 0) {
+                        noPriceHistoryMessage.classList.remove('hidden');
+                        return;
                     }
-                });
-                
-                // Afficher ou masquer le message "Aucun résultat"
-                document.getElementById('noInvoiceResults').classList.toggle('hidden', visible > 0);
-                
-                // Mettre à jour le filtre
-                const priceFilterSelect = document.getElementById('priceFilter');
-                if (priceFilterSelect) {
-                    Array.from(priceFilterSelect.options).forEach(option => {
-                        if (parseFloat(option.value) === parseFloat(price)) {
-                            priceFilterSelect.value = option.value;
+
+                    // Créer une grille pour les cartes
+                    const grid = document.createElement('div');
+                    grid.className = 'grid grid-cols-1 lg:grid-cols-2 gap-6';
+                    priceHistoryContainer.appendChild(grid);
+                    priceHistoryContainer.classList.remove('hidden');
+
+                    // Afficher chaque prix
+                    priceHistory.forEach(price => {
+                        createPriceCard(price, grid);
+                    });
+                }
+
+                // Créer une carte de prix
+                function createPriceCard(price, container) {
+                    const isDefaultPrice = price.is_default;
+                    const priceDiff = price.price - defaultPrice;
+                    const pricePercent = defaultPrice ? ((priceDiff / defaultPrice) * 100).toFixed(1) : 0;
+
+                    // Cloner le template
+                    const priceCard = document.getElementById('price-card-template').content.cloneNode(true);
+                    const card = priceCard.querySelector('.price-card');
+
+                    // Styliser la carte
+                    if (isDefaultPrice) {
+                        card.classList.add('border-indigo-300', 'dark:border-indigo-700', 'bg-indigo-50', 'dark:bg-indigo-900');
+                    } else {
+                        card.classList.add('border-gray-200', 'dark:border-gray-700');
+                    }
+
+                    // Définir les valeurs
+                    card.dataset.price = price.price;
+                    card.querySelector('.price-value').textContent = formatPrice(price.price);
+                    card.querySelector('.usage-count').textContent = `${price.usage_count} facture(s)`;
+                    card.querySelector('.total-quantity').textContent = formatNumber(price.total_quantity);
+                    card.querySelector('.total-amount').textContent = formatPrice(price.total_amount);
+
+                    // Dates d'utilisation
+                    card.querySelector('.first-used').textContent = price.first_used ? formatDate(price.first_used) : 'N/A';
+                    card.querySelector('.last-used').textContent = price.last_used ? formatDate(price.last_used) : 'N/A';
+
+                    // Différence de prix
+                    const priceDiffElement = card.querySelector('.price-diff');
+                    if (priceDiff !== 0) {
+                        priceDiffElement.textContent = `${priceDiff > 0 ? '+' : ''}${pricePercent}%`;
+                        priceDiffElement.classList.add(priceDiff > 0 ? 'text-green-600' : 'text-red-600');
+                        priceDiffElement.classList.add(priceDiff > 0 ? 'dark:text-green-400' : 'dark:text-red-400');
+                    }
+
+                    // Badge "Par défaut"
+                    const badgeElement = card.querySelector('.price-badge');
+                    if (isDefaultPrice) {
+                        badgeElement.textContent = 'Par défaut';
+                        badgeElement.classList.add('bg-indigo-100', 'dark:bg-indigo-800', 'text-indigo-700', 'dark:text-indigo-300');
+                        badgeElement.classList.remove('hidden');
+                    }
+
+                    // Bouton "Définir par défaut"
+                    const setDefaultBtn = card.querySelector('.set-default-btn');
+                    if (!isDefaultPrice) {
+                        setDefaultBtn.classList.remove('hidden');
+                        setDefaultBtn.addEventListener('click', function() {
+                            window.location.href = `{{ route('products.edit', $product) }}?set_price=${price.price}`;
+                        });
+                    }
+
+                    // Bouton "Voir factures"
+                    const viewInvoicesBtn = card.querySelector('.view-invoices-btn');
+                    viewInvoicesBtn.addEventListener('click', function() {
+                        showInvoicesByPrice(price.price);
+                    });
+
+                    // Ajouter la carte au conteneur
+                    container.appendChild(card);
+                }
+
+                // Fonction pour afficher les factures selon le prix
+                function showInvoicesByPrice(price) {
+                    // Changer d'onglet
+                    document.getElementById('tab-invoices').click();
+
+                    // Filtrer les factures
+                    const rows = document.querySelectorAll('#invoicesTableBody tr');
+                    let visible = 0;
+
+                    rows.forEach(row => {
+                        if (parseFloat(row.dataset.price) === parseFloat(price)) {
+                            row.classList.remove('hidden');
+                            visible++;
+                        } else {
+                            row.classList.add('hidden');
                         }
                     });
+
+                    // Afficher ou masquer le message "Aucun résultat"
+                    document.getElementById('noInvoiceResults').classList.toggle('hidden', visible > 0);
+
+                    // Mettre à jour le filtre
+                    const priceFilterSelect = document.getElementById('priceFilter');
+                    if (priceFilterSelect) {
+                        Array.from(priceFilterSelect.options).forEach(option => {
+                            if (parseFloat(option.value) === parseFloat(price)) {
+                                priceFilterSelect.value = option.value;
+                            }
+                        });
+                    }
                 }
-            }
 
-            // Fonctions utilitaires
-            function formatPrice(price) {
-                return new Intl.NumberFormat('fr-FR', {
-                    style: 'currency',
-                    currency: 'XOF',
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                }).format(price).replace('XOF', 'FCFA');
-            }
+                // Fonctions utilitaires
+                function formatPrice(price) {
+                    return new Intl.NumberFormat('fr-FR', {
+                        style: 'currency',
+                        currency: 'XOF',
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                    }).format(price).replace('XOF', 'FCFA');
+                }
 
-            function formatNumber(number) {
-                return new Intl.NumberFormat('fr-FR').format(number);
-            }
+                function formatNumber(number) {
+                    return new Intl.NumberFormat('fr-FR').format(number);
+                }
 
-            function formatDate(dateString) {
-                const date = new Date(dateString);
-                return date.toLocaleDateString('fr-FR');
-            }
+                function formatDate(dateString) {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('fr-FR');
+                }
 
-            // Initialiser la pagination et le tri
-            setupClientPagination();
-        });
-    </script>
+                // Initialiser la pagination et le tri
+                setupClientPagination();
+            });
+        </script>
     @endpush
 </x-app-layout>

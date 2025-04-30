@@ -54,7 +54,7 @@
                                 <label for="category_id" class="block mb-2 text-sm font-medium text-gray-900">{{ __('Catégorie') }}</label>
                                 <select id="category_id" name="category_id" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
                                     <option value="">{{ __('Aucune catégorie') }}</option>
-                                    @foreach($categories ?? [] as $category)
+                                    @foreach($categories ?? \App\Models\ProductCategory::orderBy('name')->get() as $category)
                                         <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
                                             {{ $category->name }}
                                         </option>
@@ -62,8 +62,33 @@
                                 </select>
                             </div>
                             <div>
+                                <label for="supplier_id" class="block mb-2 text-sm font-medium text-gray-900">{{ __('Fournisseur') }}</label>
+                                <div class="flex items-center space-x-2">
+                                    <select id="supplier_id" name="supplier_id" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                                        <option value="">{{ __('Aucun fournisseur') }}</option>
+                                        @foreach(\App\Models\Supplier::orderBy('name')->get() as $supplier)
+                                            <option value="{{ $supplier->id }}" {{ old('supplier_id', $product->supplier_id) == $supplier->id ? 'selected' : '' }}>
+                                                {{ $supplier->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" id="add-supplier-btn" class="inline-flex items-center p-2 border border-transparent rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-4 mb-4 sm:grid-cols-2">
+                            <div>
                                 <label for="accounting_category" class="block mb-2 text-sm font-medium text-gray-900">{{ __('Catégorie comptable') }}</label>
                                 <input type="text" id="accounting_category" name="accounting_category" value="{{ old('accounting_category', $product->accounting_category) }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5">
+                            </div>
+                            <div>
+                                <label for="tax_category" class="block mb-2 text-sm font-medium text-gray-900">{{ __('Catégorie fiscale') }}</label>
+                                <input type="text" id="tax_category" name="tax_category" value="{{ old('tax_category', $product->tax_category) }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5">
                             </div>
                         </div>
 
@@ -84,7 +109,7 @@
                                     <input type="number" step="0.01" min="0" id="cost_price" name="cost_price" value="{{ old('cost_price', $product->cost_price) }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5">
                                 </div>
                             </div>
-                            
+
                             <!-- Option de troc -->
                             <div class="mt-4">
                                 <div class="flex items-center">
@@ -118,7 +143,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const typeSelect = document.getElementById('type');
             const physicalSection = document.getElementById('physical-product-section');
-            
+
             function togglePhysicalSection() {
                 if (typeSelect.value === 'service') {
                     physicalSection.style.display = 'none';
@@ -126,12 +151,14 @@
                     physicalSection.style.display = 'block';
                 }
             }
-            
+
             // Initial state
             togglePhysicalSection();
-            
+
             // Listen for changes
             typeSelect.addEventListener('change', togglePhysicalSection);
         });
     </script>
+
+    @include('products.create-supplier-modal')
 </x-app-layout>
