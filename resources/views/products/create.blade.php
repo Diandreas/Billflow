@@ -50,32 +50,48 @@
 
                         <div class="grid gap-4 mb-4 sm:grid-cols-2">
                             <div>
-                                <label for="category_id" class="block mb-2 text-sm font-medium text-gray-900">{{ __('Catégorie') }}</label>
-                                <select id="category_id" name="category_id" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
-                                    <option value="">{{ __('Aucune catégorie') }}</option>
-                                    @foreach($categories ?? \App\Models\ProductCategory::orderBy('name')->get() as $category)
-                                        <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                            {{ $category->name }}
-                                        </option>
+                                <label for="supplier_id" class="block mb-2 text-sm font-medium text-gray-900">{{ __('Fournisseur') }}</label>
+                                <select id="supplier_id" name="supplier_id" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                                    <option value="">{{ __('Aucun') }}</option>
+                                    @foreach($suppliers ?? [] as $supplier)
+                                        <option value="{{ $supplier->id }}" {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}>{{ $supplier->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div>
-                                <label for="supplier_id" class="block mb-2 text-sm font-medium text-gray-900">{{ __('Fournisseur') }}</label>
-                                <div class="flex items-center space-x-2">
-                                    <select id="supplier_id" name="supplier_id" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
-                                        <option value="">{{ __('Aucun fournisseur') }}</option>
-                                        @foreach(\App\Models\Supplier::orderBy('name')->get() as $supplier)
-                                            <option value="{{ $supplier->id }}" {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}>
-                                                {{ $supplier->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <button type="button" id="add-supplier-btn" class="inline-flex items-center p-2 border border-transparent rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
+                                <label for="category_id" class="block mb-2 text-sm font-medium text-gray-900">{{ __('Catégorie') }}</label>
+                                <select id="category_id" name="category_id" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                                    <option value="">{{ __('Aucune') }}</option>
+                                    @foreach($categories ?? [] as $category)
+                                        <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Champs pour la marque et le modèle -->
+                        <div class="grid gap-4 mb-4 sm:grid-cols-2">
+                            <div>
+                                <label for="brand_autocomplete" class="block mb-2 text-sm font-medium text-gray-900">{{ __('Marque') }}</label>
+                                <div class="relative">
+                                    <input type="text" id="brand_autocomplete" 
+                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" 
+                                        placeholder="{{ __('Rechercher ou créer une marque') }}"
+                                        autocomplete="off">
+                                    <input type="hidden" id="brand_id" name="brand_id" value="{{ old('brand_id') }}">
+                                    <div id="brand_suggestions" class="absolute z-10 hidden bg-white border border-gray-300 w-full mt-1 rounded-lg shadow-lg"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="model_autocomplete" class="block mb-2 text-sm font-medium text-gray-900">{{ __('Modèle') }}</label>
+                                <div class="relative">
+                                    <input type="text" id="model_autocomplete" 
+                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" 
+                                        placeholder="{{ __('Rechercher ou créer un modèle') }}"
+                                        autocomplete="off"
+                                        {{ old('brand_id') ? '' : 'disabled' }}>
+                                    <input type="hidden" id="product_model_id" name="product_model_id" value="{{ old('product_model_id') }}">
+                                    <div id="model_suggestions" class="absolute z-10 hidden bg-white border border-gray-300 w-full mt-1 rounded-lg shadow-lg"></div>
                                 </div>
                             </div>
                         </div>
@@ -161,3 +177,181 @@
 
     @include('products.create-supplier-modal')
 </x-app-layout>
+
+@section('scripts')
+<script>
+// Autocomplétion pour les marques
+const brandAutocomplete = document.getElementById('brand_autocomplete');
+const brandIdInput = document.getElementById('brand_id');
+const brandSuggestions = document.getElementById('brand_suggestions');
+const modelAutocomplete = document.getElementById('model_autocomplete');
+const modelIdInput = document.getElementById('product_model_id');
+const modelSuggestions = document.getElementById('model_suggestions');
+
+// Recherche de marques
+brandAutocomplete.addEventListener('input', async function() {
+    const query = this.value.trim();
+    
+    if (query.length < 2) {
+        brandSuggestions.classList.add('hidden');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/products/search-brands?query=${encodeURIComponent(query)}`);
+        const brands = await response.json();
+        
+        // Afficher les suggestions
+        brandSuggestions.innerHTML = '';
+        
+        if (brands.length === 0) {
+            // Option pour créer une nouvelle marque
+            const createItem = document.createElement('div');
+            createItem.className = 'p-2 cursor-pointer hover:bg-gray-100';
+            createItem.innerHTML = `<strong>Créer la marque:</strong> ${query}`;
+            createItem.addEventListener('click', async function() {
+                try {
+                    const response = await fetch('/products/create-brand', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({ name: query })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        brandAutocomplete.value = result.brand.name;
+                        brandIdInput.value = result.brand.id;
+                        brandSuggestions.classList.add('hidden');
+                        modelAutocomplete.disabled = false;
+                        modelAutocomplete.focus();
+                        modelIdInput.value = '';
+                    } else {
+                        alert(result.message || 'Une erreur est survenue');
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de la création de la marque:', error);
+                }
+            });
+            
+            brandSuggestions.appendChild(createItem);
+        } else {
+            // Afficher les marques existantes
+            brands.forEach(brand => {
+                const item = document.createElement('div');
+                item.className = 'p-2 cursor-pointer hover:bg-gray-100';
+                item.textContent = brand.name;
+                item.addEventListener('click', function() {
+                    brandAutocomplete.value = brand.name;
+                    brandIdInput.value = brand.id;
+                    brandSuggestions.classList.add('hidden');
+                    modelAutocomplete.disabled = false;
+                    modelAutocomplete.focus();
+                    modelIdInput.value = '';
+                });
+                
+                brandSuggestions.appendChild(item);
+            });
+        }
+        
+        brandSuggestions.classList.remove('hidden');
+    } catch (error) {
+        console.error('Erreur lors de la recherche de marques:', error);
+    }
+});
+
+// Recherche de modèles
+modelAutocomplete.addEventListener('input', async function() {
+    const query = this.value.trim();
+    const brandId = brandIdInput.value;
+    
+    if (query.length < 2 || !brandId) {
+        modelSuggestions.classList.add('hidden');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/products/search-models?query=${encodeURIComponent(query)}&brand_id=${brandId}`);
+        const models = await response.json();
+        
+        // Afficher les suggestions
+        modelSuggestions.innerHTML = '';
+        
+        if (models.length === 0) {
+            // Option pour créer un nouveau modèle
+            const createItem = document.createElement('div');
+            createItem.className = 'p-2 cursor-pointer hover:bg-gray-100';
+            createItem.innerHTML = `<strong>Créer le modèle:</strong> ${query}`;
+            createItem.addEventListener('click', async function() {
+                try {
+                    const response = await fetch('/products/create-model', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({ 
+                            name: query,
+                            brand_id: brandId
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        modelAutocomplete.value = result.model.name;
+                        modelIdInput.value = result.model.id;
+                        modelSuggestions.classList.add('hidden');
+                    } else {
+                        if (result.model) {
+                            // Le modèle existe déjà, utiliser celui-ci
+                            modelAutocomplete.value = result.model.name;
+                            modelIdInput.value = result.model.id;
+                            modelSuggestions.classList.add('hidden');
+                        } else {
+                            alert(result.message || 'Une erreur est survenue');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de la création du modèle:', error);
+                }
+            });
+            
+            modelSuggestions.appendChild(createItem);
+        } else {
+            // Afficher les modèles existants
+            models.forEach(model => {
+                const item = document.createElement('div');
+                item.className = 'p-2 cursor-pointer hover:bg-gray-100';
+                item.textContent = model.name;
+                item.addEventListener('click', function() {
+                    modelAutocomplete.value = model.name;
+                    modelIdInput.value = model.id;
+                    modelSuggestions.classList.add('hidden');
+                });
+                
+                modelSuggestions.appendChild(item);
+            });
+        }
+        
+        modelSuggestions.classList.remove('hidden');
+    } catch (error) {
+        console.error('Erreur lors de la recherche de modèles:', error);
+    }
+});
+
+// Fermer les suggestions si on clique ailleurs
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('#brand_autocomplete') && !event.target.closest('#brand_suggestions')) {
+        brandSuggestions.classList.add('hidden');
+    }
+    
+    if (!event.target.closest('#model_autocomplete') && !event.target.closest('#model_suggestions')) {
+        modelSuggestions.classList.add('hidden');
+    }
+});
+</script>
+@endsection

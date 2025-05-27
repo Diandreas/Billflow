@@ -12,6 +12,7 @@ use PhpOffice\PhpSpreadsheet\Reader\Exception as ReaderException;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Supplier;
+use App\Models\Brand;
 
 class ImportMapperController extends Controller
 {
@@ -27,7 +28,8 @@ class ImportMapperController extends Controller
 
         return view('products.import-form', [
             'categories' => ProductCategory::orderBy('name')->get(),
-            'suppliers' => Supplier::orderBy('name')->get()
+            'suppliers' => Supplier::orderBy('name')->get(),
+            'brands' => Brand::orderBy('name')->get()
         ]);
     }
 
@@ -47,12 +49,16 @@ class ImportMapperController extends Controller
             'has_headers' => 'nullable|boolean',
             'category_id' => 'nullable|exists:product_categories,id',
             'supplier_id' => 'nullable|exists:suppliers,id',
+            'brand_id' => 'nullable|exists:brands,id',
+            'create_missing_brands' => 'nullable|boolean',
         ]);
 
         $file = $request->file('product_file');
         $hasHeaders = isset($validated['has_headers']) && $validated['has_headers'];
         $defaultCategoryId = $validated['category_id'] ?? null;
         $defaultSupplierId = $validated['supplier_id'] ?? null;
+        $defaultBrandId = $validated['brand_id'] ?? null;
+        $createMissingBrands = isset($validated['create_missing_brands']) && $validated['create_missing_brands'];
 
         try {
             // Lire le fichier
@@ -94,6 +100,8 @@ class ImportMapperController extends Controller
                 'status' => 'Statut (actif/inactif)',
                 'category' => 'Catégorie',
                 'supplier' => 'Fournisseur',
+                'brand' => 'Marque',
+                'model' => 'Modèle',
                 'is_barterable' => 'Disponible pour troc (0/1)'
             ];
 
@@ -119,7 +127,9 @@ class ImportMapperController extends Controller
                 'expectedFields',
                 'suggestedMapping',
                 'defaultCategoryId',
-                'defaultSupplierId'
+                'defaultSupplierId',
+                'defaultBrandId',
+                'createMissingBrands'
             ));
         } catch (ReaderException $e) {
             Log::error('Erreur lors de la lecture du fichier: ' . $e->getMessage());

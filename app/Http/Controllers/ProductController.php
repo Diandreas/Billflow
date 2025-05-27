@@ -7,6 +7,8 @@ use App\Models\ProductCategory;
 use App\Models\Barter;
 use App\Models\BarterItem;
 use App\Models\Bill;
+use App\Models\Brand;
+use App\Models\ProductModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -47,6 +49,16 @@ class ProductController extends Controller
         // Filtre par type
         if ($request->filled('type')) {
             $query->where('type', $request->type);
+        }
+
+        // Filtre par marque
+        if ($request->filled('brand_id')) {
+            $query->where('brand_id', $request->brand_id);
+        }
+
+        // Filtre par modèle
+        if ($request->filled('product_model_id')) {
+            $query->where('product_model_id', $request->product_model_id);
         }
 
         // Filtre par boutique spécifique
@@ -94,6 +106,17 @@ class ProductController extends Controller
         $shops = Gate::allows('admin')
             ? \App\Models\Shop::all()
             : Auth::user()->shops;
+            
+        // Récupérer les marques pour le filtre
+        $brands = Brand::orderBy('name')->get();
+        
+        // Récupérer les modèles si une marque est sélectionnée
+        $models = collect();
+        if ($request->filled('brand_id')) {
+            $models = ProductModel::where('brand_id', $request->brand_id)
+                ->orderBy('name')
+                ->get();
+        }
 
         // Préparer les statistiques pour la vue
         $stats = [
@@ -104,7 +127,7 @@ class ProductController extends Controller
             'average_price' => Product::avg('default_price') ?: 0,
         ];
 
-        return view('products.index', compact('products', 'shops', 'stats'));
+        return view('products.index', compact('products', 'shops', 'stats', 'brands', 'models'));
     }
 
     public function create()
@@ -137,6 +160,9 @@ class ProductController extends Controller
             'cost_price' => 'nullable|numeric|min:0',
             'status' => 'nullable|string|in:actif,inactif',
             'category_id' => 'nullable|exists:product_categories,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
+            'brand_id' => 'nullable|exists:brands,id',
+            'product_model_id' => 'nullable|exists:product_models,id',
             'is_barterable' => 'nullable|boolean',
         ]);
 
@@ -264,11 +290,16 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
+        // Vérifier que l'utilisateur a le droit de gérer les produits
+        if (Gate::denies('manage-products') && auth()->user()->role !== 'vendeur') {
+            abort(403, 'Action non autorisée.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'default_price' => 'nullable|numeric|min:0',
-            'type' => 'nullable|string|max:50',
+            'type' => 'required|string|max:50',
             'sku' => 'nullable|string|max:50',
             'stock_quantity' => 'nullable|integer|min:0',
             'stock_alert_threshold' => 'nullable|integer|min:0',
@@ -277,6 +308,9 @@ class ProductController extends Controller
             'cost_price' => 'nullable|numeric|min:0',
             'status' => 'nullable|string|in:actif,inactif',
             'category_id' => 'nullable|exists:product_categories,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
+            'brand_id' => 'nullable|exists:brands,id',
+            'product_model_id' => 'nullable|exists:product_models,id',
             'is_barterable' => 'nullable|boolean',
         ]);
 
@@ -285,8 +319,8 @@ class ProductController extends Controller
             $validated['default_price'] = 0;
         }
 
-        // Si le type change pour 'service', réinitialiser les valeurs de stock et troc
-        if (isset($validated['type']) && $validated['type'] === 'service') {
+        // Pour les services, mettre les valeurs de stock à zéro et désactiver le troc
+        if ($validated['type'] === 'service') {
             $validated['stock_quantity'] = 0;
             $validated['stock_alert_threshold'] = 0;
             $validated['is_barterable'] = false;
@@ -296,14 +330,6 @@ class ProductController extends Controller
         $validated['is_barterable'] = isset($validated['is_barterable']) && $validated['is_barterable'] ? true : false;
 
         $product->update($validated);
-
-        if ($request->ajax() || $request->expectsJson() || $request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'product' => $product,
-                'message' => 'Produit mis à jour avec succès'
-            ]);
-        }
 
         return redirect()
             ->route('products.show', $product)
@@ -507,6 +533,8 @@ class ProductController extends Controller
                 'status' => 'Statut (actif/inactif)',
                 'category' => 'Catégorie',
                 'supplier' => 'Fournisseur',
+                'brand' => 'Marque',
+                'model' => 'Modèle',
                 'is_barterable' => 'Disponible pour troc (0/1)'
             ];
 
@@ -603,6 +631,8 @@ class ProductController extends Controller
             'column_mapping.*' => 'nullable|string',
             'category_id' => 'nullable|exists:product_categories,id',
             'supplier_id' => 'nullable|exists:suppliers,id',
+            'brand_id' => 'nullable|exists:brands,id',
+            'create_missing_brands' => 'nullable|boolean',
         ]);
 
         // Récupérer les données de session
@@ -616,6 +646,8 @@ class ProductController extends Controller
         $headers = $importData['headers'];
         $defaultCategoryId = $validated['category_id'] ?? $importData['category_id'];
         $defaultSupplierId = $validated['supplier_id'] ?? $importData['supplier_id'];
+        $defaultBrandId = $validated['brand_id'] ?? null;
+        $createMissingBrands = $validated['create_missing_brands'] ?? true;
 
         // Créer le mapping des colonnes
         $columnMap = [];
@@ -635,12 +667,42 @@ class ProductController extends Controller
 
             $productsCreated = 0;
             $productsUpdated = 0;
+            $brandsCreated = 0;
+            $modelsCreated = 0;
             $errors = [];
 
             foreach ($rows as $rowIndex => $row) {
                 try {
                     // Extraire les données du produit en utilisant le mapping des colonnes
                     $productData = $this->extractProductDataWithMapping($row, $columnMap, $defaultCategoryId, $defaultSupplierId);
+
+                    // Gérer la marque si elle est présente ou utiliser la marque par défaut
+                    if (!isset($productData['brand_id']) && $defaultBrandId) {
+                        $productData['brand_id'] = $defaultBrandId;
+                    }
+
+                    // Si la création automatique des marques est activée et qu'une marque est spécifiée mais n'existe pas
+                    if ($createMissingBrands && isset($columnMap['brand']) && !empty($row[$columnMap['brand']]) && !isset($productData['brand_id'])) {
+                        $brandName = trim($row[$columnMap['brand']]);
+                        $brand = Brand::firstOrCreate(['name' => $brandName]);
+                        if ($brand->wasRecentlyCreated) {
+                            $brandsCreated++;
+                        }
+                        $productData['brand_id'] = $brand->id;
+
+                        // Gérer le modèle si une marque est trouvée/créée et un modèle est spécifié
+                        if (isset($columnMap['model']) && !empty($row[$columnMap['model']])) {
+                            $modelName = trim($row[$columnMap['model']]);
+                            $model = ProductModel::firstOrCreate(
+                                ['name' => $modelName, 'brand_id' => $brand->id],
+                                ['description' => '']
+                            );
+                            if ($model->wasRecentlyCreated) {
+                                $modelsCreated++;
+                            }
+                            $productData['product_model_id'] = $model->id;
+                        }
+                    }
 
                     // Essayer de trouver un produit existant par SKU s'il est défini
                     $existingProduct = null;
@@ -668,6 +730,12 @@ class ProductController extends Controller
 
             // Message de succès avec détails
             $message = "Importation réussie: {$productsCreated} produits créés, {$productsUpdated} produits mis à jour.";
+            if ($brandsCreated > 0) {
+                $message .= " {$brandsCreated} marques créées.";
+            }
+            if ($modelsCreated > 0) {
+                $message .= " {$modelsCreated} modèles créés.";
+            }
             if (!empty($errors)) {
                 $message .= " Il y a eu " . count($errors) . " erreurs.";
             }
@@ -774,6 +842,27 @@ class ProductController extends Controller
         } elseif ($defaultSupplierId) {
             $data['supplier_id'] = $defaultSupplierId;
         }
+        
+        // Gestion de la marque
+        if (isset($columnMap['brand']) && isset($row[$columnMap['brand']])) {
+            $brandName = trim($row[$columnMap['brand']]);
+            if (!empty($brandName)) {
+                $brand = Brand::firstOrCreate(['name' => $brandName]);
+                $data['brand_id'] = $brand->id;
+                
+                // Gestion du modèle (uniquement si la marque est définie)
+                if (isset($columnMap['model']) && isset($row[$columnMap['model']])) {
+                    $modelName = trim($row[$columnMap['model']]);
+                    if (!empty($modelName)) {
+                        $model = ProductModel::firstOrCreate(
+                            ['name' => $modelName, 'brand_id' => $brand->id],
+                            ['description' => '']
+                        );
+                        $data['product_model_id'] = $model->id;
+                    }
+                }
+            }
+        }
 
         return $data;
     }
@@ -786,7 +875,8 @@ class ProductController extends Controller
         $headers = [
             'Name', 'Description', 'Default Price', 'Type', 'SKU',
             'Stock Quantity', 'Stock Alert Threshold', 'Accounting Category',
-            'Tax Category', 'Cost Price', 'Status', 'Category', 'Is Barterable'
+            'Tax Category', 'Cost Price', 'Status', 'Category', 'Supplier', 
+            'Brand', 'Model', 'Is Barterable'
         ];
 
         $filename = 'product_import_template.csv';
@@ -809,6 +899,9 @@ class ProductController extends Controller
             '12.50',
             'actif', // or 'inactif'
             'Default Category',
+            'Default Supplier',
+            'Samsung', // Brand example
+            'Galaxy S21', // Model example
             'No'
         ]);
 
@@ -864,8 +957,8 @@ class ProductController extends Controller
             });
         }
 
-        // Get products for export
-        $products = $query->with('category')->get();
+        // Get products for export with related data
+        $products = $query->with(['category', 'supplier', 'brand', 'productModel'])->get();
 
         // Set filename with timestamp
         $filename = 'products_export_' . date('Y-m-d_His') . '.csv';
@@ -886,6 +979,9 @@ class ProductController extends Controller
             'Catégorie comptable',
             'Catégorie fiscale',
             'Catégorie',
+            'Fournisseur',
+            'Marque',
+            'Modèle',
             'Prix d\'achat',
             'Statut',
             'Peut être troqué',
@@ -913,6 +1009,9 @@ class ProductController extends Controller
                 $product->accounting_category,
                 $product->tax_category,
                 $product->category ? $product->category->name : '',
+                $product->supplier ? $product->supplier->name : '',
+                $product->brand ? $product->brand->name : '',
+                $product->productModel ? $product->productModel->name : '',
                 $product->cost_price,
                 $product->status,
                 $product->is_barterable ? 'Oui' : 'Non',
@@ -1031,7 +1130,7 @@ class ProductController extends Controller
                     }
 
                     $row = $rows[$rowIndex];
-                    $productData = $this->extractProductData($row, $columnMap, $defaultCategoryId, $defaultSupplierId);
+                    $productData = $this->extractProductDataWithMapping($row, $columnMap, $defaultCategoryId, $defaultSupplierId);
 
                     // Skip empty rows
                     if (empty($productData['name'])) {
@@ -1121,5 +1220,94 @@ class ProductController extends Controller
         }
 
         return $priceHistory;
+    }
+
+    /**
+     * Recherche de marques pour l'autocomplétion
+     */
+    public function searchBrands(Request $request)
+    {
+        $query = $request->input('query');
+        $brands = Brand::where('name', 'like', "%{$query}%")
+            ->orderBy('name')
+            ->limit(10)
+            ->get();
+
+        return response()->json($brands);
+    }
+
+    /**
+     * Recherche de modèles pour l'autocomplétion, filtré par marque
+     */
+    public function searchModels(Request $request)
+    {
+        $query = $request->input('query');
+        $brandId = $request->input('brand_id');
+        
+        $models = ProductModel::where('name', 'like', "%{$query}%");
+        
+        if ($brandId) {
+            $models->where('brand_id', $brandId);
+        }
+        
+        $results = $models->orderBy('name')
+            ->limit(10)
+            ->get();
+
+        return response()->json($results);
+    }
+
+    /**
+     * Création rapide d'une marque si elle n'existe pas
+     */
+    public function createBrand(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:brands',
+            'description' => 'nullable|string',
+        ]);
+
+        $brand = Brand::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'brand' => $brand,
+            'message' => 'Marque créée avec succès'
+        ]);
+    }
+
+    /**
+     * Création rapide d'un modèle si il n'existe pas
+     */
+    public function createModel(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'brand_id' => 'required|exists:brands,id',
+            'description' => 'nullable|string',
+            'year' => 'nullable|string|max:4',
+            'technical_specs' => 'nullable|string',
+        ]);
+
+        // Vérifier que ce modèle n'existe pas déjà pour cette marque
+        $existingModel = ProductModel::where('name', $validated['name'])
+            ->where('brand_id', $validated['brand_id'])
+            ->first();
+
+        if ($existingModel) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ce modèle existe déjà pour cette marque',
+                'model' => $existingModel
+            ], 422);
+        }
+
+        $model = ProductModel::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'model' => $model,
+            'message' => 'Modèle créé avec succès'
+        ]);
     }
 }

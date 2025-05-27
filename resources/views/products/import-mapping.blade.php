@@ -124,6 +124,29 @@
                             <p class="mt-1 text-xs text-gray-500">{{ __('Sera utilisé si aucun fournisseur n\'est spécifié dans le fichier') }}</p>
                         </div>
                     </div>
+                    
+                    <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                        <div>
+                            <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-2">{{ __('Marque par défaut') }}</label>
+                            <select id="brand_id" name="brand_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                <option value="">{{ __('Aucune marque par défaut') }}</option>
+                                @foreach(\App\Models\Brand::orderBy('name')->get() as $brand)
+                                    <option value="{{ $brand->id }}" {{ (isset($defaultBrandId) && $defaultBrandId == $brand->id) ? 'selected' : '' }}>
+                                        {{ $brand->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="mt-1 text-xs text-gray-500">{{ __('Sera utilisée si aucune marque n\'est spécifiée dans le fichier') }}</p>
+                        </div>
+                        <div>
+                            <div class="flex items-center h-full mt-8">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="create_missing_brands" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    <span class="ml-2 text-sm text-gray-700">{{ __('Créer automatiquement les marques et modèles manquants') }}</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="border-t border-gray-200 pt-6 flex justify-end">
                         <a href="{{ route('products.import.form') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md inline-flex items-center mr-3">

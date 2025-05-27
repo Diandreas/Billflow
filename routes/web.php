@@ -59,6 +59,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/products/{product}/usage-stats', [ProductController::class, 'usageStats'])->name('products.usage-stats');
     Route::get('/clients/search', [ClientController::class, 'search']);
     Route::get('/products/search', [ProductController::class, 'search']);
+    
+    // Routes pour l'autocomplétion des marques et modèles
+    Route::get('/products/search-brands', [ProductController::class, 'searchBrands'])->name('products.search-brands');
+    Route::get('/products/search-models', [ProductController::class, 'searchModels'])->name('products.search-models');
+    Route::post('/products/create-brand', [ProductController::class, 'createBrand'])->name('products.create-brand');
+    Route::post('/products/create-model', [ProductController::class, 'createModel'])->name('products.create-model');
 
     // Route pour l'exportation des produits - avant la route show pour éviter les conflits
     Route::get('/products/export', [ProductController::class, 'export'])->name('products.export');

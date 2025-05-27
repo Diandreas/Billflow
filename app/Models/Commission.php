@@ -95,15 +95,34 @@ class Commission extends Model
             return null;
         }
 
-        // Calculer la commission de base (sur le montant total)
+        // Calculer la base de commission (profit total sur la facture)
+        $baseAmount = 0;
+        $totalProfit = 0;
+
+        foreach ($bill->items as $item) {
+            if ($item->product && $item->product->type === 'physical' && $item->product->cost_price > 0) {
+                // Pour les produits physiques avec un prix d'achat, calculer sur la marge
+                $unitProfit = $item->price - $item->product->cost_price;
+                $itemProfit = $unitProfit * $item->quantity;
+                $totalProfit += $itemProfit > 0 ? $itemProfit : 0;
+            } else {
+                // Pour les services ou produits sans prix d'achat, calculer sur le montant total
+                $baseAmount += $item->total;
+            }
+        }
+
+        // La base de calcul est la somme du profit sur les produits physiques et du montant total des services
+        $commissionBase = $totalProfit + $baseAmount;
+
+        // Créer la commission
         $commission = new Commission();
         $commission->user_id = $seller->id;
         $commission->bill_id = $bill->id;
         $commission->shop_id = $bill->shop_id;
         $commission->type = 'vente';
-        $commission->base_amount = $bill->total;
+        $commission->base_amount = $commissionBase;
         $commission->rate = $seller->commission_rate;
-        $commission->amount = $bill->total * ($seller->commission_rate / 100);
+        $commission->amount = $commissionBase * ($seller->commission_rate / 100);
         $commission->description = "Commission sur la facture {$bill->reference}";
         $commission->is_paid = false;
         $commission->save();

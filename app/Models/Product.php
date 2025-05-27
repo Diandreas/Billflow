@@ -23,7 +23,9 @@ class Product extends Model
         'status',
         'category_id',
         'is_barterable',
-        'supplier_id'
+        'supplier_id',
+        'brand_id',
+        'product_model_id'
     ];
 
     protected $casts = [
@@ -91,6 +93,22 @@ class Product extends Model
     }
 
     /**
+     * Relation avec la marque
+     */
+    public function brand()
+    {
+        return $this->belongsTo(Brand::class);
+    }
+
+    /**
+     * Relation avec le modèle
+     */
+    public function productModel()
+    {
+        return $this->belongsTo(ProductModel::class);
+    }
+
+    /**
      * Vérifie si le produit est en rupture de stock
      */
     public function isOutOfStock()
@@ -119,6 +137,18 @@ class Product extends Model
         }
 
         return (($this->default_price - $this->cost_price) / $this->cost_price) * 100;
+    }
+
+    /**
+     * Calcule la marge bénéficiaire en valeur absolue
+     */
+    public function getProfitValue()
+    {
+        if (!$this->cost_price) {
+            return $this->default_price;
+        }
+        
+        return $this->default_price - $this->cost_price;
     }
 
     /**

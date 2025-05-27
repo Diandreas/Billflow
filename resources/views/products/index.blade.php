@@ -109,6 +109,24 @@
                     </div>
 
                     <div class="w-full sm:w-auto">
+                        <select name="brand_id" id="brand_id" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="">{{ __('Toutes les marques') }}</option>
+                            @foreach($brands as $brand)
+                                <option value="{{ $brand->id }}" {{ request('brand_id') == $brand->id ? 'selected' : '' }}>{{ $brand->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="w-full sm:w-auto">
+                        <select name="product_model_id" id="product_model_id" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" {{ $models->isEmpty() && !request('brand_id') ? 'disabled' : '' }}>
+                            <option value="">{{ __('Tous les modèles') }}</option>
+                            @foreach($models as $model)
+                                <option value="{{ $model->id }}" {{ request('product_model_id') == $model->id ? 'selected' : '' }}>{{ $model->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="w-full sm:w-auto">
                         <select name="stock" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             <option value="">{{ __('Tous les stocks') }}</option>
                             <option value="available" {{ request('stock') == 'available' ? 'selected' : '' }}>{{ __('En stock') }}</option>
@@ -198,10 +216,26 @@
                                             {{ __('Stock:') }}
                                         </div>
                                         <div class="font-medium {{ $product->isOutOfStock() ? 'text-red-600' : ($product->isLowStock() ? 'text-amber-600' : 'text-green-600') }}">
-                                            {{ number_format($product->stock_quantity, 0, ',', ' ') }} {{ __('unités') }}
+                                            {{ $product->stock_quantity }}
                                         </div>
                                     </div>
                                     @endif
+
+                                    <div class="mt-2 flex flex-col text-sm">
+                                        @if($product->brand)
+                                        <div class="flex justify-between">
+                                            <div class="text-gray-500">{{ __('Marque:') }}</div>
+                                            <div class="font-medium">{{ $product->brand->name }}</div>
+                                        </div>
+                                        @endif
+                                        
+                                        @if($product->productModel)
+                                        <div class="flex justify-between">
+                                            <div class="text-gray-500">{{ __('Modèle:') }}</div>
+                                            <div class="font-medium">{{ $product->productModel->name }}</div>
+                                        </div>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         @endforeach
@@ -545,6 +579,47 @@
                 });
             }
         });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const brandSelect = document.getElementById('brand_id');
+            const modelSelect = document.getElementById('product_model_id');
+            
+            if (brandSelect && modelSelect) {
+                brandSelect.addEventListener('change', function() {
+                    const brandId = this.value;
+                    
+                    // Désactiver le select des modèles pendant le chargement
+                    modelSelect.disabled = true;
+                    modelSelect.innerHTML = '<option value="">{{ __("Chargement...") }}</option>';
+                    
+                    if (!brandId) {
+                        modelSelect.innerHTML = '<option value="">{{ __("Tous les modèles") }}</option>';
+                        modelSelect.disabled = true;
+                        return;
+                    }
+                    
+                    // Charger les modèles pour cette marque
+                    fetch(`/products/search-models?brand_id=${brandId}`)
+                        .then(response => response.json())
+                        .then(models => {
+                            modelSelect.innerHTML = '<option value="">{{ __("Tous les modèles") }}</option>';
+                            
+                            models.forEach(model => {
+                                const option = document.createElement('option');
+                                option.value = model.id;
+                                option.textContent = model.name;
+                                modelSelect.appendChild(option);
+                            });
+                            
+                            modelSelect.disabled = false;
+                        })
+                        .catch(error => {
+                            console.error('Erreur lors du chargement des modèles:', error);
+                            modelSelect.innerHTML = '<option value="">{{ __("Erreur de chargement") }}</option>';
+                        });
+                });
+            }
+        });
     </script>
 
     <style>
@@ -569,3 +644,5 @@
     @endpush
 
 </x-app-layout>
+
+

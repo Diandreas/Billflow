@@ -199,20 +199,39 @@
                             <input type="text" id="searchInput" class="w-full pl-10 py-2 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-orange-500 focus:border-orange-500" placeholder="Rechercher un produit...">
                         </div>
 
-                        <div class="flex flex-wrap gap-2">
-                            <select id="categoryFilter" class="text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-orange-500 focus:border-orange-500">
-                                <option value="">Toutes catégories</option>
-                                @foreach($categories as $category)
-                                    <option value="{{ $category->name }}">{{ $category->name }}</option>
-                                @endforeach
-                            </select>
-
-                            <select id="stockFilter" class="text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-orange-500 focus:border-orange-500">
-                                <option value="">Tous stocks</option>
-                                <option value="in-stock">En stock</option>
-                                <option value="low-stock">Stock faible</option>
-                                <option value="out-of-stock">Rupture de stock</option>
-                            </select>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+                            <div>
+                                <select id="categoryFilter" class="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-orange-500 focus:border-orange-500">
+                                    <option value="">{{ __('Toutes catégories') }}</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <select id="brandFilter" class="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-orange-500 focus:border-orange-500">
+                                    <option value="">{{ __('Toutes marques') }}</option>
+                                    @foreach($brands as $brand)
+                                        <option value="{{ $brand->id }}" {{ request('brand_id') == $brand->id ? 'selected' : '' }}>{{ $brand->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <select id="modelFilter" class="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-orange-500 focus:border-orange-500" {{ $models->isEmpty() && !request('brand_id') ? 'disabled' : '' }}>
+                                    <option value="">{{ __('Tous modèles') }}</option>
+                                    @foreach($models as $model)
+                                        <option value="{{ $model->id }}" {{ request('product_model_id') == $model->id ? 'selected' : '' }}>{{ $model->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <select id="stockStatusFilter" class="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-orange-500 focus:border-orange-500">
+                                    <option value="">{{ __('Tout état de stock') }}</option>
+                                    <option value="in">{{ __('En stock') }}</option>
+                                    <option value="low">{{ __('Stock bas') }}</option>
+                                    <option value="out">{{ __('Rupture') }}</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -221,24 +240,12 @@
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                         <thead class="bg-gray-50 dark:bg-gray-700">
                         <tr>
-                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer" data-sort="name">
-                                {{ __('Produit') }} <span class="sort-icon">↕</span>
-                            </th>
-                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer" data-sort="sku">
-                                {{ __('Référence') }} <span class="sort-icon">↕</span>
-                            </th>
-                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer" data-sort="category">
-                                {{ __('Catégorie') }} <span class="sort-icon">↕</span>
-                            </th>
-                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer" data-sort="price">
-                                {{ __('Prix') }} <span class="sort-icon">↕</span>
-                            </th>
-                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer" data-sort="stock">
-                                {{ __('Stock') }} <span class="sort-icon">↕</span>
-                            </th>
-                            <th scope="col" class="px-2 py-1.5 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                {{ __('Actions') }}
-                            </th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('Produit') }}</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('Catégorie') }}</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('Marque/Modèle') }}</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('Stock') }}</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('Prix') }}</th>
+                            <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('Actions') }}</th>
                         </tr>
                         </thead>
                         <tbody id="inventoryTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -252,7 +259,7 @@
                                     data-stock="{{ $product->stock_quantity }}"
                                     data-barcode="{{ $product->barcode ?? '' }}"
                                     data-description="{{ $product->description ?? '' }}">
-                                    <td class="px-2 py-1.5 whitespace-nowrap">
+                                    <td class="px-2 py-3 whitespace-nowrap">
                                         <div class="flex items-center">
                                             <div class="flex-shrink-0 h-8 w-8 mr-2">
                                                 @if ($product->image)
@@ -271,37 +278,41 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-2 py-1.5 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
-                                        <div>{{ $product->sku }}</div>
-                                        @if ($product->barcode)
-                                            <div class="text-xs text-gray-400 dark:text-gray-500">{{ $product->barcode }}</div>
-                                        @endif
-                                    </td>
-                                    <td class="px-2 py-1.5 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
+                                    <td class="px-2 py-3 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
                                         {{ $product->category->name ?? 'N/A' }}
                                     </td>
-                                    <td class="px-2 py-1.5 whitespace-nowrap">
+                                    <td class="px-2 py-3 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
+                                        @if($product->brand)
+                                            {{ $product->brand->name }}
+                                            @if($product->productModel)
+                                                <span class="text-xs text-gray-400">{{ $product->productModel->name }}</span>
+                                            @endif
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                    <td class="px-2 py-3 whitespace-nowrap">
+                                        @if ($product->stock_quantity <= 0)
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
+                                                {{ __('Rupture') }}
+                                            </span>
+                                        @elseif ($product->stock_quantity <= $product->stock_alert_threshold && $product->stock_alert_threshold > 0)
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                                                {{ $product->stock_quantity }} {{ __('(Faible)') }}
+                                            </span>
+                                        @else
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                                                {{ $product->stock_quantity }}
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="px-2 py-3 whitespace-nowrap">
                                         <div class="text-xs font-medium text-gray-900 dark:text-gray-100">{{ number_format($product->default_price, 2) }} FCFA</div>
                                         @if ($product->compare_price > 0)
                                             <div class="text-xs text-gray-500 dark:text-gray-400 line-through">{{ number_format($product->compare_price, 2) }} FCFA</div>
                                         @endif
                                     </td>
-                                    <td class="px-2 py-1.5 whitespace-nowrap">
-                                        @if ($product->stock_quantity <= 0)
-                                            <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
-                                                    {{ __('Rupture') }}
-                                                </span>
-                                        @elseif ($product->stock_quantity <= $product->stock_alert_threshold)
-                                            <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
-                                                    {{ $product->stock_quantity }} {{ __('(Faible)') }}
-                                                </span>
-                                        @else
-                                            <span class="px-1.5 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                                                    {{ $product->stock_quantity }}
-                                                </span>
-                                        @endif
-                                    </td>
-                                    <td class="px-2 py-1.5 whitespace-nowrap text-right text-xs">
+                                    <td class="px-2 py-3 whitespace-nowrap text-right text-xs">
                                         <div class="flex justify-end space-x-1">
                                             <a href="{{ route('products.show', $product) }}" class="text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300" title="{{ __('Voir') }}">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -567,5 +578,96 @@
 </x-app-layout>
 
 @push('scripts')
-
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const brandFilter = document.getElementById('brandFilter');
+        const modelFilter = document.getElementById('modelFilter');
+        const stockStatusFilter = document.getElementById('stockStatusFilter');
+        
+        // Fonction pour appliquer les filtres
+        function applyFilters() {
+            const searchValue = searchInput.value.toLowerCase();
+            const categoryValue = categoryFilter.value;
+            const brandValue = brandFilter.value;
+            const modelValue = modelFilter.value;
+            const stockValue = stockStatusFilter.value;
+            
+            // Construire l'URL avec les paramètres de filtrage
+            let url = '{{ route("inventory.index") }}?';
+            const params = [];
+            
+            if (searchValue) params.push(`search=${encodeURIComponent(searchValue)}`);
+            if (categoryValue) params.push(`category_id=${categoryValue}`);
+            if (brandValue) params.push(`brand_id=${brandValue}`);
+            if (modelValue) params.push(`product_model_id=${modelValue}`);
+            if (stockValue) params.push(`stock_status=${stockValue}`);
+            
+            window.location.href = url + params.join('&');
+        }
+        
+        // Événements pour les changements de filtres
+        [categoryFilter, stockStatusFilter].forEach(filter => {
+            filter.addEventListener('change', applyFilters);
+        });
+        
+        // Événement pour la recherche (avec délai)
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(applyFilters, 500);
+        });
+        
+        // Gestion de la marque et du modèle
+        if (brandFilter && modelFilter) {
+            brandFilter.addEventListener('change', function() {
+                const brandId = this.value;
+                
+                // Si une marque est sélectionnée, charger les modèles correspondants
+                if (brandId) {
+                    // Désactiver le select des modèles pendant le chargement
+                    modelFilter.disabled = true;
+                    modelFilter.innerHTML = '<option value="">{{ __("Chargement...") }}</option>';
+                    
+                    // Charger les modèles pour cette marque
+                    fetch(`/products/search-models?brand_id=${brandId}`)
+                        .then(response => response.json())
+                        .then(models => {
+                            modelFilter.innerHTML = '<option value="">{{ __("Tous modèles") }}</option>';
+                            
+                            models.forEach(model => {
+                                const option = document.createElement('option');
+                                option.value = model.id;
+                                option.textContent = model.name;
+                                modelFilter.appendChild(option);
+                            });
+                            
+                            modelFilter.disabled = false;
+                            
+                            // Appliquer les filtres après le chargement des modèles
+                            applyFilters();
+                        })
+                        .catch(error => {
+                            console.error('Erreur lors du chargement des modèles:', error);
+                            modelFilter.innerHTML = '<option value="">{{ __("Erreur de chargement") }}</option>';
+                            modelFilter.disabled = false;
+                        });
+                } else {
+                    // Réinitialiser le select des modèles
+                    modelFilter.innerHTML = '<option value="">{{ __("Tous modèles") }}</option>';
+                    modelFilter.disabled = true;
+                    
+                    // Appliquer les filtres
+                    applyFilters();
+                }
+            });
+            
+            // Si le modèle est activé mais pas désactivé par défaut, ajouter un événement change
+            if (!modelFilter.disabled) {
+                modelFilter.addEventListener('change', applyFilters);
+            }
+        }
+    });
+</script>
 @endpush

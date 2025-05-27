@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\InventoryMovement;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\Brand;
+use App\Models\ProductModel;
 use Illuminate\Http\Request;
 
 class InventoryController extends Controller
@@ -12,7 +14,7 @@ class InventoryController extends Controller
     /**
      * Afficher le tableau de bord de l'inventaire
      */
-    public function index()
+    public function index(Request $request)
     {
         // Statistiques globales de stock (uniquement produits physiques)
         $stats = [
@@ -41,11 +43,53 @@ class InventoryController extends Controller
             ->orderBy('stock_quantity')
             ->get();
 
-        // Liste complète des produits pour l'inventaire
-        $inventories = Product::where('type', 'physical')
-            ->with('category')
-            ->orderBy('name')
-            ->paginate(25);
+        // Créer la requête pour la liste des produits
+        $inventoryQuery = Product::where('type', 'physical')->with('category', 'brand', 'productModel');
+
+        // Ajouter les filtres de recherche
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $inventoryQuery->where(function($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtre par catégorie
+        if ($request->filled('category_id')) {
+            $inventoryQuery->where('category_id', $request->input('category_id'));
+        }
+
+        // Filtre par marque
+        if ($request->filled('brand_id')) {
+            $inventoryQuery->where('brand_id', $request->input('brand_id'));
+        }
+
+        // Filtre par modèle
+        if ($request->filled('product_model_id')) {
+            $inventoryQuery->where('product_model_id', $request->input('product_model_id'));
+        }
+
+        // Filtre par état de stock
+        if ($request->filled('stock_status')) {
+            switch ($request->input('stock_status')) {
+                case 'low':
+                    $inventoryQuery->whereColumn('stock_quantity', '<=', 'stock_alert_threshold')
+                        ->where('stock_alert_threshold', '>', 0)
+                        ->where('stock_quantity', '>', 0);
+                    break;
+                case 'out':
+                    $inventoryQuery->where('stock_quantity', '<=', 0);
+                    break;
+                case 'in':
+                    $inventoryQuery->where('stock_quantity', '>', 0);
+                    break;
+            }
+        }
+
+        // Exécuter la requête avec pagination
+        $inventories = $inventoryQuery->orderBy('name')->paginate(25)->withQueryString();
 
         // Derniers mouvements de stock
         $recentMovements = InventoryMovement::with(['product', 'user'])
@@ -54,8 +98,27 @@ class InventoryController extends Controller
 
         // Catégories pour les filtres
         $categories = ProductCategory::orderBy('name')->get();
+        
+        // Marques pour les filtres
+        $brands = Brand::orderBy('name')->get();
+        
+        // Modèles pour les filtres (si une marque est sélectionnée)
+        $models = collect();
+        if ($request->filled('brand_id')) {
+            $models = ProductModel::where('brand_id', $request->input('brand_id'))
+                ->orderBy('name')
+                ->get();
+        }
 
-        return view('inventory.index', compact('stats', 'lowStockProducts', 'recentMovements', 'categories', 'inventories'));
+        return view('inventory.index', compact(
+            'stats', 
+            'lowStockProducts', 
+            'recentMovements', 
+            'categories', 
+            'inventories',
+            'brands',
+            'models'
+        ));
     }
 
     /**

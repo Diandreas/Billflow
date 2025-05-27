@@ -126,6 +126,34 @@
                                 </div>
                             </div>
                             
+                            <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                                <div>
+                                    <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Marque par défaut') }}</label>
+                                    <select id="brand_id" name="brand_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                        <option value="">{{ __('Aucune marque par défaut') }}</option>
+                                        @foreach($brands as $brand)
+                                            <option value="{{ $brand->id }}" {{ old('brand_id') == $brand->id ? 'selected' : '' }}>
+                                                {{ $brand->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        {{ __('Sera utilisée si le fichier ne spécifie pas de marque') }}
+                                    </p>
+                                </div>
+                                <div>
+                                    <div class="flex items-center mt-8">
+                                        <input type="checkbox" id="create_missing_brands" name="create_missing_brands" value="1" checked class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                        <label for="create_missing_brands" class="ml-2 block text-sm text-gray-700">
+                                            {{ __('Créer automatiquement les marques et modèles manquants') }}
+                                        </label>
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        {{ __('Lorsqu\'une marque ou un modèle n\'existe pas, il sera créé automatiquement') }}
+                                    </p>
+                                </div>
+                            </div>
+                            
                             <div class="pt-4 flex justify-end">
                                 <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg inline-flex items-center transition-colors duration-150">
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
