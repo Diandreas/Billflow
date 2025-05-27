@@ -191,11 +191,8 @@
         <div class="bill-info">
             <h2>FACTURE</h2>
             <p>
-                N° : {{ $bill->reference }}<br>
-                Date : {{ $bill->date->format('d/m/Y') }}<br>
-                @if($bill->due_date)
-                    Échéance : {{ $bill->due_date->format('d/m/Y') }}<br>
-                @endif
+                N° {{ $bill->reference }}<br>
+                Date: {{ $bill->date->format('d/m/Y') }}<br>
                 Boutique : {{ $bill->shop->name }}<br>
                 Vendeur : {{ $bill->seller->name }}<br>
                 Statut : {{ $bill->status }}

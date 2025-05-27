@@ -272,7 +272,6 @@ class BillController extends Controller
             'products.*.quantity' => 'required|integer|min:1',
             'products.*.price' => 'required|numeric|min:0',
             'date' => 'required|date',
-            'due_date' => 'nullable|date|after_or_equal:date',
             'tax_rate' => 'required|numeric|min:0|max:100',
             'payment_method' => 'nullable|string',
             'comments' => 'nullable|string',
@@ -301,7 +300,6 @@ class BillController extends Controller
             'description' => 'Facture pour ' . Client::find($validated['client_id'])->name,
             'total' => $totalWithTax,
             'date' => $validated['date'],
-            'due_date' => $validated['due_date'],
             'tax_rate' => $validated['tax_rate'],
             'tax_amount' => $taxAmount,
             'status' => 'En attente',
@@ -406,7 +404,6 @@ class BillController extends Controller
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
             'date' => 'required|date',
-            'due_date' => 'nullable|date|after_or_equal:date',
             'tax_rate' => 'required|numeric',
             'description' => 'nullable|string',
             'products' => 'required|array',
@@ -424,7 +421,6 @@ class BillController extends Controller
         $bill->update([
             'client_id' => $validated['client_id'],
             'date' => $validated['date'],
-            'due_date' => $validated['due_date'] ?? $bill->due_date,
             'tax_rate' => $validated['tax_rate'],
             'description' => $validated['description'] ?? null,
             'status' => $validated['status'] ?? $bill->status,

@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::get('clients/{client}/bills/create', [ClientController::class, 'billsCreate'])->name('clients.bills.create');
     Route::post('/clients/import', [ClientController::class, 'import'])->name('clients.import');
     Route::get('/templates/import-clients.csv', [ClientController::class, 'importTemplate'])->name('clients.import.template');
+    Route::post('/clients/quick-create', [ClientController::class, 'quickCreate'])->name('clients.quick-create');
 
     // Routes pour les produits
     Route::resource('products', ProductController::class)->except(['show']);

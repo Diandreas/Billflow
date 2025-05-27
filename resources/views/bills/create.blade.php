@@ -41,7 +41,7 @@
                     <div class="flex">
                         <div class="flex-shrink-0">
                             <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
                             </svg>
                         </div>
                         <div class="ml-3">
@@ -145,24 +145,6 @@
                                                        id="date"
                                                        name="date"
                                                        value="{{ old('date', date('Y-m-d')) }}"
-                                                       class="pl-10 w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label for="due_date" class="block mb-1 text-sm font-medium text-gray-700">
-                                                {{ __('Date d\'échéance') }}
-                                            </label>
-                                            <div class="relative">
-                                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
-                                                    </svg>
-                                                </div>
-                                                <input type="date"
-                                                       id="due_date"
-                                                       name="due_date"
-                                                       value="{{ old('due_date', date('Y-m-d', strtotime('+30 days'))) }}"
                                                        class="pl-10 w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                             </div>
                                         </div>
@@ -856,24 +838,46 @@
                 const name = document.getElementById('quick_client_name').value;
                 const email = document.getElementById('quick_client_email').value;
                 const phone = document.getElementById('quick_client_phone').value;
+                const address = document.getElementById('quick_client_address').value;
 
-                // Simuler l'ajout d'un client (normalement ce serait un appel AJAX)
-                // Pour la démonstration, nous allons simplement créer un objet client et l'utiliser
-                const newClient = {
-                    id: 'new_' + Date.now(),
-                    name: name,
-                    email: email,
-                    phones: [{ number: phone }]
-                };
-
-                // Sélectionner le nouveau client
-                selectClient(newClient);
-
-                // Fermer le modal
-                toggleNewClientModal();
-
-                // Animation de succès
-                showToast('Client créé avec succès: ' + name, 'success');
+                // Créer le client avec un appel AJAX
+                fetch('/clients/quick-create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        email: email,
+                        phone: phone,
+                        address: address
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erreur lors de la création du client');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Sélectionner le nouveau client
+                        selectClient(data.client);
+                        
+                        // Fermer le modal
+                        toggleNewClientModal();
+                        
+                        // Animation de succès
+                        showToast('Client créé avec succès: ' + name, 'success');
+                    } else {
+                        showToast(data.message || 'Erreur lors de la création du client', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    showToast('Erreur lors de la création du client', 'error');
+                });
             }
 
             // Basculer le modal "Nouveau client"

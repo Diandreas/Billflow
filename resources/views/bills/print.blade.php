@@ -197,8 +197,8 @@
 
 <div class="bill-info">
     <h1>FACTURE {{ $bill->reference }}</h1>
-    <p><strong>Date:</strong> {{ $bill->date->format('d/m/Y H:i') }}</p>
-    <p><strong>Échéance:</strong> {{ $bill->due_date ? $bill->due_date->format('d/m/Y') : 'Non spécifiée' }}</p>
+    <p><strong>Référence:</strong> {{ $bill->reference }}</p>
+<p><strong>Date:</strong> {{ $bill->date->format('d/m/Y') }}</p>
     <p><strong>Boutique:</strong> {{ $bill->shop->name }}</p>
     <p><strong>Vendeur:</strong> {{ $bill->seller->name }}</p>
     <p><strong>Statut:</strong> {{ $bill->status }}</p>

@@ -70,10 +70,7 @@
                             <!-- Détails de la facture -->
                             @php $settings = \App\Models\Setting::first(); @endphp
                             <div class="text-right">
-                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ __('Date d\'échéance') }}</div>
-                                <div class="text-base font-medium text-gray-900 dark:text-gray-100">
-                                    {{ $bill->due_date ? $bill->due_date->format('d/m/Y') : $bill->date->addDays(30)->format('d/m/Y') }}
-                                </div>
+                                
                                 @if($settings)
                                     <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $settings->company_name }}</div>
                                 @endif

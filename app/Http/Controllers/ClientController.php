@@ -234,11 +234,15 @@ class ClientController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:255'
+            'phone' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'address' => 'nullable|string|max:255'
         ]);
 
         $client = Client::create([
             'name' => $validated['name'],
+            'email' => $validated['email'] ?? null,
+            'address' => $validated['address'] ?? null,
             'user_id' => Auth::id(),
         ]);
 
@@ -253,6 +257,8 @@ class ClientController extends Controller
                 'id' => $client->id,
                 'name' => $client->name,
                 'phones' => $client->phones->pluck('number'),
+                'email' => $client->email,
+                'address' => $client->address
             ],
             'message' => 'Client créé avec succès'
         ]);
