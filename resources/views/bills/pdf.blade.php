@@ -318,6 +318,26 @@
         @endif
     </div>
 
+    <!-- QR Code -->
+    <div style="position: absolute; bottom: 20px; right: 20px; text-align: center;">
+        @php
+            try {
+                $qrCodeData = App::make(\App\Http\Controllers\BillController::class)->generateQrCode($bill);
+            } catch (\Exception $e) {
+                $qrCodeData = null;
+            }
+        @endphp
+
+        @if($qrCodeData)
+            <img src="data:image/png;base64,{{ $qrCodeData }}" style="width: 100px; height: 100px;">
+            <p style="font-size: 8px; margin-top: 5px;">Scannez pour vérifier l'authenticité</p>
+        @else
+            <div style="width: 100px; height: 100px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 8px; color: #999;">QR Code non disponible</span>
+            </div>
+        @endif
+    </div>
+
     <!-- Pied de page -->
     <div class="footer-container">
         <div class="footer">

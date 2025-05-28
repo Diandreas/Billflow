@@ -102,7 +102,7 @@ class Commission extends Model
         foreach ($bill->items as $item) {
             if ($item->product && $item->product->type === 'physical' && $item->product->cost_price > 0) {
                 // Pour les produits physiques avec un prix d'achat, calculer sur la marge
-                $unitProfit = $item->price - $item->product->cost_price;
+                $unitProfit = $item->unit_price - $item->product->cost_price;
                 $itemProfit = $unitProfit * $item->quantity;
                 $totalProfit += $itemProfit > 0 ? $itemProfit : 0;
             } else {

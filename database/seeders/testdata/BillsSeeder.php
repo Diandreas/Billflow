@@ -212,23 +212,16 @@ class BillsSeeder extends Seeder
 
                 // Créer la commission du vendeur si la facture est payée
                 if ($status === 'paid' && $seller->commission_rate > 0) {
-                    $commissionRate = $seller->commission_rate;
-                    $commissionAmount = $totalWithTax * ($commissionRate / 100);
-
-                    Commission::create([
-                        'user_id' => $seller->id,
-                        'bill_id' => $bill->id,
-                        'shop_id' => $shop->id,
-                        'amount' => $commissionAmount,
-                        'rate' => $commissionRate,
-                        'base_amount' => $totalWithTax,
-                        'type' => 'vente',
-                        'is_paid' => $faker->boolean(60), // 60% de chances que la commission soit payée
-                        'created_at' => $paidDate,
-                        'updated_at' => $paidDate,
-                    ]);
-
-                    $commissionCount++;
+                    $commission = Commission::calculateForBill($bill);
+                    if ($commission) {
+                        // Mettre à jour la date et le statut de paiement
+                        $commission->created_at = $paidDate;
+                        $commission->updated_at = $paidDate;
+                        $commission->is_paid = $faker->boolean(60); // 60% de chances que la commission soit payée
+                        $commission->save();
+                        
+                        $commissionCount++;
+                    }
                 }
 
                 $billCount++;

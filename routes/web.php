@@ -85,6 +85,7 @@ Route::middleware('auth')->group(function () {
     // Routes pour les catégories de produits
     Route::resource('product-categories', ProductCategoryController::class);
     Route::get('/api/product-categories', [ProductCategoryController::class, 'getAll'])->name('api.product-categories');
+    Route::post('/api/product-categories/quick-create', [ProductCategoryController::class, 'quickCreate'])->name('product-categories.quick-create');
 
     // Routes pour les fournisseurs
     Route::resource('suppliers', SupplierController::class);

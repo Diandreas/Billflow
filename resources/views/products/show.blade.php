@@ -50,7 +50,11 @@
 
                             <div>
                                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Prix de vente') }}</p>
-                                <p class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ number_format($product->default_price, 0, ',', ' ') }} FCFA</p>
+                                @if(Gate::allows('admin'))
+                                    <p class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ number_format($product->default_price, 0, ',', ' ') }} FCFA</p>
+                                @else
+                                    <p class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ __('Prix réservé à l\'administration') }}</p>
+                                @endif
                             </div>
 
                             @if($product->description)

@@ -21,6 +21,11 @@
                     <i class="bi bi-download mr-1"></i>
                     {{ __('PDF') }}
                 </a>
+                <button id="print-bill-btn" 
+                   class="inline-flex items-center px-3 py-1.5 bg-blue-600 dark:bg-blue-700 border border-transparent rounded-md font-medium text-sm text-white hover:bg-blue-700 dark:hover:bg-blue-600">
+                    <i class="bi bi-printer mr-1"></i>
+                    {{ __('Imprimer') }}
+                </button>
                 <a href="{{ route('bills.edit', $bill) }}"
                    class="inline-flex items-center px-3 py-1.5 bg-gray-200 dark:bg-gray-700 border border-transparent rounded-md font-medium text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600">
                     <i class="bi bi-pencil mr-1"></i>
@@ -125,6 +130,7 @@
                         </div>
 
                         <!-- Boutons de changement de statut -->
+                        @if($bill->status !== 'paid')
                         <div class="mt-4 flex flex-wrap gap-2">
                             <form action="{{ route('bills.update-status', $bill) }}" method="POST" class="inline status-update-form">
                                 @csrf
@@ -162,6 +168,7 @@
                                 </button>
                             </form>
                         </div>
+                        @endif
                     </div>
                 </div>
 
@@ -220,8 +227,11 @@
                                 @if($qrCodeData)
                                     <img src="data:image/png;base64,{{ $qrCodeData }}" class="w-28 h-28" alt="QR Code">
                                 @else
-                                    <div class="w-28 h-28 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs text-center">
-                                        QR code non disponible
+                                    <div class="w-28 h-28 flex flex-col items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs text-center p-2">
+                                        <span>QR code non disponible</span>
+                                        @if(isset($error) && $error)
+                                            <span class="mt-1 text-red-500 text-xs">Erreur: {{ Str::limit($error, 50) }}</span>
+                                        @endif
                                     </div>
                                 @endif
                             </div>
@@ -401,6 +411,32 @@
 
             if (resetButton) {
                 resetButton.addEventListener('click', resetFilters);
+            }
+
+            // 3. Gestionnaire pour l'impression de la facture
+            const printBillBtn = document.getElementById('print-bill-btn');
+            if (printBillBtn) {
+                printBillBtn.addEventListener('click', function() {
+                    printBill();
+                });
+            }
+
+            // Fonction pour imprimer la facture directement depuis le navigateur
+            function printBill() {
+                // Ouvrir la page d'impression dans une nouvelle fenêtre nommée
+                const printUrl = "{{ route('bills.print', $bill) }}";
+                const printWindow = window.open(printUrl, 'print_window', 'width=800,height=600,scrollbars=yes,resizable=yes');
+                
+                // Optionnel: Déclencher l'impression après un court délai si la page ne le fait pas automatiquement
+                if (printWindow) {
+                    printWindow.onload = function() {
+                        setTimeout(function() {
+                            if (!printWindow.closed) {
+                                printWindow.print();
+                            }
+                        }, 1000);
+                    };
+                }
             }
 
             // Fonction pour mettre à jour le statut de la facture

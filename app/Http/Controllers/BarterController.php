@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\Shop;
 use App\Models\User;
 use App\Models\TemporaryUpload;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -239,6 +240,9 @@ class BarterController extends Controller
         // Générer automatiquement une facture pour le troc
         $bill = $barter->generateBill();
 
+        // Enregistrer l'activité de création de troc
+        ActivityLogger::logCreated($barter, "Troc {$barter->reference} créé par " . Auth::user()?->name);
+
         return redirect()->route('barters.show', $barter)
             ->with('success', 'Troc créé avec succès' . ($bill ? ' et facture générée automatiquement' : ''));
     }
@@ -294,6 +298,9 @@ class BarterController extends Controller
             'payment_method' => 'nullable|string',
         ]);
 
+        // Sauvegarder les valeurs originales pour l'historique
+        $oldValues = $barter->getOriginal();
+
         $barter->update([
             'client_id' => $validated['client_id'],
             'shop_id' => $validated['shop_id'],
@@ -302,6 +309,9 @@ class BarterController extends Controller
             'description' => $validated['description'] ?? null,
             'payment_method' => $validated['payment_method'] ?? null,
         ]);
+
+        // Enregistrer l'activité de mise à jour
+        ActivityLogger::logUpdated($barter, $oldValues, "Troc {$barter->reference} modifié par " . Auth::user()?->name);
 
         return redirect()->route('barters.show', $barter)
             ->with('success', 'Troc mis à jour avec succès');
@@ -353,6 +363,9 @@ class BarterController extends Controller
 
         $barter->delete();
 
+        // Enregistrer l'activité de suppression
+        ActivityLogger::logDeleted($barter, "Troc {$barter->reference} supprimé par " . Auth::user()?->name);
+
         return redirect()->route('barters.index')
             ->with('success', 'Troc supprimé avec succès');
     }
@@ -367,12 +380,18 @@ class BarterController extends Controller
                 ->with('error', 'Impossible de compléter un troc qui n\'est pas en attente');
         }
 
+        // Sauvegarder les valeurs originales pour l'historique
+        $oldValues = $barter->getOriginal();
+
         $barter->update([
             'status' => 'completed',
         ]);
 
         // Générer une facture si elle n'existe pas encore
         $bill = $barter->bill ?? $barter->generateBill();
+
+        // Enregistrer l'activité de complétion
+        ActivityLogger::logUpdated($barter, $oldValues, "Troc {$barter->reference} marqué comme complété par " . Auth::user()?->name);
 
         return redirect()->route('barters.show', $barter)
             ->with('success', 'Troc marqué comme complété' . ($bill ? ' et facture générée' : ''));
@@ -387,6 +406,9 @@ class BarterController extends Controller
             return redirect()->route('barters.show', $barter)
                 ->with('error', 'Impossible d\'annuler un troc qui n\'est pas en attente');
         }
+
+        // Sauvegarder les valeurs originales pour l'historique
+        $oldValues = $barter->getOriginal();
 
         // Restaurer le stock pour les produits liés
         foreach ($barter->items as $item) {
@@ -415,6 +437,9 @@ class BarterController extends Controller
         $barter->update([
             'status' => 'cancelled',
         ]);
+
+        // Enregistrer l'activité d'annulation
+        ActivityLogger::logUpdated($barter, $oldValues, "Troc {$barter->reference} annulé par " . Auth::user()?->name);
 
         return redirect()->route('barters.show', $barter)
             ->with('success', 'Troc annulé avec succès');

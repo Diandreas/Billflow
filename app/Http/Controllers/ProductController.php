@@ -9,6 +9,7 @@ use App\Models\BarterItem;
 use App\Models\Bill;
 use App\Models\Brand;
 use App\Models\ProductModel;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -188,6 +189,9 @@ class ProductController extends Controller
 
         $product = Product::create($validated);
 
+        // Enregistrer l'activité de création de produit
+        ActivityLogger::logCreated($product, "Produit {$product->name} créé par " . Auth::user()?->name);
+
         if ($request->ajax() || $request->expectsJson() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
@@ -329,7 +333,13 @@ class ProductController extends Controller
         // Conversion de la valeur de is_barterable
         $validated['is_barterable'] = isset($validated['is_barterable']) && $validated['is_barterable'] ? true : false;
 
+        // Sauvegarder les valeurs originales pour l'historique
+        $oldValues = $product->getOriginal();
+
         $product->update($validated);
+
+        // Enregistrer l'activité de mise à jour
+        ActivityLogger::logUpdated($product, $oldValues, "Produit {$product->name} modifié par " . Auth::user()?->name);
 
         return redirect()
             ->route('products.show', $product)
@@ -348,6 +358,9 @@ class ProductController extends Controller
             }
             return back()->with('error', 'Impossible de supprimer un produit utilisé dans des factures');
         }
+
+        // Enregistrer l'activité de suppression
+        ActivityLogger::logDeleted($product, "Produit {$product->name} supprimé par " . Auth::user()?->name);
 
         $product->delete();
 
@@ -400,6 +413,9 @@ class ProductController extends Controller
         $validated['type'] = 'service';
 
         $product = Product::create($validated);
+
+        // Enregistrer l'activité de création rapide
+        ActivityLogger::logCreated($product, "Produit {$product->name} créé rapidement par " . Auth::user()?->name);
 
         return response()->json([
             'success' => true,

@@ -175,7 +175,50 @@
         .red-text {
             color: #dc2626;
         }
+        
+        /* Styles spécifiques pour l'impression */
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .header, .bill-info, .footer {
+                border-color: #000 !important;
+            }
+            
+            .signature-box {
+                border-color: #000 !important;
+            }
+            
+            .barter-table th {
+                background-color: #f3e8ff !important;
+            }
+            
+            @page {
+                margin: 1cm;
+                size: A4;
+            }
+        }
     </style>
+    
+    <script>
+        // Déclencher l'impression automatiquement si la page est ouverte pour impression
+        window.addEventListener('load', function() {
+            // Vérifier si la page a été ouverte via notre fonction d'impression
+            if (window.name === 'print_window' || document.referrer.includes('/bills/')) {
+                setTimeout(function() {
+                    window.print();
+                }, 100);
+            }
+        });
+        
+        // Gérer la fermeture de la fenêtre après impression (optionnel)
+        window.addEventListener('afterprint', function() {
+            // Vous pouvez décommenter la ligne suivante si vous voulez fermer automatiquement la fenêtre
+            // window.close();
+        });
+    </script>
 </head>
 <body>
 @if($bill->reprint_count > 1)

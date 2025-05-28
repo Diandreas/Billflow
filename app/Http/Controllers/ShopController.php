@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Shop;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -118,6 +119,9 @@ class ShopController extends Controller
 
         $shop = Shop::create($validated);
 
+        // Enregistrer l'activité de création de boutique
+        ActivityLogger::logCreated($shop, "Boutique {$shop->name} créée par " . Auth::user()?->name);
+
         return redirect()->route('shops.index')
             ->with('success', 'Boutique créée avec succès');
     }
@@ -169,6 +173,9 @@ class ShopController extends Controller
             'is_active' => 'sometimes|boolean',
         ]);
 
+        // Sauvegarder les valeurs originales pour l'historique
+        $oldValues = $shop->getOriginal();
+
         if ($request->hasFile('logo')) {
             // Supprimer l'ancien logo si existant
             if ($shop->logo_path) {
@@ -180,6 +187,9 @@ class ShopController extends Controller
         }
 
         $shop->update($validated);
+
+        // Enregistrer l'activité de mise à jour
+        ActivityLogger::logUpdated($shop, $oldValues, "Boutique {$shop->name} modifiée par " . Auth::user()?->name);
 
         return redirect()->route('shops.show', $shop)
             ->with('success', 'Boutique mise à jour avec succès');
@@ -195,6 +205,9 @@ class ShopController extends Controller
             return redirect()->back()
                 ->with('error', 'Impossible de supprimer cette boutique car elle contient des factures ou des trocs');
         }
+
+        // Enregistrer l'activité de suppression avant de supprimer la boutique
+        ActivityLogger::logDeleted($shop, "Boutique {$shop->name} supprimée par " . Auth::user()?->name);
 
         // Supprimer le logo si existant
         if ($shop->logo_path) {

@@ -151,4 +151,27 @@ class ProductCategoryController extends Controller
 
         return response()->json($categories);
     }
+
+    /**
+     * Création rapide d'une catégorie via AJAX
+     */
+    public function quickCreate(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
+        // Générer le slug à partir du nom
+        $validated['slug'] = Str::slug($validated['name']);
+
+        // Créer la catégorie
+        $category = ProductCategory::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'category' => $category,
+            'message' => 'Catégorie créée avec succès'
+        ]);
+    }
 }

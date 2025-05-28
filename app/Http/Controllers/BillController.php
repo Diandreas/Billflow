@@ -350,18 +350,7 @@ class BillController extends Controller
         // Calculer et créer la commission du vendeur
         $seller = User::find($validated['seller_id']);
         if ($seller && $seller->commission_rate > 0) {
-            $commissionAmount = $totalWithTax * ($seller->commission_rate / 100);
-
-            Commission::create([
-                'user_id' => $seller->id,
-                'bill_id' => $bill->id,
-                'shop_id' => $bill->shop_id,
-                'amount' => $commissionAmount,
-                'rate' => $seller->commission_rate,
-                'base_amount' => $totalWithTax,
-                'type' => 'vente',
-                'is_paid' => false,
-            ]);
+            Commission::calculateForBill($bill);
         }
 
         return redirect()->route('bills.show', $bill)
@@ -894,23 +883,18 @@ class BillController extends Controller
                 'eccLevel' => QRCode::ECC_L,
                 'scale' => 5,
                 'imageBase64' => true,
+                'imageTransparent' => false,
             ]);
 
             // Générer le QR code
-            $qrcode = (new QRCode($options))->render($data);
+            $qrcode = new QRCode($options);
+            $qrcode_base64 = $qrcode->render($data);
 
-            // Le résultat est déjà en base64 (avec le préfixe data:image/png;base64,)
-            // On enlève le préfixe pour stocker seulement le code base64
-            $base64 = str_replace('data:image/png;base64,', '', $qrcode);
-
-            return $base64;
+            // Retourner uniquement la partie base64 sans le préfixe
+            return str_replace('data:image/png;base64,', '', $qrcode_base64);
         } catch (\Exception $e) {
-            // Journaliser l'erreur mais ne pas interrompre la génération du PDF
-            Log::error('Erreur lors de la génération du QR code : ' . $e->getMessage());
-            // Stocker l'erreur pour le débogage en environnement de développement
-            if (config('app.debug')) {
-                session()->flash('qr_error', 'Erreur de QR code: ' . $e->getMessage());
-            }
+            Log::error('Erreur lors de la génération du QR code: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
             return null;
         }
     }

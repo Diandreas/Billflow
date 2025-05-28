@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\Phone;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -93,6 +94,9 @@ class ClientController extends Controller
             }
         }
 
+        // Enregistrer l'activité de création de client
+        ActivityLogger::logCreated($client, "Client {$client->name} créé par " . Auth::user()?->name);
+
         return redirect()
             ->route('clients.index')
             ->with('success', 'Client créé avec succès');
@@ -151,6 +155,9 @@ class ClientController extends Controller
             'notes' => 'nullable|string'
         ]);
 
+        // Sauvegarder les valeurs originales pour l'historique
+        $oldValues = $client->getOriginal();
+
         $client->update([
             'name' => $validated['name'],
             'sex' => $validated['sex'],
@@ -170,6 +177,9 @@ class ClientController extends Controller
                 }
             }
         }
+
+        // Enregistrer l'activité de mise à jour
+        ActivityLogger::logUpdated($client, $oldValues, "Client {$client->name} modifié par " . Auth::user()?->name);
 
         return redirect()
             ->route('clients.show', $client)
@@ -191,6 +201,9 @@ class ClientController extends Controller
 
         // Supprimer les relations avec les téléphones
         $client->phones()->detach();
+
+        // Enregistrer l'activité de suppression avant de supprimer le client
+        ActivityLogger::logDeleted($client, "Client {$client->name} supprimé par " . Auth::user()?->name);
 
         // Supprimer le client
         $client->delete();
@@ -251,14 +264,15 @@ class ClientController extends Controller
             $client->phones()->attach($phone->id);
         }
 
+        // Enregistrer l'activité de création rapide
+        ActivityLogger::logCreated($client, "Client {$client->name} créé rapidement par " . Auth::user()?->name);
+
         return response()->json([
             'success' => true,
             'client' => [
                 'id' => $client->id,
                 'name' => $client->name,
-                'phones' => $client->phones->pluck('number'),
-                'email' => $client->email,
-                'address' => $client->address
+                'phones' => $client->phones->pluck('number')
             ],
             'message' => 'Client créé avec succès'
         ]);

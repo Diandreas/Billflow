@@ -3,10 +3,10 @@
         <div class="flex justify-between items-center">
             <div>
                 <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
-                    {{ __('Nouvelle Facture') }}
+                    {{ __('Nouvelle Facture Intelligente') }}
                 </h2>
                 <p class="mt-1 text-sm text-gray-500">
-                    {{ __('Créez et gérez vos factures professionnelles') }}
+                    {{ __('Créez et gérez vos factures avec assistance intelligente') }}
                 </p>
             </div>
             <a href="{{ route('bills.index') }}"
@@ -21,8 +21,9 @@
 
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            {{-- Messages d'erreur --}}
             @if(session('error'))
-                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded shadow-sm" role="alert">
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded shadow-sm animate-fadeIn" role="alert">
                     <div class="flex">
                         <div class="flex-shrink-0">
                             <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
@@ -37,7 +38,7 @@
             @endif
 
             @if($errors->any())
-                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded shadow-sm" role="alert">
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded shadow-sm animate-fadeIn" role="alert">
                     <div class="flex">
                         <div class="flex-shrink-0">
                             <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
@@ -56,32 +57,47 @@
                 </div>
             @endif
 
-            <div class="mb-5 bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-4">
-                    <!-- Progress bar -->
-                    <div class="w-full bg-gray-100 rounded-full h-2.5 mb-2">
-                        <div id="progressBar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+            {{-- Barre de progression intelligente --}}
+            <div class="bg-white rounded-lg shadow p-4 mb-6">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-sm font-medium text-gray-700">{{ __('Progression de la facture') }}</h3>
+                    <span id="progressPercentage" class="text-sm text-gray-500">25%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="progressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-500" style="width: 25%"></div>
+                </div>
+                <div class="mt-3 grid grid-cols-4 gap-4 text-xs">
+                    <div id="step1" class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                        <span class="text-green-700">{{ __('Informations de base') }}</span>
                     </div>
-                    <div class="flex justify-between text-xs text-gray-500">
-                        <span>Client</span>
-                        <span>Produits</span>
-                        <span>Finalisation</span>
+                    <div id="step2" class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-gray-300 mr-2"></div>
+                        <span class="text-gray-500">{{ __('Client') }}</span>
+                    </div>
+                    <div id="step3" class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-gray-300 mr-2"></div>
+                        <span class="text-gray-500">{{ __('Produits') }}</span>
+                    </div>
+                    <div id="step4" class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-gray-300 mr-2"></div>
+                        <span class="text-gray-500">{{ __('Finalisation') }}</span>
                     </div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Main form -->
+                {{-- Formulaire principal --}}
                 <div class="lg:col-span-2">
-                    <form id="billForm" action="{{ route('bills.store') }}" method="POST" class="space-y-6">
+                    <form id="smartBillForm" action="{{ route('bills.store') }}" method="POST" class="space-y-6">
                         @csrf
 
-                        <!-- Client Section -->
+                        {{-- Section Client avec validation intelligente --}}
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6 border-b border-gray-200">
                                 <div class="flex justify-between items-center mb-4">
                                     <h3 class="text-lg font-medium text-gray-900">
-                                        {{ __('Informations Client') }}
+                                        {{ __('Sélection du Client') }}
                                     </h3>
                                     <button type="button"
                                             id="newClientBtn"
@@ -94,7 +110,7 @@
                                 </div>
 
                                 <div class="space-y-4">
-                                    <!-- Client Selection with enhanced search -->
+                                    {{-- Recherche client avec intelligence --}}
                                     <div>
                                         <label for="client_search" class="block mb-1 text-sm font-medium text-gray-700">
                                             {{ __('Client') }} <span class="text-red-500">*</span>
@@ -110,96 +126,35 @@
                                                     <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
                                                 </svg>
                                             </div>
+                                            <div id="clientSearchLoader" class="absolute inset-y-0 right-0 pr-3 flex items-center hidden">
+                                                <div class="spinner"></div>
+                                            </div>
                                             <input type="hidden" id="client_id" name="client_id" required>
-                                            <div id="clientSearchResults" class="hidden absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md max-h-60 overflow-auto border border-gray-200"></div>
+                                            <div id="clientSearchResults" class="hidden absolute z-20 mt-1 w-full bg-white shadow-lg rounded-md max-h-60 overflow-auto border border-gray-200"></div>
                                         </div>
                                     </div>
 
-                                    <!-- Client info card (appears when client is selected) -->
-                                    <div id="selectedClientCard" class="hidden mt-3 bg-gray-50 rounded-md p-4 border border-gray-200">
-                                        <div class="flex items-start">
-                                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold"></div>
-                                            <div class="ml-3 flex-1">
-                                                <div class="text-sm font-medium text-gray-900" id="selectedClientName"></div>
-                                                <div class="text-sm text-gray-500 mt-1" id="selectedClientDetails"></div>
+                                    {{-- Client sélectionné avec statistiques --}}
+                                    <div id="selectedClientCard" class="hidden mt-3 bg-blue-50 rounded-md p-4 border border-blue-200">
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex items-start">
+                                                <div class="flex-shrink-0 h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold" id="clientInitials"></div>
+                                                <div class="ml-3 flex-1">
+                                                    <div class="text-lg font-medium text-gray-900" id="selectedClientName"></div>
+                                                    <div class="text-sm text-gray-600 mt-1" id="selectedClientDetails"></div>
+                                                    <div class="text-xs text-gray-500 mt-1" id="clientStats"></div>
+                                                </div>
                                             </div>
-                                            <button type="button" id="changeClientBtn" class="text-sm text-indigo-600 hover:text-indigo-800">
-                                                Changer
+                                            <button type="button" id="changeClientBtn" class="text-indigo-600 hover:text-indigo-800 text-sm">
+                                                {{ __('Changer') }}
                                             </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Basic Info Row (date, tax, etc) -->
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                                        <div>
-                                            <label for="date" class="block mb-1 text-sm font-medium text-gray-700">
-                                                {{ __('Date') }}
-                                            </label>
-                                            <div class="relative">
-                                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
-                                                    </svg>
-                                                </div>
-                                                <input type="date"
-                                                       id="date"
-                                                       name="date"
-                                                       value="{{ old('date', date('Y-m-d')) }}"
-                                                       class="pl-10 w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label for="tax_rate" class="block mb-1 text-sm font-medium text-gray-700">
-                                                {{ __('TVA (%)') }}
-                                            </label>
-                                            <div class="relative">
-                                                <input type="number"
-                                                       id="tax_rate"
-                                                       name="tax_rate"
-                                                       value="{{ old('tax_rate', 18) }}"
-                                                       class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                                       onchange="calculateTotals()">
-                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                                    <span class="text-gray-500">%</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
-                                        <div>
-                                            <label for="bill_reference" class="block mb-1 text-sm font-medium text-gray-700">
-                                                {{ __('Référence') }}
-                                            </label>
-                                            <input type="text"
-                                                   id="bill_reference"
-                                                   name="reference"
-                                                   value="{{ old('reference', 'FACT-' . date('Ymd') . '-' . rand(1000, 9999)) }}"
-                                                   class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                                        </div>
-                                    </div>
-
-                                    <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
-                                        <div>
-                                            <label for="payment_method" class="block mb-1 text-sm font-medium text-gray-700">
-                                                {{ __('Méthode de paiement') }}
-                                            </label>
-                                            <select id="payment_method" name="payment_method" class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                                                <option value="espèces">{{ __('Espèces') }}</option>
-                                                <option value="carte">{{ __('Carte bancaire') }}</option>
-                                                <option value="virement">{{ __('Virement bancaire') }}</option>
-                                                <option value="chèque">{{ __('Chèque') }}</option>
-                                                <option value="mobile_money">{{ __('Mobile Money') }}</option>
-                                                <option value="autre">{{ __('Autre') }}</option>
-                                            </select>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Products Section -->
+                        {{-- Section Produits avec gestion intelligente du stock --}}
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6">
                                 <div class="flex justify-between items-center mb-4">
@@ -207,7 +162,7 @@
                                         {{ __('Produits et Services') }}
                                     </h3>
                                     <button type="button"
-                                            onclick="toggleProductSearchModal()"
+                                            id="addProductBtn"
                                             class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200">
                                         <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -216,7 +171,23 @@
                                     </button>
                                 </div>
 
-                                <!-- Empty state when no products -->
+                                {{-- Recherche rapide de produits --}}
+                                <div class="mb-4">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               id="productQuickSearch" 
+                                               placeholder="Scan code-barres ou recherche rapide..." 
+                                               class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                            </svg>
+                                        </div>
+                                        <div id="quickProductSuggestions" class="hidden absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border max-h-40 overflow-auto"></div>
+                                    </div>
+                                </div>
+
+                                {{-- État vide et table des produits --}}
                                 <div id="emptyProductsState" class="py-8 text-center">
                                     <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -225,7 +196,7 @@
                                     <p class="mt-1 text-sm text-gray-500">{{ __('Commencez par ajouter des produits à votre facture.') }}</p>
                                     <div class="mt-6">
                                         <button type="button"
-                                                onclick="toggleProductSearchModal()"
+                                                onclick="document.getElementById('addProductBtn').click()"
                                                 class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                                             <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -235,13 +206,16 @@
                                     </div>
                                 </div>
 
-                                <!-- Products Table -->
+                                {{-- Table des produits --}}
                                 <div id="productsTableContainer" class="hidden overflow-x-auto">
                                     <table id="productsTable" class="min-w-full divide-y divide-gray-200">
                                         <thead class="bg-gray-50">
                                         <tr>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 {{ __('Produit') }}
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                                                {{ __('Stock') }}
                                             </th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                                                 {{ __('Quantité') }}
@@ -263,42 +237,94 @@
                             </div>
                         </div>
 
-                        <!-- Notes Section -->
+                        {{-- Informations de la facture --}}
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6">
-                                <div class="mb-4">
-                                    <h3 class="text-lg font-medium text-gray-900 mb-2">
-                                        {{ __('Notes et informations supplémentaires') }}
-                                    </h3>
-                                    <p class="text-sm text-gray-500">
-                                        {{ __('Ces informations apparaîtront en bas de votre facture.') }}
-                                    </p>
+                                <h3 class="text-lg font-medium text-gray-900 mb-4">
+                                    {{ __('Informations de la Facture') }}
+                                </h3>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="date" class="block mb-1 text-sm font-medium text-gray-700">
+                                            {{ __('Date') }}
+                                        </label>
+                                        <input type="date"
+                                               id="date"
+                                               name="date"
+                                               value="{{ old('date', date('Y-m-d')) }}"
+                                               class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    </div>
+
+                                    <div>
+                                        <label for="bill_reference" class="block mb-1 text-sm font-medium text-gray-700">
+                                            {{ __('Référence') }}
+                                        </label>
+                                        <input type="text"
+                                               id="bill_reference"
+                                               name="reference"
+                                               value="{{ old('reference', 'FACT-' . date('Ymd') . '-' . rand(1000, 9999)) }}"
+                                               class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                               readonly>
+                                    </div>
+
+                                    <div>
+                                        <label for="tax_rate" class="block mb-1 text-sm font-medium text-gray-700">
+                                            {{ __('TVA (%)') }}
+                                        </label>
+                                        <input type="number"
+                                               id="tax_rate"
+                                               name="tax_rate"
+                                               value="{{ old('tax_rate', 18) }}"
+                                               min="0"
+                                               max="100"
+                                               step="0.01"
+                                               class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    </div>
+
+                                    <div>
+                                        <label for="payment_method" class="block mb-1 text-sm font-medium text-gray-700">
+                                            {{ __('Méthode de paiement') }}
+                                        </label>
+                                        <select id="payment_method" name="payment_method" class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                            <option value="espèces">{{ __('Espèces') }}</option>
+                                            <option value="carte">{{ __('Carte bancaire') }}</option>
+                                            <option value="virement">{{ __('Virement bancaire') }}</option>
+                                            <option value="chèque">{{ __('Chèque') }}</option>
+                                            <option value="mobile_money">{{ __('Mobile Money') }}</option>
+                                            <option value="autre">{{ __('Autre') }}</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div>
+
+                                <div class="mt-4">
+                                    <label for="notes" class="block mb-1 text-sm font-medium text-gray-700">
+                                        {{ __('Notes') }}
+                                    </label>
                                     <textarea id="notes"
                                               name="notes"
                                               rows="3"
                                               class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                              placeholder="Informations de paiement, conditions, etc.">{{ old('notes', 'Merci pour votre confiance! La facture est payable sous 30 jours.') }}</textarea>
+                                              placeholder="{{ __('Notes supplémentaires...') }}">{{ old('notes', 'Merci pour votre confiance! La facture est payable sous 30 jours.') }}</textarea>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Boutique et Vendeur -->
+                        {{-- Boutique et Vendeur --}}
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <!-- Boutique -->
+                                    {{-- Boutique --}}
                                     <div>
                                         <label for="shop_id" class="block text-sm font-medium text-gray-700">{{ __('Boutique') }} <span class="text-red-500">*</span></label>
                                         @if(Auth::user()->role === 'vendeur')
-                                            <input type="text" class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="{{ $shops->first()->name }}" readonly>
-                                            <input type="hidden" name="shop_id" id="shop_id" value="{{ $defaultShopId }}">
+                                            <input type="text" class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="{{ $shops->first()->name ?? '' }}" readonly>
+                                            <input type="hidden" name="shop_id" id="shop_id" value="{{ $defaultShopId ?? '' }}">
                                         @else
                                             <select id="shop_id" name="shop_id" onchange="updateVendorsList(this.value)" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
-                                                <option value="">Sélectionner une boutique</option>
+                                                <option value="">{{ __('Sélectionner une boutique') }}</option>
                                                 @foreach ($shops as $shop)
-                                                    <option value="{{ $shop->id }}" {{ old('shop_id', $defaultShopId) == $shop->id ? 'selected' : '' }}>{{ $shop->name }}</option>
+                                                    <option value="{{ $shop->id }}" {{ old('shop_id', $defaultShopId ?? '') == $shop->id ? 'selected' : '' }}>{{ $shop->name }}</option>
                                                 @endforeach
                                             </select>
                                         @endif
@@ -307,17 +333,17 @@
                                         @enderror
                                     </div>
 
-                                    <!-- Vendeur -->
+                                    {{-- Vendeur --}}
                                     <div>
                                         <label for="user_id" class="block text-sm font-medium text-gray-700">{{ __('Vendeur') }} <span class="text-red-500">*</span></label>
                                         @if(Auth::user()->role === 'vendeur')
                                             <input type="text" class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="{{ Auth::user()->name }}" readonly>
-                                            <input type="hidden" name="seller_id" id="user_id" value="{{ $defaultSellerId }}">
+                                            <input type="hidden" name="seller_id" id="user_id" value="{{ $defaultSellerId ?? Auth::user()->id }}">
                                         @else
                                             <select id="user_id" name="seller_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
-                                                <option value="">Sélectionner un vendeur</option>
+                                                <option value="">{{ __('Sélectionner un vendeur') }}</option>
                                                 @foreach ($sellers as $seller)
-                                                    <option value="{{ $seller->id }}" {{ old('seller_id', $defaultSellerId) == $seller->id ? 'selected' : '' }}>{{ $seller->name }}</option>
+                                                    <option value="{{ $seller->id }}" {{ old('seller_id', $defaultSellerId ?? '') == $seller->id ? 'selected' : '' }}>{{ $seller->name }}</option>
                                                 @endforeach
                                             </select>
                                         @endif
@@ -329,7 +355,7 @@
                             </div>
                         </div>
 
-                        <!-- Submit Button -->
+                        {{-- Boutons d'action --}}
                         <div class="flex justify-between items-center">
                             <button type="button" id="saveDraftBtn" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                                 <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -338,7 +364,9 @@
                                 {{ __('Enregistrer comme brouillon') }}
                             </button>
                             <button type="submit"
-                                    class="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                                    id="submitBtn"
+                                    class="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 disabled:opacity-50"
+                                    disabled>
                                 <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -348,88 +376,70 @@
                     </form>
                 </div>
 
-                <!-- Preview column -->
+                {{-- Panneau de récapitulatif intelligent --}}
                 <div class="lg:col-span-1 space-y-6">
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg sticky top-6">
                         <div class="p-6 border-b border-gray-200">
                             <h3 class="text-lg font-medium text-gray-900 mb-4">
-                                {{ __('Récapitulatif') }}
+                                {{ __('Récapitulatif Intelligent') }}
                             </h3>
 
-                            <!-- Quick info card -->
+                            {{-- Informations générales --}}
                             <div class="bg-gray-50 rounded-md p-4 mb-4">
                                 <div class="space-y-3">
                                     <div class="flex justify-between">
-                                        <span class="text-sm text-gray-500">Client:</span>
+                                        <span class="text-sm text-gray-500">{{ __('Client:') }}</span>
                                         <span id="summaryClientName" class="text-sm font-medium">-</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-sm text-gray-500">Référence:</span>
+                                        <span class="text-sm text-gray-500">{{ __('Référence:') }}</span>
                                         <span id="summaryReference" class="text-sm font-medium">{{ 'FACT-' . date('Ymd') . '-' . rand(1000, 9999) }}</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-sm text-gray-500">Date:</span>
+                                        <span class="text-sm text-gray-500">{{ __('Date:') }}</span>
                                         <span id="summaryDate" class="text-sm font-medium">{{ date('d/m/Y') }}</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-sm text-gray-500">Articles:</span>
+                                        <span class="text-sm text-gray-500">{{ __('Articles:') }}</span>
                                         <span id="summaryItems" class="text-sm font-medium">0</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Totals -->
+                            {{-- Alertes intelligentes --}}
+                            <div id="smartAlerts" class="space-y-2 mb-6"></div>
+
+                            {{-- Détails des montants --}}
                             <div>
-                                <h4 class="font-medium text-sm text-gray-700 mb-2">Détails du montant</h4>
+                                <h4 class="font-medium text-sm text-gray-700 mb-2">{{ __('Détails du montant') }}</h4>
                                 <div class="space-y-1 text-sm mb-4">
                                     <div class="flex justify-between">
-                                        <span class="text-gray-500">Sous-total:</span>
+                                        <span class="text-gray-500">{{ __('Sous-total:') }}</span>
                                         <span id="summarySubtotal" class="font-medium">0 FCFA</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-gray-500">TVA (<span id="summaryTaxRate">18</span>%):</span>
+                                        <span class="text-gray-500">{{ __('TVA') }} (<span id="summaryTaxRate">18</span>%):</span>
                                         <span id="summaryTaxAmount" class="font-medium">0 FCFA</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500">{{ __('Remise:') }}</span>
+                                        <span id="summaryDiscount" class="font-medium">0 FCFA</span>
                                     </div>
                                 </div>
 
                                 <div class="border-t border-gray-200 pt-4">
                                     <div class="flex justify-between items-center">
-                                        <span class="text-lg font-bold text-gray-900">Total:</span>
+                                        <span class="text-lg font-bold text-gray-900">{{ __('Total:') }}</span>
                                         <span id="summaryTotal" class="text-xl font-bold text-indigo-600">0 FCFA</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Invoice progress -->
-                            <div class="mt-6">
-                                <h4 class="font-medium text-sm text-gray-700 mb-2">Progression</h4>
-                                <div class="space-y-3">
-                                    <div>
-                                        <div class="flex items-center">
-                                            <div class="flex items-center justify-center h-6 w-6 rounded-full bg-green-100 text-green-600">
-                                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                                </svg>
-                                            </div>
-                                            <span class="ml-2 text-sm font-medium text-gray-700">Informations de base</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="flex items-center" id="clientStepStatus">
-                                            <div class="flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 text-gray-400">
-                                                <span class="text-xs font-medium">2</span>
-                                            </div>
-                                            <span class="ml-2 text-sm font-medium text-gray-500">Client sélectionné</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="flex items-center" id="productsStepStatus">
-                                            <div class="flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 text-gray-400">
-                                                <span class="text-xs font-medium">3</span>
-                                            </div>
-                                            <span class="ml-2 text-sm font-medium text-gray-500">Produits ajoutés</span>
-                                        </div>
-                                    </div>
+                            {{-- Suggestions intelligentes --}}
+                            <div id="smartSuggestions" class="mt-6">
+                                <h4 class="font-medium text-sm text-gray-700 mb-2">{{ __('Suggestions') }}</h4>
+                                <div id="suggestionsContainer" class="space-y-2">
+                                    <p class="text-xs text-gray-500">{{ __('Les suggestions apparaîtront automatiquement...') }}</p>
                                 </div>
                             </div>
                         </div>
@@ -439,7 +449,7 @@
         </div>
     </div>
 
-    <!-- New Client Quick Modal -->
+    {{-- Modal de nouveau client --}}
     <div id="newClientModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center overflow-y-auto">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 transform transition-all">
             <div class="flex justify-between items-center p-4 border-b">
@@ -451,20 +461,21 @@
                 </button>
             </div>
             <form id="quickClientForm" class="p-4 space-y-4">
+                @csrf
                 <div>
-                    <label for="quick_client_name" class="block text-sm font-medium text-gray-700">Nom <span class="text-red-500">*</span></label>
+                    <label for="quick_client_name" class="block text-sm font-medium text-gray-700">{{ __('Nom') }} <span class="text-red-500">*</span></label>
                     <input type="text" id="quick_client_name" name="name" required class="mt-1 w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                 </div>
                 <div>
-                    <label for="quick_client_email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <label for="quick_client_email" class="block text-sm font-medium text-gray-700">{{ __('Email') }}</label>
                     <input type="email" id="quick_client_email" name="email" class="mt-1 w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                 </div>
                 <div>
-                    <label for="quick_client_phone" class="block text-sm font-medium text-gray-700">Téléphone <span class="text-red-500">*</span></label>
+                    <label for="quick_client_phone" class="block text-sm font-medium text-gray-700">{{ __('Téléphone') }} <span class="text-red-500">*</span></label>
                     <input type="text" id="quick_client_phone" name="phone" required class="mt-1 w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                 </div>
                 <div>
-                    <label for="quick_client_address" class="block text-sm font-medium text-gray-700">Adresse</label>
+                    <label for="quick_client_address" class="block text-sm font-medium text-gray-700">{{ __('Adresse') }}</label>
                     <textarea id="quick_client_address" name="address" rows="2" class="mt-1 w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"></textarea>
                 </div>
                 <div class="flex justify-end space-x-3 pt-3 border-t">
@@ -479,57 +490,55 @@
         </div>
     </div>
 
-    <!-- Product Search Modal (Amélioré) -->
-    <div id="productSearchModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center overflow-y-auto">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 transform transition-all">
-            <div class="flex justify-between items-center p-4 border-b">
-                <h3 class="text-lg font-medium text-gray-900">{{ __('Sélectionner des produits') }}</h3>
-                <button type="button" onclick="toggleProductSearchModal()" class="text-gray-400 hover:text-gray-500">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    {{-- Modal de sélection de produits --}}
+    <div id="productModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b">
+                <h3 class="text-lg font-medium">{{ __('Sélectionner des Produits') }}</h3>
+                <button type="button" id="closeProductModal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
-            <div class="p-4">
-                <div class="mb-4">
-                    <div class="relative">
-                        <input type="text" id="quickProductSearch" autofocus placeholder="Rechercher un produit par nom ou référence..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
+            
+            <div class="p-6">
+                {{-- Recherche et filtres --}}
+                <div class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="md:col-span-2">
+                        <input type="text" id="modalProductSearch" placeholder="{{ __('Rechercher des produits...') }}" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                     </div>
-                </div>
-
-                <!-- Onglets pour filtrer les produits -->
-                <div class="mb-4 border-b border-gray-200">
-                    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
-                        <li class="mr-2">
-                            <button type="button" onclick="filterProducts('all')" class="inline-block p-4 border-b-2 border-indigo-600 rounded-t-lg active text-indigo-600" id="tab-all">Tous</button>
-                        </li>
-                        <li class="mr-2">
-                            <button type="button" onclick="filterProducts('physical')" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300" id="tab-physical">Produits physiques</button>
-                        </li>
-                        <li class="mr-2">
-                            <button type="button" onclick="filterProducts('service')" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300" id="tab-service">Services</button>
-                        </li>
-                    </ul>
-                </div>
-
-                <div id="productSearchResults" class="max-h-72 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <!-- Les résultats s'afficheront ici en grille -->
-                </div>
-
-                <div class="mt-6 flex justify-between items-center pt-3 border-t">
                     <div>
-                        <span id="selectedProductsCount" class="text-sm font-medium text-gray-700">0 produit(s) sélectionné(s)</span>
+                        <select id="productTypeFilter" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
+                            <option value="">{{ __('Tous les types') }}</option>
+                            <option value="physical">{{ __('Produits physiques') }}</option>
+                            <option value="service">{{ __('Services') }}</option>
+                        </select>
                     </div>
-                    <div class="space-x-2">
-                        <button type="button" onclick="toggleProductSearchModal()" class="px-4 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-200">
+                    <div>
+                        <select id="stockFilter" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
+                            <option value="">{{ __('Tout stock') }}</option>
+                            <option value="available">{{ __('En stock') }}</option>
+                            <option value="low">{{ __('Stock faible') }}</option>
+                            <option value="out">{{ __('Rupture de stock') }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                {{-- Grille de produits --}}
+                <div id="productGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto mb-6">
+                    {{-- Les produits seront générés par JavaScript --}}
+                </div>
+
+                {{-- Actions du modal --}}
+                <div class="flex justify-between items-center border-t pt-4">
+                    <span id="selectedCount" class="text-sm text-gray-600">{{ __('0 produit(s) sélectionné(s)') }}</span>
+                    <div class="space-x-3">
+                        <button type="button" id="cancelProductSelection" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
                             {{ __('Annuler') }}
                         </button>
-                        <button type="button" onclick="addSelectedProductsToInvoice()" class="px-4 py-2 bg-indigo-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-indigo-700">
+                        <button type="button" id="confirmProductSelection" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
                             {{ __('Ajouter à la facture') }}
                         </button>
                     </div>
@@ -538,302 +547,353 @@
         </div>
     </div>
 
+    {{-- Container pour les notifications toast --}}
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
     @push('styles')
         <style>
-            /* Animation de transition pour les éléments */
-            .animate-fadeIn {
-                animation: fadeIn 0.3s ease-in-out;
-            }
+            /* Animations personnalisées */
+            .animate-fadeIn { animation: fadeIn 0.3s ease-in-out; }
+            .animate-scaleIn { animation: scaleIn 0.2s ease-out; }
+            .animate-highlight { animation: highlight 1s ease-in-out; }
+            .animate-pulse-error { animation: pulseError 0.5s ease-in-out; }
 
-            .animate-scaleIn {
-                animation: scaleIn 0.2s ease-out;
-            }
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+            @keyframes highlight { 0% { background-color: rgba(79, 70, 229, 0.1); } 100% { background-color: transparent; } }
+            @keyframes pulseError { 0%, 100% { border-color: #ef4444; } 50% { border-color: #f87171; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1); } }
 
-            .animate-highlight {
-                animation: highlight 1s ease-in-out;
-            }
+            /* Styles pour les états de stock */
+            .stock-high { color: #059669; }
+            .stock-medium { color: #d97706; }
+            .stock-low { color: #dc2626; }
+            .stock-out { color: #7f1d1d; background-color: #fef2f2; }
 
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
+            /* Styles pour les produits */
+            .product-card { transition: all 0.2s ease; border: 2px solid transparent; }
+            .product-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+            .product-card.selected { border-color: #4F46E5; background-color: rgba(79, 70, 229, 0.05); }
+            .product-card.disabled { opacity: 0.5; cursor: not-allowed; }
 
-            @keyframes scaleIn {
-                from { transform: scale(0.95); opacity: 0; }
-                to { transform: scale(1); opacity: 1; }
-            }
+            /* Indicateurs de validation */
+            .field-valid { border-color: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1); }
+            .field-invalid { border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1); }
 
-            @keyframes highlight {
-                0% { background-color: rgba(79, 70, 229, 0.1); }
-                100% { background-color: transparent; }
-            }
+            /* Loading spinner */
+            .spinner { border: 2px solid #f3f3f3; border-top: 2px solid #4F46E5; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-            /* Styles pour les résultats de recherche */
-            .search-result {
-                transition: all 0.2s;
-            }
+            /* Suggestion dropdown */
+            .suggestion-item { transition: background-color 0.15s ease; }
+            .suggestion-item.highlighted { background-color: #e0e7ff; }
 
-            .search-result:hover {
-                background-color: #F3F4F6;
-            }
+            /* Stock indicator */
+            .stock-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+            .stock-indicator.high { background-color: #10b981; }
+            .stock-indicator.medium { background-color: #f59e0b; }
+            .stock-indicator.low { background-color: #ef4444; }
+            .stock-indicator.out { background-color: #7f1d1d; }
 
-            /* Transition pour le hover des boutons */
-            button {
-                transition: all 0.2s;
-            }
-
-            /* Ajout d'une ombre intérieure sur focus pour les champs de recherche */
-            input:focus {
-                box-shadow: inset 0 0 0 2px rgba(79, 70, 229, 0.1);
-            }
-
-            /* Style pour les input number */
-            input[type="number"] {
-                -moz-appearance: textfield;
-            }
-
-            input[type="number"]::-webkit-outer-spin-button,
-            input[type="number"]::-webkit-inner-spin-button {
-                -webkit-appearance: none;
-                margin: 0;
-            }
-
-            /* Style pour les cartes de produits */
-            .product-card {
-                transition: all 0.2s ease;
-                border: 2px solid transparent;
-            }
-
-            .product-card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            }
-
-            .product-card.selected {
-                border-color: #4F46E5;
-                background-color: rgba(79, 70, 229, 0.05);
-            }
+            /* Input number styling */
+            input[type="number"] { -moz-appearance: textfield; }
+            input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         </style>
     @endpush
 
     @push('scripts')
         <script>
-            // Variables globales
-            const clients = @json($clients);
-            const products = @json($products);
-            let rowCounter = 0;
-            let selectedProducts = [];
-            let currentProductFilter = 'all';
-
-            // Variables pour stocker les états de la facture
+            // Variables globales pour Laravel/Blade
+            const clients = @json($clients ?? []);
+            const products = @json($products ?? []);
+            let selectedClient = null;
+            let invoiceProducts = [];
+            let selectedProductsInModal = [];
             let hasClientSelected = false;
             let hasProductsAdded = false;
 
             // Initialisation
             document.addEventListener('DOMContentLoaded', function() {
-                initClientSearch();
+                initializeSmartInvoice();
+                setupEventListeners();
                 updateProgressBar();
-                checkEmptyProductsState();
-                document.getElementById('summaryReference').textContent = document.getElementById('bill_reference').value;
+            });
 
-                // Mise à jour dynamique de la référence
+            function initializeSmartInvoice() {
+                // Initialiser la référence dans le récapitulatif
+                document.getElementById('summaryReference').textContent = document.getElementById('bill_reference').value;
+                
+                // Mettre à jour la date dans le récapitulatif
+                const dateInput = document.getElementById('date');
+                const dateObj = new Date(dateInput.value);
+                document.getElementById('summaryDate').textContent = dateObj.toLocaleDateString('fr-FR');
+
+                // Initialiser le taux de TVA
+                document.getElementById('summaryTaxRate').textContent = document.getElementById('tax_rate').value;
+
+                updateSummary();
+                checkEmptyProductsState();
+            }
+
+            function setupEventListeners() {
+                // Recherche de client
+                const clientSearch = document.getElementById('client_search');
+                clientSearch.addEventListener('input', debounce(searchClients, 300));
+                clientSearch.addEventListener('focus', () => {
+                    if (clientSearch.value.length >= 2) {
+                        searchClients();
+                    }
+                });
+
+                // Cacher les suggestions quand on clique ailleurs
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('#client_search') && !e.target.closest('#clientSearchResults')) {
+                        document.getElementById('clientSearchResults').classList.add('hidden');
+                    }
+                    if (!e.target.closest('#productQuickSearch') && !e.target.closest('#quickProductSuggestions')) {
+                        document.getElementById('quickProductSuggestions').classList.add('hidden');
+                    }
+                });
+
+                // Changer de client
+                document.getElementById('changeClientBtn').addEventListener('click', clearSelectedClient);
+
+                // Nouveau client
+                document.getElementById('newClientBtn').addEventListener('click', toggleNewClientModal);
+
+                // Recherche rapide de produits
+                const productQuickSearch = document.getElementById('productQuickSearch');
+                productQuickSearch.addEventListener('input', debounce(quickProductSearch, 200));
+                productQuickSearch.addEventListener('keydown', handleProductQuickSearchKeydown);
+
+                // Modal de produits
+                document.getElementById('addProductBtn').addEventListener('click', openProductModal);
+                document.getElementById('closeProductModal').addEventListener('click', closeProductModal);
+                document.getElementById('cancelProductSelection').addEventListener('click', closeProductModal);
+                document.getElementById('confirmProductSelection').addEventListener('click', addSelectedProductsToInvoice);
+
+                // Filtres dans le modal
+                document.getElementById('modalProductSearch').addEventListener('input', debounce(filterProductsInModal, 200));
+                document.getElementById('productTypeFilter').addEventListener('change', filterProductsInModal);
+                document.getElementById('stockFilter').addEventListener('change', filterProductsInModal);
+
+                // Champs de la facture
+                document.getElementById('tax_rate').addEventListener('input', () => {
+                    document.getElementById('summaryTaxRate').textContent = document.getElementById('tax_rate').value;
+                    updateSummary();
+                });
+
+                document.getElementById('date').addEventListener('change', function() {
+                    const dateObj = new Date(this.value);
+                    document.getElementById('summaryDate').textContent = dateObj.toLocaleDateString('fr-FR');
+                });
+
                 document.getElementById('bill_reference').addEventListener('input', function() {
                     document.getElementById('summaryReference').textContent = this.value;
                 });
 
-                // Mise à jour de la date dans le récapitulatif
-                document.getElementById('date').addEventListener('change', function() {
-                    const dateObj = new Date(this.value);
-                    const formattedDate = dateObj.toLocaleDateString('fr-FR');
-                    document.getElementById('summaryDate').textContent = formattedDate;
-                });
-
-                // Mise à jour du taux de TVA
-                document.getElementById('tax_rate').addEventListener('input', function() {
-                    document.getElementById('summaryTaxRate').textContent = this.value;
-                    calculateTotals();
-                });
-
-                // Sauvegarde automatique en brouillon
-                let autoSaveTimeout;
-                const formInputs = document.querySelectorAll('#billForm input, #billForm select, #billForm textarea');
-                formInputs.forEach(input => {
-                    input.addEventListener('change', function() {
-                        clearTimeout(autoSaveTimeout);
-                        autoSaveTimeout = setTimeout(saveAsDraft, 3000);
-                    });
-                });
-
-                // Gestionnaire pour le bouton de sauvegarde en brouillon
-                document.getElementById('saveDraftBtn').addEventListener('click', function() {
-                    saveAsDraft(true); // true indique que c'est une sauvegarde manuelle
-                });
-
-                // Soumission du formulaire avec validation
-                document.getElementById('billForm').addEventListener('submit', function(e) {
-                    if (!validateForm()) {
-                        e.preventDefault();
-                    }
-                });
-
-                // Gestion du formulaire de client rapide
+                // Formulaire de client rapide
                 document.getElementById('quickClientForm').addEventListener('submit', function(e) {
                     e.preventDefault();
                     addQuickClient();
                 });
 
-                // Bouton pour changer de client
-                document.getElementById('changeClientBtn').addEventListener('click', function() {
-                    document.getElementById('selectedClientCard').classList.add('hidden');
-                    document.getElementById('client_search').classList.remove('hidden');
-                    document.getElementById('client_search').focus();
-                });
-
-                // Initialiser l'affichage des prix formatés
-                const formatPrice = (price) => {
-                    return new Intl.NumberFormat('fr-FR').format(price) + ' FCFA';
-                };
-
-                // Configuration de la recherche de produits dans le modal
-                const productSearchInput = document.getElementById('quickProductSearch');
-                if (productSearchInput) {
-                    productSearchInput.addEventListener('input', function() {
-                        const searchTerm = this.value.toLowerCase().trim();
-                        filterAndDisplayProducts(searchTerm, currentProductFilter);
-                    });
-                }
-            });
-
-            // Fonction pour initialiser la recherche de client
-            function initClientSearch() {
-                const searchInput = document.getElementById('client_search');
-                const resultsContainer = document.getElementById('clientSearchResults');
-
-                searchInput.addEventListener('input', function() {
-                    const searchTerm = this.value.toLowerCase().trim();
-
-                    if (searchTerm.length < 2) {
-                        resultsContainer.classList.add('hidden');
-                        return;
-                    }
-
-                    const filteredClients = clients.filter(client => {
-                        const nameMatch = client.name.toLowerCase().includes(searchTerm);
-                        const emailMatch = client.email && client.email.toLowerCase().includes(searchTerm);
-                        const phoneMatch = client.phones && client.phones.some(phone =>
-                            phone.number.toLowerCase().includes(searchTerm)
-                        );
-
-                        return nameMatch || emailMatch || phoneMatch;
-                    });
-
-                    renderClientSearchResults(filteredClients);
-                });
-
-                // Cacher les résultats quand on clique ailleurs
-                document.addEventListener('click', function(e) {
-                    if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
-                        resultsContainer.classList.add('hidden');
+                // Validation du formulaire
+                document.getElementById('smartBillForm').addEventListener('submit', function(e) {
+                    if (!validateForm()) {
+                        e.preventDefault();
                     }
                 });
 
-                // Affichage au focus
-                searchInput.addEventListener('focus', function() {
-                    if (this.value.length >= 2) {
-                        resultsContainer.classList.remove('hidden');
-                    }
+                // Sauvegarde brouillon
+                document.getElementById('saveDraftBtn').addEventListener('click', function() {
+                    saveDraft();
                 });
+
+                // Raccourcis clavier
+                document.addEventListener('keydown', handleKeyboardShortcuts);
             }
 
-            // Afficher les résultats de recherche de clients
-            function renderClientSearchResults(clients) {
-                const resultsContainer = document.getElementById('clientSearchResults');
+            // Gestion des raccourcis clavier
+            function handleKeyboardShortcuts(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case 's':
+                            e.preventDefault();
+                            if (e.shiftKey) {
+                                saveDraft();
+                            } else {
+                                document.getElementById('smartBillForm').submit();
+                            }
+                            break;
+                        case 'p':
+                            e.preventDefault();
+                            openProductModal();
+                            break;
+                        case 'f':
+                            e.preventDefault();
+                            document.getElementById('client_search').focus();
+                            break;
+                    }
+                }
+            }
 
-                // Effacer les résultats précédents
-                resultsContainer.innerHTML = '';
+            // Recherche de clients avec intelligence
+            function searchClients() {
+                const query = document.getElementById('client_search').value.trim();
+                const loader = document.getElementById('clientSearchLoader');
+                const results = document.getElementById('clientSearchResults');
 
-                if (clients.length === 0) {
-                    resultsContainer.innerHTML = `
-                        <div class="p-4 text-center">
-                            <p class="text-sm text-gray-500">Aucun client trouvé</p>
-                            <button type="button" onclick="toggleNewClientModal()" class="mt-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-                                Ajouter un nouveau client
-                            </button>
-                        </div>
-                    `;
-                    resultsContainer.classList.remove('hidden');
+                if (query.length < 2) {
+                    results.classList.add('hidden');
                     return;
                 }
 
-                // Créer les résultats
-                clients.forEach(client => {
-                    const resultItem = document.createElement('div');
-                    resultItem.className = 'search-result p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100';
+                // Afficher le loader
+                loader.classList.remove('hidden');
 
-                    const phoneNumbers = client.phones && client.phones.length > 0
-                        ? client.phones.map(p => p.number).join(', ')
-                        : 'Pas de téléphone';
-
-                    resultItem.innerHTML = `
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
-                                ${client.name.substring(0, 2).toUpperCase()}
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm font-medium text-gray-900">${client.name}</p>
-                                <p class="text-xs text-gray-500">${phoneNumbers}</p>
-                            </div>
-                        </div>
-                    `;
-
-                    resultItem.addEventListener('click', function() {
-                        selectClient(client);
-                    });
-
-                    resultsContainer.appendChild(resultItem);
+                // Filtrer les clients
+                const filteredClients = clients.filter(client => {
+                    const nameMatch = client.name.toLowerCase().includes(query.toLowerCase());
+                    const emailMatch = client.email && client.email.toLowerCase().includes(query.toLowerCase());
+                    const phoneMatch = client.phones && client.phones.some(phone =>
+                        phone.number.toLowerCase().includes(query.toLowerCase())
+                    );
+                    return nameMatch || emailMatch || phoneMatch;
                 });
 
-                resultsContainer.classList.remove('hidden');
+                // Simuler un délai de recherche pour l'effet
+                setTimeout(() => {
+                    displayClientSuggestions(filteredClients);
+                    loader.classList.add('hidden');
+                }, 200);
             }
 
-            // Sélectionner un client
+            function displayClientSuggestions(clientsList) {
+                const results = document.getElementById('clientSearchResults');
+                results.innerHTML = '';
+
+                if (clientsList.length === 0) {
+                    results.innerHTML = `
+                        <div class="p-4 text-center">
+                            <p class="text-gray-500 text-sm">{{ __('Aucun client trouvé') }}</p>
+                            <button type="button" onclick="toggleNewClientModal()" class="mt-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                                {{ __('Créer un nouveau client') }}
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    clientsList.forEach((client, index) => {
+                        const div = document.createElement('div');
+                        div.className = `suggestion-item p-3 cursor-pointer border-b border-gray-100 hover:bg-gray-50 ${index === 0 ? 'highlighted' : ''}`;
+                        
+                        // Calculer les statistiques du client
+                        const totalOrders = client.total_orders || 0;
+                        const totalAmount = client.total_amount || 0;
+                        const avgOrder = totalOrders > 0 ? totalAmount / totalOrders : 0;
+                        const lastOrder = client.last_order || null;
+                        
+                        const phoneNumbers = client.phones && client.phones.length > 0
+                            ? client.phones.map(p => p.number).join(', ')
+                            : 'Pas de téléphone';
+                        
+                        div.innerHTML = `
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                                        <span class="text-indigo-600 font-semibold">${client.name.split(' ').map(n => n[0]).join('')}</span>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h4 class="font-medium text-gray-900">${client.name}</h4>
+                                        <p class="text-sm text-gray-600">${phoneNumbers}</p>
+                                        ${totalOrders > 0 ? `<p class="text-xs text-gray-500">${totalOrders} commandes • Moy. ${formatCurrency(avgOrder)}</p>` : ''}
+                                    </div>
+                                </div>
+                                ${totalAmount > 0 ? `
+                                <div class="text-right">
+                                    <div class="text-sm font-medium text-gray-900">${formatCurrency(totalAmount)}</div>
+                                    ${lastOrder ? `<div class="text-xs text-gray-500">${formatDate(lastOrder)}</div>` : ''}
+                                </div>
+                                ` : ''}
+                            </div>
+                        `;
+
+                        div.addEventListener('click', () => selectClient(client));
+                        results.appendChild(div);
+                    });
+                }
+
+                results.classList.remove('hidden');
+            }
+
             function selectClient(client) {
+                selectedClient = client;
+                hasClientSelected = true;
+
+                // Mettre à jour l'affichage
                 document.getElementById('client_id').value = client.id;
-
-                // Mettre à jour l'affichage du client sélectionné
-                const clientCard = document.getElementById('selectedClientCard');
-                clientCard.classList.remove('hidden');
-                clientCard.classList.add('animate-fadeIn');
-
-                // Définir les infos du client
-                const initialDiv = clientCard.querySelector('.flex-shrink-0');
-                initialDiv.textContent = client.name.substring(0, 2).toUpperCase();
-
+                document.getElementById('client_search').value = '';
+                document.getElementById('clientSearchResults').classList.add('hidden');
+                
+                const selectedDiv = document.getElementById('selectedClientCard');
+                document.getElementById('clientInitials').textContent = client.name.split(' ').map(n => n[0]).join('');
                 document.getElementById('selectedClientName').textContent = client.name;
-
+                
                 const phoneNumbers = client.phones && client.phones.length > 0
                     ? client.phones.map(p => p.number).join(', ')
                     : 'Pas de téléphone';
-                document.getElementById('selectedClientDetails').textContent = phoneNumbers;
+                document.getElementById('selectedClientDetails').textContent = `${phoneNumbers} • ${client.email || 'Pas d\'email'}`;
+                
+                // Afficher les statistiques si disponibles
+                const totalOrders = client.total_orders || 0;
+                const totalAmount = client.total_amount || 0;
+                if (totalOrders > 0) {
+                    const avgOrder = totalAmount / totalOrders;
+                    document.getElementById('clientStats').textContent = 
+                        `${totalOrders} commandes • Moyenne ${formatCurrency(avgOrder)} • Total ${formatCurrency(totalAmount)}`;
+                }
+                
+                selectedDiv.classList.remove('hidden');
+                selectedDiv.classList.add('animate-fadeIn');
 
-                // Cacher l'input de recherche
-                document.getElementById('client_search').value = '';
-                document.getElementById('clientSearchResults').classList.add('hidden');
+                // Cacher le champ de recherche
                 document.getElementById('client_search').classList.add('hidden');
 
                 // Mettre à jour le récapitulatif
-                document.getElementById('summaryClientName').textContent = client.name;
-
-                // Mettre à jour le statut du client
-                hasClientSelected = true;
-                updateClientStatus();
+                updateSummary();
                 updateProgressBar();
 
-                // Animation de succès
-                showToast('Client sélectionné: ' + client.name, 'success');
+                // Analyser le client et afficher des alertes
+                analyzeClientAndShowAlerts(client);
+
+                showToast(`{{ __('Client sélectionné:') }} ${client.name}`, 'success');
             }
 
-            // Ajouter un client rapidement
+            function clearSelectedClient() {
+                selectedClient = null;
+                hasClientSelected = false;
+                document.getElementById('client_id').value = '';
+                document.getElementById('selectedClientCard').classList.add('hidden');
+                document.getElementById('client_search').classList.remove('hidden');
+                document.getElementById('client_search').focus();
+                updateSummary();
+                updateProgressBar();
+                clearSmartAlerts();
+            }
+
+            // Nouveau client
+            function toggleNewClientModal() {
+                const modal = document.getElementById('newClientModal');
+                if (modal.classList.contains('hidden')) {
+                    modal.classList.remove('hidden');
+                    document.getElementById('quickClientForm').reset();
+                    setTimeout(() => {
+                        document.getElementById('quick_client_name').focus();
+                    }, 100);
+                } else {
+                    modal.classList.add('hidden');
+                }
+            }
+
             function addQuickClient() {
                 const name = document.getElementById('quick_client_name').value;
                 const email = document.getElementById('quick_client_email').value;
@@ -841,398 +901,620 @@
                 const address = document.getElementById('quick_client_address').value;
 
                 // Créer le client avec un appel AJAX
-                fetch('/clients/quick-create', {
+                fetch('{{ route("clients.store") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}'
                     },
                     body: JSON.stringify({
                         name: name,
                         email: email,
                         phone: phone,
-                        address: address
+                        address: address,
+                        quick_create: true
                     })
                 })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Erreur lors de la création du client');
-                    }
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        // Ajouter le client à la liste locale
+                        clients.push(data.client);
+                        
                         // Sélectionner le nouveau client
                         selectClient(data.client);
                         
                         // Fermer le modal
                         toggleNewClientModal();
                         
-                        // Animation de succès
-                        showToast('Client créé avec succès: ' + name, 'success');
+                        showToast(`{{ __('Client créé avec succès:') }} ${name}`, 'success');
                     } else {
-                        showToast(data.message || 'Erreur lors de la création du client', 'error');
+                        showToast(data.message || '{{ __("Erreur lors de la création du client") }}', 'error');
                     }
                 })
                 .catch(error => {
                     console.error('Erreur:', error);
-                    showToast('Erreur lors de la création du client', 'error');
+                    showToast('{{ __("Erreur lors de la création du client") }}', 'error');
                 });
             }
 
-            // Basculer le modal "Nouveau client"
-            function toggleNewClientModal() {
-                const modal = document.getElementById('newClientModal');
-                if (modal) {
-                    if (modal.classList.contains('hidden')) {
-                        modal.classList.remove('hidden');
-                        // Réinitialiser le formulaire
-                        const form = document.getElementById('quickClientForm');
-                        if (form) form.reset();
-                        // Focus sur le premier champ
-                        setTimeout(() => {
-                            const nameField = document.getElementById('quick_client_name');
-                            if (nameField) nameField.focus();
-                        }, 100);
-                    } else {
-                        modal.classList.add('hidden');
-                    }
-                }
-            }
+            // Recherche rapide de produits
+            function quickProductSearch() {
+                const query = document.getElementById('productQuickSearch').value.trim();
+                const suggestions = document.getElementById('quickProductSuggestions');
 
-            // Basculer le modal de recherche de produits
-            function toggleProductSearchModal() {
-                const modal = document.getElementById('productSearchModal');
-                if (modal) {
-                    if (modal.classList.contains('hidden')) {
-                        modal.classList.remove('hidden');
-                        // Réinitialiser la recherche et afficher tous les produits
-                        document.getElementById('quickProductSearch').value = '';
-                        // Pré-sélectionner les produits déjà ajoutés à la facture
-                        updateSelectedProductsFromTable();
-                        // Afficher tous les produits
-                        filterAndDisplayProducts('', 'all');
-                        // Focus sur le champ de recherche
-                        setTimeout(() => {
-                            document.getElementById('quickProductSearch').focus();
-                        }, 100);
-                    } else {
-                        modal.classList.add('hidden');
-                        // Réinitialiser les produits sélectionnés si on annule
-                        selectedProducts = [];
-                    }
-                }
-            }
-
-            // Récupérer les produits déjà ajoutés à la facture
-            function updateSelectedProductsFromTable() {
-                selectedProducts = [];
-                const productRows = document.querySelectorAll('#productsContainer tr');
-
-                productRows.forEach(row => {
-                    const productId = row.querySelector('input[name^="products"][name$="[id]"]').value;
-                    const quantity = parseInt(row.querySelector('input[name^="products"][name$="[quantity]"]').value) || 1;
-                    const price = parseFloat(row.querySelector('input[name^="products"][name$="[price]"]').value) || 0;
-
-                    // Trouver le produit complet dans la liste des produits
-                    const product = products.find(p => p.id == productId);
-                    if (product) {
-                        selectedProducts.push({
-                            id: product.id,
-                            name: product.name,
-                            price: price,
-                            quantity: quantity,
-                            type: product.type
-                        });
-                    }
-                });
-
-                updateSelectedProductsCount();
-            }
-
-            // Filtrer les produits par type
-            function filterProducts(type) {
-                currentProductFilter = type;
-                // Réinitialiser les styles des onglets
-                document.getElementById('tab-all').classList.remove('border-indigo-600', 'text-indigo-600');
-                document.getElementById('tab-physical').classList.remove('border-indigo-600', 'text-indigo-600');
-                document.getElementById('tab-service').classList.remove('border-indigo-600', 'text-indigo-600');
-
-                document.getElementById('tab-all').classList.add('border-transparent');
-                document.getElementById('tab-physical').classList.add('border-transparent');
-                document.getElementById('tab-service').classList.add('border-transparent');
-
-                // Styliser l'onglet actif
-                document.getElementById('tab-' + type).classList.remove('border-transparent');
-                document.getElementById('tab-' + type).classList.add('border-indigo-600', 'text-indigo-600');
-
-                // Filtrer et afficher les produits
-                const searchTerm = document.getElementById('quickProductSearch').value.toLowerCase().trim();
-                filterAndDisplayProducts(searchTerm, type);
-            }
-
-            // Filtrer et afficher les produits
-            function filterAndDisplayProducts(searchTerm, type) {
-                let filteredProducts = products;
-
-                // Appliquer le filtre de recherche
-                if (searchTerm) {
-                    filteredProducts = filteredProducts.filter(product => {
-                        const nameMatch = product.name.toLowerCase().includes(searchTerm);
-                        const refMatch = product.reference && product.reference.toLowerCase().includes(searchTerm);
-                        return nameMatch || refMatch;
-                    });
-                }
-
-                // Appliquer le filtre de type
-                if (type !== 'all') {
-                    filteredProducts = filteredProducts.filter(product => product.type === type);
-                }
-
-                // Afficher les produits filtrés
-                renderProductCards(filteredProducts);
-            }
-
-            // Rendre les cartes de produits
-            function renderProductCards(products) {
-                const resultsContainer = document.getElementById('productSearchResults');
-                resultsContainer.innerHTML = '';
-
-                if (products.length === 0) {
-                    resultsContainer.innerHTML = '<div class="col-span-full py-8 text-center text-gray-500">Aucun produit trouvé</div>';
+                if (query.length < 2) {
+                    suggestions.classList.add('hidden');
                     return;
                 }
 
-                products.forEach(product => {
-                    // Vérifier si le produit est déjà sélectionné
-                    const isSelected = selectedProducts.some(p => p.id == product.id);
-                    const selectedClass = isSelected ? 'selected' : '';
+                const filteredProducts = products.filter(product => {
+                    return product.name.toLowerCase().includes(query.toLowerCase()) ||
+                           (product.reference && product.reference.toLowerCase().includes(query.toLowerCase())) ||
+                           (product.barcode && product.barcode.includes(query));
+                });
 
-                    // Déterminer la couleur en fonction du type
-                    let typeColor, typeName;
-                    if (product.type === 'physical') {
-                        typeColor = 'bg-blue-100 text-blue-800';
-                        typeName = 'Produit';
-                    } else {
-                        typeColor = 'bg-purple-100 text-purple-800';
-                        typeName = 'Service';
-                    }
+                if (filteredProducts.length === 0) {
+                    suggestions.classList.add('hidden');
+                    return;
+                }
 
-                    // Créer la carte
-                    const card = document.createElement('div');
-                    card.className = `product-card p-3 border rounded-lg ${selectedClass}`;
-                    card.dataset.id = product.id;
-
-                    card.innerHTML = `
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="font-medium text-gray-900">${product.name}</h3>
-                            <span class="px-2 py-1 text-xs font-medium rounded-full ${typeColor}">${typeName}</span>
-                        </div>
-                        <p class="text-sm text-gray-500 mb-3 line-clamp-2">${product.description || 'Aucune description'}</p>
-                        <div class="flex justify-between items-center mt-auto">
-                            <div class="font-medium text-indigo-600">${formatPrice(product.default_price)}</div>
-                            ${product.type === 'physical'
-                        ? `<div class="text-sm ${product.stock_quantity > 0 ? 'text-green-600' : 'text-red-600'}">
-                                    ${product.stock_quantity > 0 ? `Stock: ${product.stock_quantity}` : 'Rupture de stock'}
-                                   </div>`
-                        : ''}
-                        </div>
-                        <div class="mt-2 ${isSelected ? '' : 'hidden'}" id="quantity-control-${product.id}">
-                            <div class="flex items-center justify-between border rounded-md">
-                                <button type="button" onclick="decreaseQuantity('${product.id}')" class="px-2 py-1 text-indigo-600 hover:bg-indigo-50">-</button>
-                                <span id="product-quantity-${product.id}" class="px-2">${isSelected ? selectedProducts.find(p => p.id == product.id).quantity : 1}</span>
-                                <button type="button" onclick="increaseQuantity('${product.id}')" class="px-2 py-1 text-indigo-600 hover:bg-indigo-50">+</button>
+                suggestions.innerHTML = '';
+                filteredProducts.slice(0, 5).forEach(product => {
+                    const div = document.createElement('div');
+                    div.className = `p-2 cursor-pointer hover:bg-gray-50 border-b border-gray-100 ${getStockClass(product)}`;
+                    
+                    const stockInfo = getStockInfo(product);
+                    div.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="font-medium">${product.name}</span>
+                                <span class="ml-2 text-sm text-gray-500">${formatCurrency(product.default_price || product.price)}</span>
+                            </div>
+                            <div class="text-sm ${stockInfo.class}">
+                                ${stockInfo.text}
                             </div>
                         </div>
                     `;
 
-                    // Ajouter l'événement de sélection
-                    card.addEventListener('click', function(e) {
-                        if (e.target.tagName === 'BUTTON') return; // Ignorer les clics sur les boutons de quantité
+                    if (product.type === 'physical' && (product.stock_quantity === 0 || product.stock === 0)) {
+                        div.classList.add('opacity-50', 'cursor-not-allowed');
+                    } else {
+                        div.addEventListener('click', () => addProductQuickly(product));
+                    }
 
-                        if (isSelected) {
-                            // Désélectionner
-                            card.classList.remove('selected');
-                            selectedProducts = selectedProducts.filter(p => p.id != product.id);
-                            document.getElementById(`quantity-control-${product.id}`).classList.add('hidden');
-                        } else {
-                            // Sélectionner
-                            card.classList.add('selected');
-                            selectedProducts.push({
-                                id: product.id,
-                                name: product.name,
-                                price: product.default_price || 0,
-                                quantity: 1,
-                                type: product.type
-                            });
-                            document.getElementById(`quantity-control-${product.id}`).classList.remove('hidden');
-                        }
-
-                        updateSelectedProductsCount();
-                    });
-
-                    resultsContainer.appendChild(card);
+                    suggestions.appendChild(div);
                 });
+
+                suggestions.classList.remove('hidden');
             }
 
-            // Augmenter la quantité d'un produit
-            function increaseQuantity(productId) {
-                const product = selectedProducts.find(p => p.id == productId);
-                if (product) {
-                    product.quantity++;
-                    document.getElementById(`product-quantity-${productId}`).textContent = product.quantity;
+            function handleProductQuickSearchKeydown(e) {
+                const suggestions = document.getElementById('quickProductSuggestions');
+                if (e.key === 'Enter' && !suggestions.classList.contains('hidden')) {
+                    const firstSuggestion = suggestions.querySelector('div');
+                    if (firstSuggestion && !firstSuggestion.classList.contains('cursor-not-allowed')) {
+                        firstSuggestion.click();
+                    }
                 }
             }
 
-            // Diminuer la quantité d'un produit
-            function decreaseQuantity(productId) {
-                const product = selectedProducts.find(p => p.id == productId);
-                if (product && product.quantity > 1) {
-                    product.quantity--;
-                    document.getElementById(`product-quantity-${productId}`).textContent = product.quantity;
-                }
-            }
-
-            // Mettre à jour le compteur de produits sélectionnés
-            function updateSelectedProductsCount() {
-                const count = selectedProducts.length;
-                const countElement = document.getElementById('selectedProductsCount');
-                if (countElement) {
-                    countElement.textContent = `${count} produit(s) sélectionné(s)`;
-                }
-            }
-
-            // Ajouter les produits sélectionnés à la facture
-            function addSelectedProductsToInvoice() {
-                if (selectedProducts.length === 0) {
-                    showToast('Veuillez sélectionner au moins un produit', 'error');
+            function addProductQuickly(product) {
+                const stockQuantity = product.stock_quantity || product.stock || 0;
+                
+                if (product.type === 'physical' && stockQuantity === 0) {
+                    showToast('{{ __("Ce produit est en rupture de stock") }}', 'error');
                     return;
                 }
 
-                // Vider le tableau actuel
-                document.getElementById('productsContainer').innerHTML = '';
+                // Vérifier si le produit est déjà dans la facture
+                const existingProduct = invoiceProducts.find(p => p.id === product.id);
+                if (existingProduct) {
+                    // Vérifier le stock disponible
+                    if (product.type === 'physical' && existingProduct.quantity >= stockQuantity) {
+                        showToast(`{{ __("Stock insuffisant. Stock disponible:") }} ${stockQuantity}`, 'error');
+                        return;
+                    }
+                    existingProduct.quantity += 1;
+                    updateProductRow(existingProduct);
+                } else {
+                    const invoiceProduct = {
+                        ...product,
+                        quantity: 1,
+                        unitPrice: product.default_price || product.price,
+                        stock: stockQuantity
+                    };
+                    invoiceProducts.push(invoiceProduct);
+                    addProductRow(invoiceProduct);
+                }
 
-                // Ajouter chaque produit sélectionné
-                selectedProducts.forEach((product, index) => {
-                    addProductToTable(product, index);
-                });
+                // Nettoyer la recherche
+                document.getElementById('productQuickSearch').value = '';
+                document.getElementById('quickProductSuggestions').classList.add('hidden');
 
-                // Calculer les totaux
-                calculateTotals();
-
-                // Mettre à jour l'affichage
-                checkEmptyProductsState();
-
-                // Fermer le modal
-                toggleProductSearchModal();
-
-                // Notification de succès
-                showToast('Produits ajoutés à la facture', 'success');
+                hasProductsAdded = true;
+                updateSummary();
+                updateProgressBar();
+                analyzeProductsAndShowAlerts();
             }
 
-            // Ajouter un produit au tableau
-            function addProductToTable(product, index) {
-                const tbody = document.getElementById('productsContainer');
-                const row = document.createElement('tr');
+            // Modal de sélection de produits
+            function openProductModal() {
+                selectedProductsInModal = [];
+                document.getElementById('productModal').classList.remove('hidden');
+                setTimeout(() => {
+                    document.getElementById('modalProductSearch').focus();
+                }, 100);
+                renderProductsInModal();
+            }
 
+            function closeProductModal() {
+                document.getElementById('productModal').classList.add('hidden');
+                selectedProductsInModal = [];
+            }
+
+            function renderProductsInModal() {
+                const grid = document.getElementById('productGrid');
+                const searchTerm = document.getElementById('modalProductSearch').value.toLowerCase();
+                const typeFilter = document.getElementById('productTypeFilter').value;
+                const stockFilter = document.getElementById('stockFilter').value;
+
+                let filteredProducts = products.filter(product => {
+                    const stockQuantity = product.stock_quantity || product.stock || 0;
+                    
+                    // Filtre de recherche
+                    const matchesSearch = product.name.toLowerCase().includes(searchTerm) ||
+                                        (product.reference && product.reference.toLowerCase().includes(searchTerm));
+                    
+                    // Filtre de type
+                    const matchesType = !typeFilter || product.type === typeFilter;
+                    
+                    // Filtre de stock
+                    let matchesStock = true;
+                    if (stockFilter === 'available' && product.type === 'physical') {
+                        matchesStock = stockQuantity > 0;
+                    } else if (stockFilter === 'low' && product.type === 'physical') {
+                        const lowThreshold = product.low_stock_threshold || 5;
+                        matchesStock = stockQuantity > 0 && stockQuantity <= lowThreshold;
+                    } else if (stockFilter === 'out' && product.type === 'physical') {
+                        matchesStock = stockQuantity === 0;
+                    }
+
+                    return matchesSearch && matchesType && matchesStock;
+                });
+
+                grid.innerHTML = '';
+
+                if (filteredProducts.length === 0) {
+                    grid.innerHTML = '<div class="col-span-full py-8 text-center text-gray-500">{{ __("Aucun produit trouvé") }}</div>';
+                    return;
+                }
+
+                filteredProducts.forEach(product => {
+                    const card = createProductCard(product);
+                    grid.appendChild(card);
+                });
+
+                updateSelectedCount();
+            }
+
+            function createProductCard(product) {
+                const isSelected = selectedProductsInModal.includes(product.id);
+                const stockQuantity = product.stock_quantity || product.stock || 0;
+                const isOutOfStock = product.type === 'physical' && stockQuantity === 0;
+                const stockInfo = getStockInfo(product);
+
+                const card = document.createElement('div');
+                card.className = `product-card p-4 border rounded-lg cursor-pointer ${isSelected ? 'selected' : ''} ${isOutOfStock ? 'disabled' : ''}`;
+                card.dataset.productId = product.id;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-medium text-gray-900">${product.name}</h3>
+                        <span class="px-2 py-1 text-xs rounded-full ${product.type === 'physical' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">
+                            ${product.type === 'physical' ? '{{ __("Produit") }}' : '{{ __("Service") }}'}
+                        </span>
+                    </div>
+                    
+                    <p class="text-sm text-gray-600 mb-3">${product.description || '{{ __("Aucune description") }}'}</p>
+                    
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-semibold text-indigo-600">${formatCurrency(product.default_price || product.price)}</span>
+                        ${product.type === 'physical' ? `
+                            <div class="flex items-center text-sm">
+                                <span class="stock-indicator ${stockInfo.level}"></span>
+                                <span class="${stockInfo.class}">${stockInfo.text}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    ${isSelected ? `
+                        <div class="mt-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __("Quantité") }}</label>
+                            <div class="flex items-center space-x-2">
+                                <button type="button" class="quantity-btn minus w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center" 
+                                        ${isOutOfStock ? 'disabled' : ''}>-</button>
+                                <input type="number" class="quantity-input w-16 text-center border border-gray-300 rounded" 
+                                       value="1" min="1" ${product.type === 'physical' ? `max="${stockQuantity}"` : ''} 
+                                       ${isOutOfStock ? 'disabled' : ''}>
+                                <button type="button" class="quantity-btn plus w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center"
+                                        ${isOutOfStock ? 'disabled' : ''}>+</button>
+                            </div>
+                            ${product.type === 'physical' && stockQuantity > 0 ? `
+                                <p class="text-xs text-gray-500 mt-1">{{ __("Max:") }} ${stockQuantity}</p>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                `;
+
+                // Event listeners
+                if (!isOutOfStock) {
+                    card.addEventListener('click', (e) => {
+                        if (e.target.closest('.quantity-btn') || e.target.classList.contains('quantity-input')) {
+                            return;
+                        }
+                        toggleProductSelection(product.id, card);
+                    });
+
+                    setupQuantityControlsInCard(card, product);
+                }
+
+                return card;
+            }
+
+            function setupQuantityControlsInCard(card, product) {
+                const minusBtn = card.querySelector('.minus');
+                const plusBtn = card.querySelector('.plus');
+                const quantityInput = card.querySelector('.quantity-input');
+
+                if (minusBtn) {
+                    minusBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const input = card.querySelector('.quantity-input');
+                        const currentValue = parseInt(input.value);
+                        if (currentValue > 1) {
+                            input.value = currentValue - 1;
+                        }
+                    });
+                }
+
+                if (plusBtn) {
+                    plusBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const input = card.querySelector('.quantity-input');
+                        const currentValue = parseInt(input.value);
+                        const stockQuantity = product.stock_quantity || product.stock || 0;
+                        const maxValue = product.type === 'physical' ? stockQuantity : Infinity;
+                        if (currentValue < maxValue) {
+                            input.value = currentValue + 1;
+                        } else {
+                            showToast(`{{ __("Stock maximum atteint:") }} ${stockQuantity}`, 'warning');
+                        }
+                    });
+                }
+
+                if (quantityInput) {
+                    quantityInput.addEventListener('input', (e) => {
+                        const value = parseInt(e.target.value) || 1;
+                        const stockQuantity = product.stock_quantity || product.stock || 0;
+                        const maxValue = product.type === 'physical' ? stockQuantity : Infinity;
+                        
+                        if (value > maxValue) {
+                            e.target.value = maxValue;
+                            showToast(`{{ __("Quantité maximale:") }} ${maxValue}`, 'warning');
+                        } else if (value < 1) {
+                            e.target.value = 1;
+                        }
+                    });
+                }
+            }
+
+            function toggleProductSelection(productId, cardElement) {
+                const index = selectedProductsInModal.indexOf(productId);
+                
+                if (index > -1) {
+                    // Désélectionner
+                    selectedProductsInModal.splice(index, 1);
+                    cardElement.classList.remove('selected');
+                    // Supprimer les contrôles de quantité
+                    const quantityDiv = cardElement.querySelector('.mt-3');
+                    if (quantityDiv) quantityDiv.remove();
+                } else {
+                    // Sélectionner
+                    selectedProductsInModal.push(productId);
+                    cardElement.classList.add('selected');
+                    // Ajouter les contrôles de quantité
+                    addQuantityControlsToCard(cardElement, productId);
+                }
+                
+                updateSelectedCount();
+            }
+
+            function addQuantityControlsToCard(cardElement, productId) {
+                const product = products.find(p => p.id === productId);
+                const stockQuantity = product.stock_quantity || product.stock || 0;
+                const isOutOfStock = product.type === 'physical' && stockQuantity === 0;
+                
+                const quantityDiv = document.createElement('div');
+                quantityDiv.className = 'mt-3';
+                quantityDiv.innerHTML = `
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __("Quantité") }}</label>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" class="quantity-btn minus w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center" 
+                                ${isOutOfStock ? 'disabled' : ''}>-</button>
+                        <input type="number" class="quantity-input w-16 text-center border border-gray-300 rounded" 
+                               value="1" min="1" ${product.type === 'physical' ? `max="${stockQuantity}"` : ''} 
+                               ${isOutOfStock ? 'disabled' : ''}>
+                        <button type="button" class="quantity-btn plus w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center"
+                                ${isOutOfStock ? 'disabled' : ''}>+</button>
+                    </div>
+                    ${product.type === 'physical' && stockQuantity > 0 ? `
+                        <p class="text-xs text-gray-500 mt-1">{{ __("Max:") }} ${stockQuantity}</p>
+                    ` : ''}
+                `;
+                
+                cardElement.appendChild(quantityDiv);
+                setupQuantityControlsInCard(quantityDiv, product);
+            }
+
+            function updateSelectedCount() {
+                document.getElementById('selectedCount').textContent = 
+                    `${selectedProductsInModal.length} {{ __("produit(s) sélectionné(s)") }}`;
+            }
+
+            function filterProductsInModal() {
+                renderProductsInModal();
+            }
+
+            function addSelectedProductsToInvoice() {
+                if (selectedProductsInModal.length === 0) {
+                    showToast('{{ __("Veuillez sélectionner au moins un produit") }}', 'warning');
+                    return;
+                }
+
+                selectedProductsInModal.forEach(productId => {
+                    const product = products.find(p => p.id === productId);
+                    const card = document.querySelector(`[data-product-id="${productId}"]`);
+                    const quantityInput = card.querySelector('.quantity-input');
+                    const quantity = parseInt(quantityInput?.value) || 1;
+                    const stockQuantity = product.stock_quantity || product.stock || 0;
+
+                    // Vérifier si le produit est déjà dans la facture
+                    const existingProduct = invoiceProducts.find(p => p.id === productId);
+                    if (existingProduct) {
+                        // Vérifier le stock disponible
+                        if (product.type === 'physical') {
+                            const newQuantity = existingProduct.quantity + quantity;
+                            if (newQuantity > stockQuantity) {
+                                showToast(`{{ __("Stock insuffisant pour") }} ${product.name}. {{ __("Stock disponible:") }} ${stockQuantity}`, 'error');
+                                return;
+                            }
+                        }
+                        existingProduct.quantity += quantity;
+                        updateProductRow(existingProduct);
+                    } else {
+                        const invoiceProduct = {
+                            ...product,
+                            quantity: quantity,
+                            unitPrice: product.default_price || product.price,
+                            stock: stockQuantity
+                        };
+                        invoiceProducts.push(invoiceProduct);
+                        addProductRow(invoiceProduct);
+                    }
+                });
+
+                closeProductModal();
+                hasProductsAdded = true;
+                updateSummary();
+                updateProgressBar();
+                analyzeProductsAndShowAlerts();
+                showToast(`${selectedProductsInModal.length} {{ __("produit(s) ajouté(s) à la facture") }}`, 'success');
+            }
+
+            function addProductRow(product) {
+                const tableBody = document.getElementById('productsContainer');
+                const row = document.createElement('tr');
+                row.dataset.productId = product.id;
+                row.className = 'animate-fadeIn';
+
+                const stockInfo = getStockInfo(product);
+                
                 row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap">
+                    <td class="px-6 py-4">
                         <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <span class="text-gray-600 font-medium">${product.name.charAt(0)}</span>
+                            </div>
                             <div class="ml-4">
                                 <div class="text-sm font-medium text-gray-900">${product.name}</div>
-                                <div class="text-xs text-gray-500">${product.type === 'physical' ? 'Produit' : 'Service'}</div>
+                                <div class="text-sm text-gray-500">${product.type === 'physical' ? '{{ __("Produit") }}' : '{{ __("Service") }}'}</div>
                             </div>
                         </div>
-                        <input type="hidden" name="products[${index}][id]" value="${product.id}">
+                        <input type="hidden" name="products[${invoiceProducts.length - 1}][id]" value="${product.id}">
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <input type="number" name="products[${index}][quantity]" value="${product.quantity}" min="1" class="product-quantity w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" onchange="calculateTotals()">
+                    <td class="px-6 py-4 text-sm">
+                        ${product.type === 'physical' ? `
+                            <div class="flex items-center">
+                                <span class="stock-indicator ${stockInfo.level}"></span>
+                                <span class="${stockInfo.class}">${stockInfo.text}</span>
+                            </div>
+                        ` : '<span class="text-gray-400">N/A</span>'}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <input type="number" name="products[${index}][price]" value="${product.price}" min="0" step="0.01" class="product-price w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" onchange="calculateTotals()">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center space-x-2">
+                            <button type="button" class="quantity-decrease w-8 h-8 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300">-</button>
+                            <input type="number" class="quantity-input w-16 text-center border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500" 
+                                   name="products[${invoiceProducts.length - 1}][quantity]"
+                                   value="${product.quantity}" min="1" ${product.type === 'physical' ? `max="${product.stock}"` : ''}>
+                            <button type="button" class="quantity-increase w-8 h-8 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300">+</button>
+                        </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <span class="product-total">${formatPrice(product.price * product.quantity)}</span>
+                    <td class="px-6 py-4">
+                        <input type="number" class="price-input w-32 border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500" 
+                               name="products[${invoiceProducts.length - 1}][price]"
+                               value="${product.unitPrice}" min="0" step="0.01">
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button type="button" class="text-red-600 hover:text-red-900" onclick="removeProductRow(this)">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <td class="px-6 py-4 text-sm font-medium text-gray-900 line-total">
+                        ${formatCurrency(product.quantity * product.unitPrice)}
+                    </td>
+                    <td class="px-6 py-4">
+                        <button type="button" class="remove-product text-red-600 hover:text-red-900">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                         </button>
                     </td>
                 `;
 
-                tbody.appendChild(row);
+                // Event listeners pour cette ligne
+                setupProductRowEvents(row, product);
+
+                tableBody.appendChild(row);
+                
+                // Afficher le tableau s'il était caché
+                checkEmptyProductsState();
             }
 
-            // Supprimer une ligne de produit
-            function removeProductRow(button) {
-                const row = button.closest('tr');
+            function setupProductRowEvents(row, product) {
+                const quantityInput = row.querySelector('.quantity-input');
+                const priceInput = row.querySelector('.price-input');
+                const decreaseBtn = row.querySelector('.quantity-decrease');
+                const increaseBtn = row.querySelector('.quantity-increase');
+                const removeBtn = row.querySelector('.remove-product');
 
-                // Animation de suppression
-                row.style.transition = 'all 0.3s';
-                row.style.opacity = '0';
-                row.style.transform = 'translateX(10px)';
+                // Gestion de la quantité
+                quantityInput.addEventListener('input', (e) => {
+                    const newQuantity = parseInt(e.target.value) || 1;
+                    
+                    // Validation du stock pour les produits physiques
+                    if (product.type === 'physical' && newQuantity > product.stock) {
+                        e.target.value = product.stock;
+                        showToast(`{{ __("Stock maximum atteint:") }} ${product.stock}`, 'warning');
+                        product.quantity = product.stock;
+                    } else if (newQuantity < 1) {
+                        e.target.value = 1;
+                        product.quantity = 1;
+                    } else {
+                        product.quantity = newQuantity;
+                    }
+                    
+                    updateLineTotal(row, product);
+                    updateSummary();
+                    analyzeProductsAndShowAlerts();
+                });
 
-                setTimeout(() => {
-                    row.remove();
-                    calculateTotals();
-                    checkEmptyProductsState();
-                }, 300);
-            }
-
-            // Calculer tous les totaux
-            function calculateTotals() {
-                let subtotal = 0;
-                let itemCount = 0;
-                const productRows = document.querySelectorAll('#productsContainer tr');
-
-                productRows.forEach(row => {
-                    const quantityInput = row.querySelector('.product-quantity');
-                    const priceInput = row.querySelector('.product-price');
-                    const totalSpan = row.querySelector('.product-total');
-
-                    if (quantityInput && priceInput) {
-                        const quantity = parseFloat(quantityInput.value) || 0;
-                        const price = parseFloat(priceInput.value) || 0;
-                        const total = quantity * price;
-
-                        if (totalSpan) {
-                            totalSpan.textContent = formatPrice(total);
-                        }
-
-                        subtotal += total;
-                        itemCount += quantity;
+                decreaseBtn.addEventListener('click', () => {
+                    if (product.quantity > 1) {
+                        product.quantity--;
+                        quantityInput.value = product.quantity;
+                        updateLineTotal(row, product);
+                        updateSummary();
+                        analyzeProductsAndShowAlerts();
                     }
                 });
 
-                // Calculer la TVA
-                const taxRate = parseFloat(document.getElementById('tax_rate').value) || 0;
-                const taxAmount = subtotal * (taxRate / 100);
+                increaseBtn.addEventListener('click', () => {
+                    if (product.type === 'physical' && product.quantity >= product.stock) {
+                        showToast(`{{ __("Stock maximum atteint:") }} ${product.stock}`, 'warning');
+                        return;
+                    }
+                    product.quantity++;
+                    quantityInput.value = product.quantity;
+                    updateLineTotal(row, product);
+                    updateSummary();
+                    analyzeProductsAndShowAlerts();
+                });
 
-                // Calculer le total
-                const total = subtotal + taxAmount;
+                // Gestion du prix
+                priceInput.addEventListener('input', (e) => {
+                    const newPrice = parseFloat(e.target.value) || 0;
+                    product.unitPrice = newPrice;
+                    updateLineTotal(row, product);
+                    updateSummary();
+                });
 
-                // Mettre à jour l'affichage des totaux
-                document.getElementById('summarySubtotal').textContent = formatPrice(subtotal);
-                document.getElementById('summaryTaxAmount').textContent = formatPrice(taxAmount);
-                document.getElementById('summaryTotal').textContent = formatPrice(total);
-                document.getElementById('summaryItems').textContent = itemCount;
-
-                // Mise à jour du statut des produits
-                hasProductsAdded = productRows.length > 0;
-                updateProductsStatus();
-                updateProgressBar();
+                // Suppression du produit
+                removeBtn.addEventListener('click', () => {
+                    removeProductFromInvoice(product.id, row);
+                });
             }
 
-            // Vérifier si le tableau des produits est vide
+            function updateLineTotal(row, product) {
+                const total = product.quantity * product.unitPrice;
+                row.querySelector('.line-total').textContent = formatCurrency(total);
+            }
+
+            function updateProductRow(product) {
+                const row = document.querySelector(`tr[data-product-id="${product.id}"]`);
+                if (row) {
+                    row.querySelector('.quantity-input').value = product.quantity;
+                    updateLineTotal(row, product);
+                }
+            }
+
+            function removeProductFromInvoice(productId, row) {
+                // Animation de suppression
+                row.style.transition = 'all 0.3s ease';
+                row.style.opacity = '0';
+                row.style.transform = 'translateX(-20px)';
+
+                setTimeout(() => {
+                    row.remove();
+                    
+                    // Supprimer du tableau des produits
+                    const index = invoiceProducts.findIndex(p => p.id === productId);
+                    if (index > -1) {
+                        invoiceProducts.splice(index, 1);
+                    }
+
+                    // Vérifier s'il faut afficher l'état vide
+                    hasProductsAdded = invoiceProducts.length > 0;
+                    checkEmptyProductsState();
+                    updateSummary();
+                    updateProgressBar();
+                    analyzeProductsAndShowAlerts();
+                }, 300);
+            }
+
+            // Fonctions utilitaires pour le stock
+            function getStockInfo(product) {
+                if (product.type === 'service') {
+                    return { text: '{{ __("Service") }}', class: 'text-gray-500', level: 'high' };
+                }
+
+                const stockQuantity = product.stock_quantity || product.stock || 0;
+                const lowThreshold = product.low_stock_threshold || 5;
+
+                if (stockQuantity === 0) {
+                    return { text: '{{ __("Rupture") }}', class: 'text-red-600', level: 'out' };
+                } else if (stockQuantity <= lowThreshold) {
+                    return { text: `${stockQuantity} {{ __("restant") }}`, class: 'text-orange-600', level: 'low' };
+                } else if (stockQuantity <= lowThreshold * 2) {
+                    return { text: `${stockQuantity} {{ __("en stock") }}`, class: 'text-yellow-600', level: 'medium' };
+                } else {
+                    return { text: `${stockQuantity} {{ __("en stock") }}`, class: 'text-green-600', level: 'high' };
+                }
+            }
+
+            function getStockClass(product) {
+                if (product.type === 'service') return '';
+                
+                const stockQuantity = product.stock_quantity || product.stock || 0;
+                const lowThreshold = product.low_stock_threshold || 5;
+                
+                if (stockQuantity === 0) return 'stock-out';
+                if (stockQuantity <= lowThreshold) return 'stock-low';
+                if (stockQuantity <= lowThreshold * 2) return 'stock-medium';
+                return 'stock-high';
+            }
+
+            // Vérifier l'état vide des produits
             function checkEmptyProductsState() {
-                const productRows = document.querySelectorAll('#productsContainer tr');
                 const emptyState = document.getElementById('emptyProductsState');
                 const tableContainer = document.getElementById('productsTableContainer');
 
-                if (productRows.length === 0) {
+                if (invoiceProducts.length === 0) {
                     emptyState.classList.remove('hidden');
                     tableContainer.classList.add('hidden');
                 } else {
@@ -1241,109 +1523,302 @@
                 }
             }
 
-            // Gestion de la barre de progression
+            // Mise à jour du récapitulatif
+            function updateSummary() {
+                const subtotal = invoiceProducts.reduce((sum, product) => sum + (product.quantity * product.unitPrice), 0);
+                const taxRate = parseFloat(document.getElementById('tax_rate').value) || 0;
+                const taxAmount = subtotal * (taxRate / 100);
+                const total = subtotal + taxAmount;
+
+                document.getElementById('summaryClientName').textContent = selectedClient ? selectedClient.name : '-';
+                document.getElementById('summaryItems').textContent = invoiceProducts.reduce((sum, product) => sum + product.quantity, 0);
+                document.getElementById('summarySubtotal').textContent = formatCurrency(subtotal);
+                document.getElementById('summaryTaxAmount').textContent = formatCurrency(taxAmount);
+                document.getElementById('summaryTotal').textContent = formatCurrency(total);
+
+                // Activer/désactiver le bouton de soumission
+                const canSubmit = hasClientSelected && hasProductsAdded;
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.disabled = !canSubmit;
+                
+                if (canSubmit) {
+                    submitBtn.classList.remove('opacity-50');
+                } else {
+                    submitBtn.classList.add('opacity-50');
+                }
+            }
+
+            // Barre de progression intelligente
             function updateProgressBar() {
-                let progress = 30; // 30% pour les informations de base
+                let progress = 25; // Base
 
-                if (hasClientSelected) progress += 35;
-                if (hasProductsAdded) progress += 35;
+                if (hasClientSelected) progress += 25;
+                if (hasProductsAdded) progress += 25;
+                if (hasClientSelected && hasProductsAdded) progress += 25;
 
-                const progressBar = document.getElementById('progressBar');
-                progressBar.style.width = `${progress}%`;
+                document.getElementById('progressBar').style.width = `${progress}%`;
+                document.getElementById('progressPercentage').textContent = `${progress}%`;
+
+                // Mettre à jour les étapes
+                updateStepStatus('step2', hasClientSelected);
+                updateStepStatus('step3', hasProductsAdded);
+                updateStepStatus('step4', progress === 100);
             }
 
-            // Mettre à jour le statut du client
-            function updateClientStatus() {
-                const clientStep = document.getElementById('clientStepStatus');
+            function updateStepStatus(stepId, completed) {
+                const step = document.getElementById(stepId);
+                const circle = step.querySelector('div');
+                const text = step.querySelector('span');
 
-                if (hasClientSelected) {
-                    clientStep.innerHTML = `
-                        <div class="flex items-center justify-center h-6 w-6 rounded-full bg-green-100 text-green-600">
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <span class="ml-2 text-sm font-medium text-gray-900">Client sélectionné</span>
-                    `;
+                if (completed) {
+                    circle.className = 'w-3 h-3 rounded-full bg-green-500 mr-2';
+                    text.className = 'text-green-700';
                 } else {
-                    clientStep.innerHTML = `
-                        <div class="flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 text-gray-400">
-                            <span class="text-xs font-medium">2</span>
-                        </div>
-                        <span class="ml-2 text-sm font-medium text-gray-500">Client sélectionné</span>
-                    `;
+                    circle.className = 'w-3 h-3 rounded-full bg-gray-300 mr-2';
+                    text.className = 'text-gray-500';
                 }
             }
 
-            // Mettre à jour le statut des produits
-            function updateProductsStatus() {
-                const productsStep = document.getElementById('productsStepStatus');
-
-                if (hasProductsAdded) {
-                    productsStep.innerHTML = `
-                        <div class="flex items-center justify-center h-6 w-6 rounded-full bg-green-100 text-green-600">
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <span class="ml-2 text-sm font-medium text-gray-900">Produits ajoutés</span>
-                    `;
-                } else {
-                    productsStep.innerHTML = `
-                        <div class="flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 text-gray-400">
-                            <span class="text-xs font-medium">3</span>
-                        </div>
-                        <span class="ml-2 text-sm font-medium text-gray-500">Produits ajoutés</span>
-                    `;
+            // Alertes intelligentes
+            function analyzeClientAndShowAlerts(client) {
+                const alerts = [];
+                
+                const totalAmount = client.total_amount || 0;
+                const totalOrders = client.total_orders || 0;
+                const lastOrder = client.last_order;
+                
+                // Client VIP
+                if (totalAmount > 3000000) {
+                    alerts.push({
+                        type: 'info',
+                        message: '👑 {{ __("Client VIP - Traitement prioritaire") }}',
+                        color: 'bg-purple-50 border-purple-200 text-purple-800'
+                    });
                 }
+
+                // Client inactif
+                if (lastOrder) {
+                    const daysSinceLastOrder = Math.floor((new Date() - new Date(lastOrder)) / (1000 * 60 * 60 * 24));
+                    if (daysSinceLastOrder > 30) {
+                        alerts.push({
+                            type: 'warning',
+                            message: `⚠️ {{ __("Client inactif depuis") }} ${daysSinceLastOrder} {{ __("jours") }}`,
+                            color: 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                        });
+                    }
+                }
+
+                // Historique de commandes
+                if (totalOrders > 20) {
+                    alerts.push({
+                        type: 'success',
+                        message: '✨ {{ __("Client fidèle - Considérer une remise") }}',
+                        color: 'bg-green-50 border-green-200 text-green-800'
+                    });
+                }
+
+                displaySmartAlerts(alerts);
             }
 
-            // Afficher une notification toast
-            function showToast(message, type = 'info') {
-                // Créer le toast s'il n'existe pas
-                if (!document.getElementById('toast-container')) {
-                    const toastContainer = document.createElement('div');
-                    toastContainer.id = 'toast-container';
-                    toastContainer.className = 'fixed bottom-4 right-4 z-50 space-y-2';
-                    document.body.appendChild(toastContainer);
+            function analyzeProductsAndShowAlerts() {
+                const alerts = [];
+
+                // Vérifier les stocks faibles
+                const lowStockProducts = invoiceProducts.filter(p => {
+                    const stockQuantity = p.stock_quantity || p.stock || 0;
+                    const lowThreshold = p.low_stock_threshold || 5;
+                    return p.type === 'physical' && stockQuantity <= lowThreshold && stockQuantity > 0;
+                });
+
+                if (lowStockProducts.length > 0) {
+                    alerts.push({
+                        type: 'warning',
+                        message: `📦 ${lowStockProducts.length} {{ __("produit(s) en stock faible") }}`,
+                        color: 'bg-orange-50 border-orange-200 text-orange-800'
+                    });
                 }
 
-                const container = document.getElementById('toast-container');
+                // Calculer la marge (simulation)
+                const totalCost = invoiceProducts.reduce((sum, p) => sum + (p.quantity * p.unitPrice * 0.7), 0); // Simulation coût à 70% du prix
+                const totalRevenue = invoiceProducts.reduce((sum, p) => sum + (p.quantity * p.unitPrice), 0);
+                
+                if (totalRevenue > 0) {
+                    const margin = ((totalRevenue - totalCost) / totalRevenue) * 100;
 
-                // Créer le toast
+                    if (margin < 20) {
+                        alerts.push({
+                            type: 'error',
+                            message: '💰 {{ __("Marge faible détectée") }} (' + margin.toFixed(1) + '%)',
+                            color: 'bg-red-50 border-red-200 text-red-800'
+                        });
+                    } else if (margin > 50) {
+                        alerts.push({
+                            type: 'success',
+                            message: '💎 {{ __("Excellente marge") }} (' + margin.toFixed(1) + '%)',
+                            color: 'bg-green-50 border-green-200 text-green-800'
+                        });
+                    }
+                }
+
+                displaySmartAlerts(alerts);
+            }
+
+            function displaySmartAlerts(alerts) {
+                const container = document.getElementById('smartAlerts');
+                container.innerHTML = '';
+
+                alerts.forEach(alert => {
+                    const div = document.createElement('div');
+                    div.className = `p-3 rounded-md border text-sm ${alert.color}`;
+                    div.textContent = alert.message;
+                    container.appendChild(div);
+                });
+            }
+
+            function clearSmartAlerts() {
+                document.getElementById('smartAlerts').innerHTML = '';
+            }
+
+            // Validation du formulaire
+            function validateForm() {
+                let isValid = true;
+
+                // Vérifier si un client est sélectionné
+                if (!hasClientSelected) {
+                    showToast('{{ __("Veuillez sélectionner un client") }}', 'error');
+                    document.getElementById('client_search').focus();
+                    isValid = false;
+                }
+
+                // Vérifier si des produits sont ajoutés
+                if (!hasProductsAdded) {
+                    showToast('{{ __("Veuillez ajouter au moins un produit") }}', 'error');
+                    isValid = false;
+                }
+
+                // Validation finale des stocks
+                const invalidProducts = invoiceProducts.filter(p => {
+                    const stockQuantity = p.stock_quantity || p.stock || 0;
+                    return p.type === 'physical' && p.quantity > stockQuantity;
+                });
+
+                if (invalidProducts.length > 0) {
+                    showToast('{{ __("Stock insuffisant pour certains produits") }}', 'error');
+                    isValid = false;
+                }
+
+                return isValid;
+            }
+
+            // Sauvegarde brouillon
+            function saveDraft() {
+                const formData = new FormData(document.getElementById('smartBillForm'));
+                
+                // Ajouter les produits au FormData
+                invoiceProducts.forEach((product, index) => {
+                    formData.append(`products[${index}][id]`, product.id);
+                    formData.append(`products[${index}][quantity]`, product.quantity);
+                    formData.append(`products[${index}][price]`, product.unitPrice);
+                });
+                
+                formData.append('is_draft', '1');
+
+                fetch('{{ route("bills.store") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}'
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('💾 {{ __("Brouillon sauvegardé avec succès") }}', 'success');
+                    } else {
+                        showToast(data.message || '{{ __("Erreur lors de la sauvegarde") }}', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    showToast('{{ __("Erreur lors de la sauvegarde") }}', 'error');
+                });
+            }
+
+            // Mise à jour de la liste des vendeurs en fonction de la boutique
+            function updateVendorsList(shopId) {
+                if (!shopId) return;
+
+                fetch(`/api/shops/${shopId}/vendors`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const vendorSelect = document.getElementById('user_id');
+                        const currentValue = vendorSelect.value;
+
+                        vendorSelect.innerHTML = '<option value="">{{ __("Sélectionner un vendeur") }}</option>';
+
+                        data.forEach(vendor => {
+                            const option = document.createElement('option');
+                            option.value = vendor.id;
+                            option.textContent = vendor.name;
+                            vendorSelect.appendChild(option);
+                        });
+
+                        if (currentValue && [...vendorSelect.options].find(opt => opt.value === currentValue)) {
+                            vendorSelect.value = currentValue;
+                        }
+                    })
+                    .catch(error => console.error('{{ __("Erreur lors de la récupération des vendeurs:") }}', error));
+            }
+
+            // Fonctions utilitaires
+            function formatCurrency(amount) {
+                return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+            }
+
+            function formatDate(dateString) {
+                return new Date(dateString).toLocaleDateString('fr-FR');
+            }
+
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            function showToast(message, type = 'info', duration = 3000) {
+                const container = document.getElementById('toastContainer');
                 const toast = document.createElement('div');
-                toast.className = 'rounded-md p-4 max-w-xs shadow-lg transform transition-all duration-300 opacity-0 translate-y-2';
+                
+                const colors = {
+                    success: 'bg-green-50 border-green-200 text-green-800',
+                    error: 'bg-red-50 border-red-200 text-red-800',
+                    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                    info: 'bg-blue-50 border-blue-200 text-blue-800'
+                };
 
-                // Définir le style en fonction du type
-                if (type === 'success') {
-                    toast.classList.add('bg-green-50', 'border', 'border-green-100');
-                } else if (type === 'error') {
-                    toast.classList.add('bg-red-50', 'border', 'border-red-100');
-                } else {
-                    toast.classList.add('bg-blue-50', 'border', 'border-blue-100');
-                }
+                toast.className = `p-4 rounded-md border shadow-lg transform transition-all duration-300 opacity-0 translate-y-2 ${colors[type]}`;
+                
+                // Ajouter une icône selon le type
+                const icons = {
+                    success: '✅',
+                    error: '❌',
+                    warning: '⚠️',
+                    info: 'ℹ️'
+                };
 
-                // Contenu du toast
                 toast.innerHTML = `
                     <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            ${type === 'success' ?
-                    '<svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>' :
-                    (type === 'error' ?
-                            '<svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>' :
-                            '<svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>'
-                    )
-                }
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium ${type === 'success' ? 'text-green-800' : (type === 'error' ? 'text-red-800' : 'text-blue-800')}">
-                                ${message}
-                            </p>
-                        </div>
+                        <span class="mr-2">${icons[type]}</span>
+                        <span>${message}</span>
                     </div>
                 `;
 
-                // Ajouter au container
                 container.appendChild(toast);
 
                 // Animation d'entrée
@@ -1352,82 +1827,23 @@
                     toast.classList.add('opacity-100', 'translate-y-0');
                 }, 10);
 
-                // Supprimer après un délai
-                setTimeout(() => {
+                // Suppression automatique
+                if (duration > 0) {
+                    setTimeout(() => hideToast(toast), duration);
+                }
+
+                return toast;
+            }
+
+            function hideToast(toast) {
+                if (toast && toast.parentNode) {
                     toast.classList.add('opacity-0', 'translate-y-2');
                     setTimeout(() => {
-                        toast.remove();
-                    }, 300);
-                }, 3000);
-            }
-
-            // Sauvegarder comme brouillon
-            function saveAsDraft(isManual = false) {
-                // Dans un cas réel, ce serait un appel AJAX pour sauvegarder en base de données
-                // Ici on simule la sauvegarde
-
-                // Afficher une notification uniquement si c'est une sauvegarde manuelle
-                if (isManual) {
-                    showToast('Brouillon sauvegardé avec succès', 'success');
-                }
-            }
-
-            // Valider le formulaire avant l'envoi
-            function validateForm() {
-                let isValid = true;
-
-                // Vérifier si un client est sélectionné
-                if (!hasClientSelected) {
-                    showToast('Veuillez sélectionner un client', 'error');
-                    document.getElementById('client_search').focus();
-                    isValid = false;
-                }
-
-                // Vérifier si des produits sont ajoutés
-                if (!hasProductsAdded) {
-                    showToast('Veuillez ajouter au moins un produit', 'error');
-                    isValid = false;
-                }
-
-                return isValid;
-            }
-
-            // Formatage des prix
-            function formatPrice(price) {
-                return new Intl.NumberFormat('fr-FR').format(price) + ' FCFA';
-            }
-
-            // Mise à jour de la liste des vendeurs en fonction de la boutique
-            function updateVendorsList(shopId) {
-                if (!shopId) return;
-
-                // Faire une requête AJAX pour obtenir les vendeurs de cette boutique
-                fetch(`/api/shops/${shopId}/vendors`)
-                    .then(response => response.json())
-                    .then(data => {
-                        // Récupérer le select des vendeurs
-                        const vendorSelect = document.getElementById('user_id');
-
-                        // Sauvegarder la valeur actuelle si elle existe
-                        const currentValue = vendorSelect.value;
-
-                        // Vider le select
-                        vendorSelect.innerHTML = '<option value="">Sélectionner un vendeur</option>';
-
-                        // Ajouter les vendeurs à la liste
-                        data.forEach(vendor => {
-                            const option = document.createElement('option');
-                            option.value = vendor.id;
-                            option.textContent = vendor.name;
-                            vendorSelect.appendChild(option);
-                        });
-
-                        // Restaurer la valeur précédente si possible
-                        if (currentValue && [...vendorSelect.options].find(opt => opt.value === currentValue)) {
-                            vendorSelect.value = currentValue;
+                        if (toast.parentNode) {
+                            toast.parentNode.removeChild(toast);
                         }
-                    })
-                    .catch(error => console.error('Erreur lors de la récupération des vendeurs:', error));
+                    }, 300);
+                }
             }
 
             // Exécuter au chargement de la page si une boutique est déjà sélectionnée
@@ -1437,6 +1853,82 @@
                     updateVendorsList(shopSelect.value);
                 }
             });
+
+            // Suggestions intelligentes
+            function generateSmartSuggestions() {
+                const suggestions = [];
+                const subtotal = invoiceProducts.reduce((sum, product) => sum + (product.quantity * product.unitPrice), 0);
+
+                // Suggestions basées sur le montant
+                if (subtotal > 500000) {
+                    suggestions.push('💡 {{ __("Montant élevé - Proposer un paiement échelonné") }}');
+                }
+
+                if (subtotal < 50000) {
+                    suggestions.push('🎯 {{ __("Petite commande - Proposer des produits complémentaires") }}');
+                }
+
+                // Suggestions basées sur les produits
+                const hasPhysicalProducts = invoiceProducts.some(p => p.type === 'physical');
+                const hasServices = invoiceProducts.some(p => p.type === 'service');
+
+                if (hasPhysicalProducts && !hasServices) {
+                    suggestions.push('🛠️ {{ __("Produits physiques uniquement - Proposer un service de maintenance") }}');
+                }
+
+                if (hasServices && !hasPhysicalProducts) {
+                    suggestions.push('📦 {{ __("Services uniquement - Proposer des produits associés") }}');
+                }
+
+                // Suggestions basées sur le client
+                if (selectedClient) {
+                    const totalOrders = selectedClient.total_orders || 0;
+                    if (totalOrders > 10) {
+                        suggestions.push('🏆 {{ __("Client fidèle - Appliquer une remise de fidélité") }}');
+                    }
+                }
+
+                displaySuggestions(suggestions);
+            }
+
+            function displaySuggestions(suggestions) {
+                const container = document.getElementById('suggestionsContainer');
+                container.innerHTML = '';
+
+                if (suggestions.length === 0) {
+                    container.innerHTML = '<p class="text-xs text-gray-500">{{ __("Aucune suggestion pour le moment") }}</p>';
+                    return;
+                }
+
+                suggestions.forEach(suggestion => {
+                    const div = document.createElement('div');
+                    div.className = 'p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800';
+                    div.textContent = suggestion;
+                    container.appendChild(div);
+                });
+            }
+
+            // Mettre à jour les suggestions quand la facture change
+            function updateSummaryWithSuggestions() {
+                updateSummary();
+                generateSmartSuggestions();
+            }
+
+            // Remplacer les appels updateSummary() par updateSummaryWithSuggestions() dans les événements pertinents
+            document.addEventListener('DOMContentLoaded', function() {
+                // Mettre à jour les event listeners pour inclure les suggestions
+                const originalUpdateSummary = updateSummary;
+                updateSummary = function() {
+                    originalUpdateSummary();
+                    generateSmartSuggestions();
+                };
+            });
         </script>
     @endpush
+
+    {{-- Meta tag pour CSRF token --}}
+    @section('head')
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+    @endsection
+
 </x-app-layout>
