@@ -470,6 +470,21 @@
                             <span>{{ __('Paramètres') }}</span>
                         </a>
                     </li>
+
+                    <!-- Historique des activités -->
+                    <li>
+                        <a class="{{ request()->routeIs('activities.*') ? 'bg-indigo-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700' }}
+                          flex items-center p-3 rounded-lg transition-colors duration-200"
+                           href="{{ route('activities.index') }}"
+                           data-intro-id="activities"
+                           data-title="Historique des activités"
+                           data-intro="Consultez l'historique complet des actions des utilisateurs.">
+                            <div class="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-white dark:bg-gray-800 shadow-md">
+                                <i class="fas fa-history text-lg {{ request()->routeIs('activities.*') ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400' }}"></i>
+                            </div>
+                            <span>{{ __('Historique') }}</span>
+                        </a>
+                    </li>
                 @endif
             </ul>
         </div>

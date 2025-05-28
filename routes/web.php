@@ -26,10 +26,10 @@ use App\Http\Controllers\ImportMapperController;
 Route::get('/', [DashboardController::class, 'index'])
     ->middleware(['auth'])
     ->name('/');
-Route::get('/commissions/{userId}', [App\Http\Controllers\CommissionController::class, 'getVendorPendingCommissions']);
+Route::middleware('auth')->get('/commissions/{commission}', [CommissionController::class, 'show'])->name('commissions.show');
 // Dans routes/web.php (pas routes/api.php)
 Route::middleware('auth')->get('/dashboard/top-suppliers', [App\Http\Controllers\DashboardController::class, 'getTopSuppliers'])->name('dashboard.top-suppliers');
-Route::get('/get-pending-commissions/{userId}', [App\Http\Controllers\CommissionController::class, 'getPendingCommissionsForPayment']);
+Route::middleware('auth')->get('/get-pending-commissions/{userId}', [CommissionController::class, 'getPendingCommissionsForPayment']);
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth'])
     ->name('dashboard');
@@ -281,6 +281,13 @@ Route::prefix('admin/system')->middleware(['auth', 'can:admin'])->group(function
     Route::post('/import/confirm', [App\Http\Controllers\SystemExportImportController::class, 'confirmImport'])->name('system.import.confirm');
     Route::get('/backup/{filename}/download', [App\Http\Controllers\SystemExportImportController::class, 'downloadBackup'])->name('system.backup.download');
     Route::delete('/backup/{filename}', [App\Http\Controllers\SystemExportImportController::class, 'deleteBackup'])->name('system.backup.delete');
+});
+
+// Routes pour l'historique des activités (admin uniquement)
+Route::prefix('admin')->middleware(['auth', 'can:admin'])->group(function () {
+    Route::get('/activities', [App\Http\Controllers\ActivityController::class, 'index'])->name('activities.index');
+    Route::get('/activities/{activity}', [App\Http\Controllers\ActivityController::class, 'show'])->name('activities.show');
+    Route::get('/activities-export', [App\Http\Controllers\ActivityController::class, 'export'])->name('activities.export');
 });
 
 require __DIR__.'/auth.php';

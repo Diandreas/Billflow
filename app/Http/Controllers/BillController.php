@@ -19,6 +19,7 @@ use chillerlan\QRCode\QROptions;
 use Illuminate\Support\Facades\Gate;
 use App\Models\BillItem;
 use App\Models\Signature;
+use App\Services\ActivityLogger;
 
 class BillController extends Controller
 {
@@ -297,41 +298,35 @@ class BillController extends Controller
         // Créer la facture
         $bill = Bill::create([
             'reference' => $reference,
-            'description' => 'Facture pour ' . Client::find($validated['client_id'])->name,
-            'total' => $totalWithTax,
-            'date' => $validated['date'],
-            'tax_rate' => $validated['tax_rate'],
-            'tax_amount' => $taxAmount,
-            'status' => 'En attente',
-            'payment_method' => $validated['payment_method'] ?? 'espèces',
-            // 'comments' => $validated['comments'],
-            'user_id' => Auth::id(),
             'client_id' => $validated['client_id'],
             'shop_id' => $validated['shop_id'],
+            'user_id' => Auth::id(),
             'seller_id' => $validated['seller_id'],
-            'reprint_count' => 0,
+            'date' => $validated['date'],
+            'due_date' => date('Y-m-d', strtotime($validated['date'] . ' + 30 days')),
+            'tax_rate' => $validated['tax_rate'],
+            'tax_amount' => $taxAmount,
+            'total' => $totalWithTax,
+            'status' => 'pending',
+            'payment_method' => $validated['payment_method'] ?? null,
+            'comments' => $validated['comments'] ?? null,
         ]);
+
+        // Enregistrer l'activité de création de facture
+        ActivityLogger::logCreated($bill, "Facture {$bill->reference} créée par " . Auth::user()->name);
 
         // Ajouter les produits à la facture
         foreach ($validated['products'] as $product) {
             $productItem = Product::find($product['id']);
-
-            // Vérifier le stock uniquement pour les produits physiques
-            if ($productItem->type === 'physical' && $productItem->stock_quantity < $product['quantity']) {
-                return back()->with('error', "Stock insuffisant pour {$productItem->name}");
-            }
-
-            // Ajouter le produit à la facture
-            BillItem::create([
-                'bill_id' => $bill->id,
+            $bill->items()->create([
                 'product_id' => $product['id'],
-                'unit_price' => $product['price'],
                 'quantity' => $product['quantity'],
+                'unit_price' => $product['price'],
                 'price' => $product['price'],
                 'total' => $product['price'] * $product['quantity'],
             ]);
 
-            // Mettre à jour le stock uniquement pour les produits physiques
+            // Si c'est un produit physique, mettre à jour le stock
             if ($productItem->type === 'physical') {
                 $productItem->stock_quantity -= $product['quantity'];
                 $productItem->save();
@@ -417,6 +412,9 @@ class BillController extends Controller
             return [$product->id => $product->pivot->quantity];
         })->toArray();
 
+        // Sauvegarder les valeurs originales pour l'historique
+        $oldValues = $bill->getOriginal();
+
         // Mettre à jour la facture
         $bill->update([
             'client_id' => $validated['client_id'],
@@ -425,6 +423,9 @@ class BillController extends Controller
             'description' => $validated['description'] ?? null,
             'status' => $validated['status'] ?? $bill->status,
         ]);
+
+        // Enregistrer l'activité de mise à jour
+        ActivityLogger::logUpdated($bill, $oldValues, "Facture {$bill->reference} modifiée par " . Auth::user()->name);
 
         // Mettre à jour les produits
         $bill->products()->detach();
@@ -517,6 +518,10 @@ class BillController extends Controller
     public function destroy(Bill $bill)
     {
         $bill->delete();
+
+        // Enregistrer l'activité de suppression
+        ActivityLogger::logDeleted($bill, "Facture {$bill->reference} supprimée par " . Auth::user()->name);
+
         return redirect()
             ->route('bills.index')
             ->with('success', 'Facture supprimée avec succès');
@@ -534,8 +539,14 @@ class BillController extends Controller
         $oldStatus = $bill->status;
         $newStatus = $request->status;
 
+        // Sauvegarder les valeurs originales pour l'historique
+        $oldValues = $bill->getOriginal();
+
         // Mettre à jour le statut
         $bill->update(['status' => $newStatus]);
+
+        // Enregistrer l'activité de changement de statut
+        ActivityLogger::logUpdated($bill, $oldValues, "Statut de la facture {$bill->reference} changé de {$oldStatus} à {$newStatus} par " . Auth::user()->name);
 
         // Messages personnalisés selon le changement de statut
         if ($oldStatus !== $newStatus) {

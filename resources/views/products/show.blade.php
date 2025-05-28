@@ -25,6 +25,9 @@
                         <i class="bi bi-chevron-double-right"></i>
                     </a>
                 </div>
+                <a href="{{ route('products.create') }}" class="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white text-sm rounded-md">
+                    <i class="bi bi-plus-lg mr-1"></i> {{ __('Ajouter') }}
+                </a>
                 <a href="{{ route('products.edit', $product) }}" class="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm rounded-md">
                     <i class="bi bi-pencil mr-1"></i> {{ __('Modifier') }}
                 </a>

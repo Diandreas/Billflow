@@ -16,6 +16,7 @@ use Spatie\Activitylog\Facades\LogActivity;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\CommissionsExport;
 use Spatie\Activitylog\Models\Activity;
+use Illuminate\Support\Facades\Log;
 
 class CommissionController extends Controller
 {
@@ -193,14 +194,14 @@ class CommissionController extends Controller
 
         // Obtenir les commissions par mois
         $monthlySales = Bill::where('seller_id', $user->id)
-            ->selectRaw('YEAR(date) as year, MONTH(date) as month, SUM(total) as total, COUNT(*) as count')
+            ->selectRaw('strftime("%Y", date) as year, strftime("%m", date) as month, SUM(total) as total, COUNT(*) as count')
             ->groupBy('year', 'month')
             ->orderBy('year', 'desc')
             ->orderBy('month', 'desc')
             ->get();
 
         $monthlyCommissions = Commission::where('user_id', $user->id)
-            ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, SUM(amount) as total, COUNT(*) as count')
+            ->selectRaw('strftime("%Y", created_at) as year, strftime("%m", created_at) as month, SUM(amount) as total, COUNT(*) as count')
             ->groupBy('year', 'month')
             ->orderBy('year', 'desc')
             ->orderBy('month', 'desc')
@@ -218,7 +219,7 @@ class CommissionController extends Controller
     public function vendorPendingReport(User $user)
     {
         // Vendor can only view their own commissions
-        if (auth()->user()->role === 'vendeur' && auth()->id() !== $user->id) {
+        if (Auth::user()->role === 'vendeur' && Auth::id() !== $user->id) {
             abort(403);
         }
 
@@ -249,7 +250,7 @@ class CommissionController extends Controller
     public function vendorHistoryReport(User $user)
     {
         // Vendor can only view their own commissions
-        if (auth()->user()->role === 'vendeur' && auth()->id() !== $user->id) {
+        if (Auth::user()->role === 'vendeur' && Auth::id() !== $user->id) {
             abort(403);
         }
 
@@ -386,7 +387,13 @@ class CommissionController extends Controller
             abort(403, 'Action non autorisée.');
         }
 
-        $commission->load(['user', 'bill.client', 'shop']);
+        $commission->load([
+            'user', 
+            'bill.client', 
+            'bill.items.product', 
+            'shop',
+            'payment'
+        ]);
 
         return view('commissions.show', compact('commission'));
     }
@@ -522,7 +529,7 @@ class CommissionController extends Controller
         $sellers = User::where('role', 'vendeur')->orderBy('name')->get();
         $shops = Gate::allows('admin')
             ? Shop::orderBy('name')->get()
-            : Auth::user()->shops;
+            : Auth::user()->shops()->get();
 
         return view('commissions.create', compact('sellers', 'shops'));
     }
@@ -587,7 +594,7 @@ class CommissionController extends Controller
         $sellers = User::where('role', 'vendeur')->orderBy('name')->get();
         $shops = Gate::allows('admin')
             ? Shop::orderBy('name')->get()
-            : Auth::user()->shops;
+            : Auth::user()->shops()->get();
 
         return view('commissions.edit', compact('commission', 'sellers', 'shops'));
     }
@@ -799,7 +806,7 @@ class CommissionController extends Controller
     public function payCommission($commissionId)
     {
         // Vérifier les autorisations
-        if (!auth()->user()->can('pay commissions')) {
+        if (!Gate::allows('pay-commissions')) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -818,7 +825,7 @@ class CommissionController extends Controller
                 'reference' => CommissionPayment::generateReference(),
                 'shop_id' => $commission->shop_id,
                 'user_id' => $commission->user_id,
-                'paid_by' => auth()->id(),
+                'paid_by' => Auth::id(),
                 'amount' => $commission->amount,
                 'payment_method' => 'cash', // Default payment method
                 'payment_reference' => null,
@@ -830,7 +837,7 @@ class CommissionController extends Controller
             $commission->update([
                 'is_paid' => true,
                 'paid_at' => now(),
-                'paid_by' => auth()->id(),
+                'paid_by' => Auth::id(),
                 'payment_method' => 'cash',
                 'payment_reference' => null,
                 'payment_group_id' => $payment->id,
@@ -855,7 +862,7 @@ class CommissionController extends Controller
     public function payVendorCommissions(User $user)
     {
         // Only admin can pay commissions
-        if (auth()->user()->role !== 'admin') {
+        if (Auth::user()->role !== 'admin') {
             abort(403);
         }
 
@@ -893,7 +900,7 @@ class CommissionController extends Controller
     public function shopCommissions($shopId)
     {
         // Vérifier les autorisations
-        if (!auth()->user()->can('view commissions')) {
+        if (!Gate::allows('view-commissions')) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -962,7 +969,7 @@ class CommissionController extends Controller
             ]);
         } catch (\Exception $e) {
             // Log l'erreur pour que vous puissiez la déboguer
-            \Log::error('Error in getPendingCommissionsForPayment: ' . $e->getMessage());
+            Log::error('Error in getPendingCommissionsForPayment: ' . $e->getMessage());
 
             // Retourne une réponse d'erreur propre
             return response()->json([
