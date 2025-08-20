@@ -16,6 +16,18 @@
                 </p>
             </div>
             <div class="flex space-x-2">
+                @if($bill->payment_status !== 'paid')
+                    <button id="payNowBtn" 
+                       class="inline-flex items-center px-3 py-1.5 bg-green-600 dark:bg-green-700 border border-transparent rounded-md font-medium text-sm text-white hover:bg-green-700 dark:hover:bg-green-600">
+                        <i class="fas fa-money-bill-wave mr-1"></i>
+                        {{ __('Encaisser maintenant') }}
+                    </button>
+                    <button id="addPaymentBtn" 
+                       class="inline-flex items-center px-3 py-1.5 bg-orange-600 dark:bg-orange-700 border border-transparent rounded-md font-medium text-sm text-white hover:bg-orange-700 dark:hover:bg-orange-600">
+                        <i class="fas fa-plus mr-1"></i>
+                        {{ __('Paiement partiel') }}
+                    </button>
+                @endif
                 <a href="{{ route('bills.download', $bill) }}"
                    class="inline-flex items-center px-3 py-1.5 bg-indigo-600 dark:bg-indigo-700 border border-transparent rounded-md font-medium text-sm text-white hover:bg-indigo-700 dark:hover:bg-indigo-600">
                     <i class="bi bi-download mr-1"></i>
@@ -239,6 +251,66 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Informations de paiement -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4 mb-4">
+                <h3 class="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">
+                    <i class="fas fa-credit-card mr-2 text-blue-600"></i>
+                    Informations de paiement
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                        <div class="text-sm font-medium text-blue-600 dark:text-blue-400">Montant total</div>
+                        <div class="text-xl font-bold text-blue-900 dark:text-blue-100">
+                            {{ number_format($bill->total, 0, ',', ' ') }} FCFA
+                        </div>
+                    </div>
+                    
+                    <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                        <div class="text-sm font-medium text-green-600 dark:text-green-400">Montant payé</div>
+                        <div class="text-xl font-bold text-green-900 dark:text-green-100">
+                            {{ number_format($bill->paid_amount ?? 0, 0, ',', ' ') }} FCFA
+                        </div>
+                    </div>
+                    
+                    <div class="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
+                        <div class="text-sm font-medium text-orange-600 dark:text-orange-400">Reste à encaisser</div>
+                        <div class="text-xl font-bold text-orange-900 dark:text-orange-100">
+                            {{ number_format($bill->remaining_amount ?? $bill->total, 0, ',', ' ') }} FCFA
+                        </div>
+                    </div>
+                </div>
+
+                @if($bill->payments && $bill->payments->count() > 0)
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Historique des paiements</h4>
+                        <div class="space-y-2">
+                            @foreach($bill->payments as $payment)
+                                <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+                                            <i class="fas fa-check text-green-600 dark:text-green-400 text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                {{ number_format($payment->amount, 0, ',', ' ') }} FCFA
+                                            </div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                {{ $payment->payment_date->format('d/m/Y à H:i') }} - 
+                                                {{ \App\Models\Payment::getPaymentMethods()[$payment->payment_method] ?? $payment->payment_method }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        {{ $payment->reference }}
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <!-- Produits -->

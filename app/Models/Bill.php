@@ -141,4 +141,77 @@ class Bill extends Model
     {
         return number_format($amount, 0, ',', ' ') . ' FCFA';
     }
+
+    /**
+     * Relation avec les paiements de la facture
+     */
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Relation avec le devis d'origine
+     */
+    public function quote()
+    {
+        return $this->belongsTo(Quote::class);
+    }
+
+    /**
+     * Calculer le montant total payé
+     */
+    public function getTotalPaidAttribute()
+    {
+        return $this->payments->sum('amount');
+    }
+
+    /**
+     * Calculer le montant restant à payer
+     */
+    public function getRemainingAmountAttribute()
+    {
+        return $this->total - $this->getTotalPaidAttribute();
+    }
+
+    /**
+     * Mettre à jour le statut de paiement
+     */
+    public function updatePaymentStatus()
+    {
+        $totalPaid = $this->getTotalPaidAttribute();
+        
+        if ($totalPaid == 0) {
+            $this->payment_status = 'unpaid';
+        } elseif ($totalPaid >= $this->total) {
+            $this->payment_status = 'paid';
+            $this->status = 'paid';
+        } else {
+            $this->payment_status = 'partial';
+        }
+        
+        $this->paid_amount = $totalPaid;
+        $this->remaining_amount = $this->total - $totalPaid;
+        $this->save();
+    }
+
+    /**
+     * Ajouter un paiement à la facture
+     */
+    public function addPayment($amount, $paymentMethod, $notes = null)
+    {
+        $payment = $this->payments()->create([
+            'reference' => Payment::generateReference(),
+            'amount' => $amount,
+            'payment_method' => $paymentMethod,
+            'payment_date' => now(),
+            'notes' => $notes,
+            'user_id' => auth()->id(),
+            'shop_id' => $this->shop_id,
+        ]);
+
+        $this->updatePaymentStatus();
+
+        return $payment;
+    }
 }
